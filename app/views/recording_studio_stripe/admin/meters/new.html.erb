@@ -1,0 +1,15 @@
+<% recording_studio_page_nav(title: "New meter", page_nav_back_url: "/admin/screens/meters", page_nav_back_label: "Meters") %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "New meter",
+    subtitle: "A named counter. The app records usage against it.",
+    variant: :h1
+  ) %>
+
+  <%= form_with url: recording_studio_stripe.admin_meters_path, method: :post, local: true, class: "flex max-w-xl flex-col gap-4" do %>
+    <%= render FlatPack::TextInput::Component.new(name: "name", label: "Name", required: true, placeholder: "ai_tokens", help_text: "Lowercase, like ai_tokens.") %>
+    <%= render FlatPack::TextInput::Component.new(name: "label", label: "Label", required: true, placeholder: "AI tokens") %>
+    <%= render FlatPack::Button::Component.new(text: "Create meter", style: :primary, size: :md, type: "submit") %>
+  <% end %>
+</div>

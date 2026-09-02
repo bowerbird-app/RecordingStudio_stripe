@@ -15,23 +15,43 @@ Style/StringLiterals:
 
 Layout/LineLength:
   Max: 120
+  AllowedPatterns:
+    - '@source'
 
-# Relax metrics for test files and generators
 Metrics/ClassLength:
+  Max: 150
   Exclude:
     - 'test/**/*'
+    - 'db/migrate/**/*'
+
+Metrics/ModuleLength:
+  Max: 150
 
 Metrics/MethodLength:
+  Max: 30
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
+    - 'db/migrate/**/*'
 
 Metrics/AbcSize:
+  Max: 30
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
+    - 'db/migrate/**/*'
 
-# Allow empty blocks in tests (common for stubs/mocks)
+Metrics/BlockLength:
+  Max: 40
+  Exclude:
+    - 'db/migrate/**/*'
+
+Metrics/CyclomaticComplexity:
+  Max: 10
+
+Metrics/ParameterLists:
+  CountKeywordArgs: false
+
 Lint/EmptyBlock:
   Exclude:
     - 'test/**/*'
@@ -45,8 +65,3 @@ Lint/NestedMethodDefinition:
 Naming/VariableNumber:
   Exclude:
     - 'test/**/*'
-
-# Don't require super in service initialize methods
-Lint/MissingSuper:
-  Exclude:
-    - 'test/services/**/*'

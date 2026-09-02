@@ -16,6 +16,16 @@ GIT
       recording_studio (~> 4.1)
 
 GIT
+  remote: https://github.com/bowerbird-app/RecordingStudio_admin.git
+  revision: 1c524c8e73ce66f7701a810abc989dff39ee93a9
+  tag: v2.0.2
+  specs:
+    recording_studio_admin (2.0.2)
+      flat_pack (~> 0.1.129)
+      rails (~> 8.1.0)
+      recording_studio_accessible (~> 0.6)
+
+GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_root_switchable.git
   revision: 98be393513dea19e5cd633ef83616e282c92b6ea
   tag: v0.5.0
@@ -40,9 +50,10 @@ GIT
 PATH
   remote: ../..
   specs:
-    gem_template (0.2.1)
+    recording_studio_stripe (0.3.0)
       rails (~> 8.1.0)
       recording_studio (~> 4.1)
+      stripe (>= 13.0, < 20)
 
 GEM
   remote: https://rubygems.org/
@@ -391,6 +402,9 @@ GEM
       ostruct
     stimulus-rails (1.3.4)
       railties (>= 6.0.0)
+    stripe (19.6.1)
+      bigdecimal
+      logger
     tailwind_merge (0.16.0)
       sin_lru_redux (~> 2.5)
     tailwindcss-rails (4.4.0)
@@ -456,7 +470,6 @@ DEPENDENCIES
   debug
   devise
   flat_pack!
-  gem_template!
   image_processing (~> 1.2)
   importmap-rails
   jbuilder
@@ -467,7 +480,9 @@ DEPENDENCIES
   rails (~> 8.1.1)
   recording_studio!
   recording_studio_accessible!
+  recording_studio_admin!
   recording_studio_root_switchable!
+  recording_studio_stripe!
   rubocop-rails-omakase
   solid_cable
   solid_cache
@@ -526,7 +541,6 @@ CHECKSUMS
   ffi (1.17.2-x86_64-linux-musl) sha256=97c0eb3981414309285a64dc4d466bd149e981c279a56371ef811395d68cb95c
   flat_pack (0.1.133)
   fugit (1.12.1) sha256=5898f478ede9b415f0804e42b8f3fd53f814bd85eebffceebdbc34e1107aaf68
-  gem_template (0.2.1)
   globalid (1.3.0) sha256=05c639ad6eb4594522a0b07983022f04aa7254626ab69445a0e493aa3786ff11
   i18n (1.15.2) sha256=00f9eb62412fe593b2a65a97daa75300d37abb8f7202ec748e94b6d46a9dd1b5
   image_processing (1.14.0) sha256=754cc169c9c262980889bec6bfd325ed1dafad34f85242b5a07b60af004742fb
@@ -595,7 +609,9 @@ CHECKSUMS
   rdoc (8.0.0) sha256=03bf8c08a9639658855a0cfd77c0abca8325c227693f7f33f82957811348c469
   recording_studio (4.2.0)
   recording_studio_accessible (0.6.0)
+  recording_studio_admin (2.0.2)
   recording_studio_root_switchable (0.5.0)
+  recording_studio_stripe (0.3.0)
   regexp_parser (2.11.3) sha256=ca13f381a173b7a93450e53459075c9b76a10433caadcb2f1180f2c741fc55a4
   reline (0.6.3) sha256=1198b04973565b36ec0f11542ab3f5cfeeec34823f4e54cebde90968092b1835
   responders (3.2.0) sha256=89c2d6ac0ae16f6458a11524cae4a8efdceba1a3baea164d28ee9046bd3df55a
@@ -613,6 +629,7 @@ CHECKSUMS
   solid_queue (1.2.4) sha256=bb60f9552a969ac377d87601b0ff6a088f5e6f20b0cbbe3844a59d022cac0e4b
   sshkit (1.24.0) sha256=9597c1f984778ae9742f2dc839778d57a6a2efb868107046575c52ac7c628e6c
   stimulus-rails (1.3.4) sha256=765676ffa1f33af64ce026d26b48e8ffb2e0b94e0f50e9119e11d6107d67cb06
+  stripe (19.6.1) sha256=086c3bdedbe00dad7ed7ffb683f92c2af8582cac075a2f5ffe1e2baf614bdece
   tailwind_merge (0.16.0) sha256=e2a2b26aaef57ae6af6d0e98380bbcbf324ce4e9778cd56df8e837c30e66005c
   tailwindcss-rails (4.4.0) sha256=efa2961351a52acebe616e645a81a30bb4f27fde46cc06ce7688d1cd1131e916
   tailwindcss-ruby (4.1.16) sha256=d30e4713152bb89ebe1fddb5b5f9b31d7755bf5576453e601eb58b19174c48c0

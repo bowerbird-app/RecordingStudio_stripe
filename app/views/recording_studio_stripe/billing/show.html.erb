@@ -1,0 +1,55 @@
+<% recording_studio_page_nav(title: "Billing", page_nav_back_url: main_app.root_path, page_nav_back_label: "Home") %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Billing",
+    subtitle: billing_subtitle(@subscription),
+    variant: :h1
+  ) %>
+
+  <% if notice = flash[:notice] %>
+    <%= render FlatPack::Alert::Component.new(title: notice, style: :success) %>
+  <% end %>
+  <% if alert = flash[:alert] %>
+    <%= render FlatPack::Alert::Component.new(title: alert, style: :warning) %>
+  <% end %>
+
+  <% if @subscription&.active? %>
+    <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: @subscription) %>
+  <% else %>
+    <%= render FlatPack::EmptyState::Component.new(
+      title: "No plan yet",
+      description: "Pick a plan when you’re ready. Usage stays at zero until then.",
+      icon: :inbox
+    ) do |empty| %>
+      <% empty.slot do %>
+        <%= render FlatPack::Button::Component.new(text: "See plans", style: :primary, size: :md, href: main_app.plans_path) %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <%= render FlatPack::SectionTitle::Component.new(title: "Usage this period") %>
+
+  <% if @meters.empty? %>
+    <%= render FlatPack::EmptyState::Component.new(
+      title: "No meters yet",
+      description: "Staff add meters in admin, then your app can record usage.",
+      icon: :inbox
+    ) %>
+  <% else %>
+    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
+      <% @meters.each do |handle| %>
+        <%= render RecordingStudioStripe::MeterCardComponent.new(handle: handle) %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <% if @allowance_prices.any? %>
+    <%= render FlatPack::SectionTitle::Component.new(title: "Need a bit more?") %>
+    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md) do %>
+      <% @allowance_prices.each do |price| %>
+        <%= render RecordingStudioStripe::AllowanceCardComponent.new(price: price) %>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>
