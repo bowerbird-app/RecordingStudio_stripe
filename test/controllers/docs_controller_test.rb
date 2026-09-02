@@ -78,6 +78,7 @@ class DocsControllerTest < ActionDispatch::IntegrationTest
     folder_recording = record_child(folder, root_recording, root_recording)
     page = Page.create!(title: "API")
     record_child(page, root_recording, folder_recording)
+    grant_admin_access!(root_recording)
 
     get docs_recordings_tree_path
 
@@ -86,10 +87,10 @@ class DocsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Workspace: Tree Workspace"
     assert_includes response.body, "Folder: Reference"
     assert_includes response.body, "Page: API"
+    assert_includes response.body, "Access: Admin for #{@user.email}"
     refute_includes response.body, "Access boundary"
-    refute_includes response.body, "Access: Admin"
     assert_select "div[role='tree']", count: 1
-    assert_select "[role='treeitem']", minimum: 3
+    assert_select "[role='treeitem']", minimum: 4
     refute_includes response.body, "Current structure"
     refute_includes response.body, "This tree is generated from RecordingStudio::Recording records"
   end
@@ -163,5 +164,19 @@ class DocsControllerTest < ActionDispatch::IntegrationTest
       root_recording: root_recording,
       parent_recording: parent_recording
     ).recording
+  end
+
+  def grant_admin_access!(recording)
+    return if RecordingStudioAccessible.authorized?(actor: @user, recording: recording, role: :admin)
+
+    RecordingStudioAccessible::AccessCreationContext.allow do
+      RecordingStudio.root_recording_or_self(recording).record(
+        RecordingStudio::Access,
+        parent_recording: recording
+      ) do |access|
+        access.actor = @user
+        access.role = :admin
+      end
+    end
   end
 end
