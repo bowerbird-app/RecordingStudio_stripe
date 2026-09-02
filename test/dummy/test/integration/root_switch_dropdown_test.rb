@@ -101,4 +101,35 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to "/"
   end
+
+  test "studio admin is in the root switcher and opens /admin after switch" do
+    user = User.find_or_create_by!(email: "admin@admin.com") do |record|
+      record.password = "Password"
+      record.password_confirmation = "Password"
+    end
+    sign_in user
+
+    workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
+    RecordingStudio.root_recording_for(workspace)
+    admin_root = AdminRoot.find_or_create_by!(name: "Studio Admin")
+    admin_recording = RecordingStudio.root_recording_for(admin_root)
+    grant_owner_access!(recording: admin_recording, actor: user)
+
+    scope = RecordingStudioRootSwitchable.configuration.scopes.fetch("all_workspaces")
+    root_ids = scope.available_roots.call.map(&:id)
+    assert_includes root_ids, admin_recording.id
+
+    patch "/recording_studio_root_switchable/v1/root_switch", params: {
+      scope: "all_workspaces",
+      root_switch: {
+        root_recording_id: admin_recording.id,
+        return_to: "/admin"
+      }
+    }
+
+    follow_redirect!
+    assert_response :success
+    assert_includes response.body, "Stripe"
+    assert_includes response.body, "Products"
+  end
 end

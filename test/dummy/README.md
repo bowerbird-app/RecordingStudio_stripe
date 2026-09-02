@@ -9,7 +9,7 @@ Sign in with `admin@admin.com` / `Password`.
 - `/` — current workspace plan and usage
 - `/plans` — Products and Prices
 - `/billing` — usage remaining and extra packs
-- `/admin` — Stripe admin section
+- `/admin` — Stripe admin section. The Admin button switches to Studio Admin first, because Admin authorizes against that root.
 - `/webhooks/stripe` — Stripe webhook intake
 - `/users/sign_in` — Devise
 

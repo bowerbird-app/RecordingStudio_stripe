@@ -10,7 +10,7 @@
   <div class="flex flex-wrap gap-2">
     <%= render FlatPack::Button::Component.new(text: "Plans", style: :primary, size: :md, href: plans_path) %>
     <%= render FlatPack::Button::Component.new(text: "Billing", style: :secondary, size: :md, href: recording_studio_stripe.root_path) %>
-    <%= render FlatPack::Button::Component.new(text: "Admin", style: :ghost, size: :md, href: "/admin") %>
+    <%= dummy_admin_button %>
   </div>
 
   <% handle = current_root_recording&.recordable&.billing %>
