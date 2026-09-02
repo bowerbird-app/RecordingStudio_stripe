@@ -34,6 +34,8 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, workspace.name
     assert_select "body[data-recording-studio-default-layout='true']", count: 1
+    assert_select "body[data-theme='rounded']", count: 1
+    assert_includes response.body, 'document.documentElement.setAttribute("data-theme", "rounded")'
   end
 
   test "root switch page renders with the host default layout" do

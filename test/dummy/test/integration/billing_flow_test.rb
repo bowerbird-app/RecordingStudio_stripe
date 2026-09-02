@@ -29,8 +29,14 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "$29/month"
     assert_includes response.body, "$9/month"
     assert_includes response.body, "10m ai tokens"
+    assert_includes response.body, "Monthly"
+    assert_includes response.body, "Yearly"
+    assert_includes response.body, "[border-radius:var(--tabs-pill-corner-radius)]"
+    refute_includes response.body, "[&>*]:border-r-0"
     refute_includes response.body, "border-b border-[var(--card-border-color)]"
     refute_includes response.body, "border-t border-[var(--card-border-color)]"
+    assert_select "body[data-theme='rounded']", count: 1
+    assert_includes response.body, 'document.documentElement.setAttribute("data-theme", "rounded")'
   end
 
   test "plans page shows yearly Prices on the same Products" do

@@ -7,18 +7,12 @@
     variant: :h1
   ) %>
 
-  <%= render FlatPack::SegmentedButtons::Component.new do |group| %>
-    <% group.button(
-      text: "Monthly",
-      selected: @interval == "month",
-      href: url_for(interval: "month")
-    ) %>
-    <% group.button(
-      text: "Yearly",
-      selected: @interval == "year",
-      href: url_for(interval: "year")
-    ) %>
-  <% end %>
+  <%= render FlatPack::Button::Pill::Component.new(
+    items: [
+      { text: "Monthly", href: url_for(interval: "month"), active: @interval == "month" },
+      { text: "Yearly", href: url_for(interval: "year"), active: @interval == "year" }
+    ]
+  ) %>
 
   <% if @products.empty? %>
     <%= render FlatPack::EmptyState::Component.new(
