@@ -82,7 +82,8 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_dummy_tailwind_scans_engine_components
     tailwind_source = File.read(File.expand_path("dummy/app/assets/tailwind/application.css", __dir__))
 
-    assert_includes tailwind_source, "../../../vendor/bundle/**/flatpack/app/components/**/*.{rb,erb}"
+    assert_includes tailwind_source, "bundler/gems/flatpack-*/app/components"
+    assert_includes tailwind_source, "usr/local/lib/ruby/gems"
     assert_includes tailwind_source, "app/components/**/*.{rb,erb}"
     refute_includes tailwind_source, "@theme"
   end

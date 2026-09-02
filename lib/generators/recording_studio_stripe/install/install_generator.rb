@@ -98,12 +98,15 @@ module RecordingStudioStripe
 
       def tailwind_source_lines
         [
-          '@source "../../vendor/bundle/**/recording_studio_stripe/app/views/**/*.erb";',
-          '@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/recording_studio_stripe-*/app/views/**/*.erb";',
-          '@source "../../vendor/bundle/**/recording_studio_stripe/app/components/**/*.{rb,erb}";',
-          '@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/recording_studio_stripe-*/app/components/**/*.{rb,erb}";',
-          '@source "../../vendor/bundle/**/flatpack/app/components/**/*.{rb,erb}";',
-          '@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/flatpack-*/app/components/**/*.{rb,erb}";'
+          '@source "../../vendor/bundle/**/bundler/gems/recording_studio_stripe-*/app/views/**/*.erb";',
+          '@source "../../vendor/bundle/**/bundler/gems/recording_studio_stripe-*/app/components/**/*.{rb,erb}";',
+          '@source "../../../../../../usr/local/bundle/**/bundler/gems/recording_studio_stripe-*/app/views/**/*.erb";',
+          '@source "../../../../../../usr/local/bundle/**/bundler/gems/recording_studio_stripe-*/app/components/**/*.{rb,erb}";',
+          '@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/recording_studio_stripe-*/app/views/**/*.erb";',
+          '@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/recording_studio_stripe-*/app/components/**/*.{rb,erb}";',
+          '@source "../../vendor/bundle/**/bundler/gems/flatpack-*/app/components/**/*.{rb,erb}";',
+          '@source "../../../../../../usr/local/bundle/**/bundler/gems/flatpack-*/app/components/**/*.{rb,erb}";',
+          '@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/flatpack-*/app/components/**/*.{rb,erb}";'
         ]
       end
     end
