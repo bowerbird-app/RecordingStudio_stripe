@@ -11,19 +11,20 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(style: :outlined) do |card|
-        card.header do
-          render FlatPack::PageTitle::Component.new(
-            title: @handle.meter.label,
-            subtitle: "#{stripe_quantity_label(@handle.remaining)} left",
-            variant: :h3,
-            class: "mb-0 pb-0"
-          )
-        end
-        card.body { details }
+        card.body { helpers.stripe_card_stack(title, details) }
       end
     end
 
     private
+
+    def title
+      render FlatPack::PageTitle::Component.new(
+        title: @handle.meter.label,
+        subtitle: "#{stripe_quantity_label(@handle.remaining)} left",
+        variant: :h3,
+        class: "mb-0 pb-0"
+      )
+    end
 
     def details
       cap = [@handle.included + @handle.purchased, 1].max

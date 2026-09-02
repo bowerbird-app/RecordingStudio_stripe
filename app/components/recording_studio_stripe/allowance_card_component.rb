@@ -11,19 +11,20 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(style: :flat) do |card|
-        card.header do
-          render FlatPack::PageTitle::Component.new(
-            title: pack_title,
-            subtitle: @price.formatted_amount,
-            variant: :h3,
-            class: "mb-0 pb-0"
-          )
-        end
-        card.footer { buy_button }
+        card.body { helpers.stripe_card_stack(title, buy_button) }
       end
     end
 
     private
+
+    def title
+      render FlatPack::PageTitle::Component.new(
+        title: pack_title,
+        subtitle: @price.formatted_amount,
+        variant: :h3,
+        class: "mb-0 pb-0"
+      )
+    end
 
     def pack_title
       meter = Meter.find_by(name: @price.allowance_meter_name)

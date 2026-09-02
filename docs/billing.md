@@ -15,6 +15,38 @@ Stripe is the source of truth for Products, Prices, Customers, Subscriptions, in
 
 Usage is a fact table, not a Recording. High volume stays off the tree.
 
+## Products and Prices
+
+Stripe's shape is the shape here. A **Product** is the plan or pack. A **Price** is one way to pay for it.
+
+Starter is one Product. Monthly and yearly are two Prices on that Product. Extra token packs are a separate Product with one-time Prices.
+
+`/plans` groups by Product. A Monthly / Yearly toggle picks which Price each card shows. Admin Products is one row per Product, with Add Price. Admin Prices lists every Price with the Product name, and filters by Product or interval.
+
+Included usage lives on the Price, not the Product. Two Prices on Starter can include different amounts, though dummy uses the same numbers for month and year.
+
+## Meters
+
+A meter is a named counter the host records against. Defaults are `ai_tokens` and `api_calls`. The host replaces or extends that map:
+
+```ruby
+RecordingStudioStripe.configure do |config|
+  config.meters = {
+    "ai_tokens" => { "label" => "AI tokens" },
+    "api_calls" => { "label" => "API calls" },
+    "seats" => { "label" => "Seats" }
+  }
+end
+```
+
+The gem writes those rows on boot. Staff can also add a meter in Admin. Then:
+
+```ruby
+account.billing.meter(:seats).record(1)
+```
+
+A plan Price nominates how many of each meter it includes with `included_<meter_name>` metadata. Zero or missing means that meter is not part of the plan. The New Price form shows one included field per meter. Allowance packs name a meter and a quantity on a one-time Price (`meter`, `allowance`).
+
 ## Remaining
 
 For the current subscription period:

@@ -26,6 +26,8 @@ Metrics/ClassLength:
 
 Metrics/ModuleLength:
   Max: 150
+  Exclude:
+    - "lib/recording_studio_stripe/admin/definitions.rb"
 
 Metrics/MethodLength:
   Max: 30

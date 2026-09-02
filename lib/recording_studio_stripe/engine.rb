@@ -119,6 +119,17 @@ module RecordingStudioStripe
       end
     end
 
+    initializer "recording_studio_stripe.sync_meters" do
+      config.to_prepare do
+        next unless defined?(ActiveRecord::Base)
+        next unless RecordingStudioStripe::Meter.table_exists?
+
+        RecordingStudioStripe::Meter.sync_from_config!
+      rescue ActiveRecord::ActiveRecordError
+        nil
+      end
+    end
+
     initializer "recording_studio_stripe.append_migrations" do |app|
       engine_migrations = config.paths["db/migrate"].expanded
       next if engine_migrations.empty?

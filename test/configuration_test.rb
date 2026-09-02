@@ -67,6 +67,11 @@ class ConfigurationTest < Minitest::Test
     assert_kind_of RecordingStudioStripe::Configuration, RecordingStudioStripe.configuration
   end
 
+  def test_default_meters_are_ai_tokens_and_api_calls
+    assert_equal %w[ai_tokens api_calls], @configuration.meters.keys
+    assert_equal "AI tokens", @configuration.meters.fetch("ai_tokens").fetch("label")
+  end
+
   def test_local_mode_when_no_secret
     ENV["STRIPE_SECRET_KEY"] = nil
     configuration = RecordingStudioStripe::Configuration.new

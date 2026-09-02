@@ -13,16 +13,7 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(style: current? ? :elevated : :outlined) do |card|
-        card.header do
-          render FlatPack::PageTitle::Component.new(
-            title: @product.name,
-            subtitle: price_subtitle,
-            variant: :h3,
-            class: "mb-0 pb-0"
-          )
-        end
-        card.body { body }
-        card.footer { footer } if footer
+        card.body { helpers.stripe_card_stack(title, inclusions, action) }
       end
     end
 
@@ -32,13 +23,22 @@ module RecordingStudioStripe
       @interval == "year" ? @product.annual_price : @product.monthly_price
     end
 
+    def title
+      render FlatPack::PageTitle::Component.new(
+        title: @product.name,
+        subtitle: price_subtitle,
+        variant: :h3,
+        class: "mb-0 pb-0"
+      )
+    end
+
     def price_subtitle
       return "No #{stripe_interval_label(@interval)} Price yet" unless price
 
       "#{price.formatted_amount}/#{stripe_interval_label(price.interval)}"
     end
 
-    def body
+    def inclusions
       helpers.tag.ul(class: "space-y-2 text-sm leading-6") do
         safe_join(inclusion_lines.map { |line| helpers.tag.li(line) })
       end
@@ -56,7 +56,7 @@ module RecordingStudioStripe
       lines.presence || ["Unlimited vibes. Add included usage on the Price."]
     end
 
-    def footer
+    def action
       return unless price
       return current_button if current?
       return change_button if @subscription&.active?

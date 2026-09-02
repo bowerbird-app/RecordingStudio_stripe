@@ -14,6 +14,10 @@ module RecordingStudioStripe
       interval == "year" ? "year" : "month"
     end
 
+    def stripe_card_stack(*parts)
+      tag.div(safe_join(parts.compact), class: "flex h-full flex-col gap-4")
+    end
+
     def billing_subtitle(subscription)
       return "Usage resets when a paid period starts." unless subscription&.active?
       return "This plan runs until #{subscription.current_period_end.to_date.to_fs(:long)}." if subscription.canceling?

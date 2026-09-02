@@ -59,4 +59,27 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_includes response.body, "Studio"
   end
+
+  test "prices screen groups Prices under their Product" do
+    get "/admin/screens/prices"
+
+    assert_response :success
+    assert_includes response.body, "Prices"
+    assert_includes response.body, "Product"
+    assert_includes response.body, "Interval"
+
+    get "/admin/screens/prices/table"
+
+    assert_response :success
+    assert_includes response.body, "Starter"
+    assert_includes response.body, "Pro"
+    assert_includes response.body, "month"
+    assert_includes response.body, "year"
+
+    get "/admin/screens/prices/table", params: { product: "Starter" }
+
+    assert_response :success
+    assert_includes response.body, "Starter"
+    refute_includes response.body, ">Pro<"
+  end
 end

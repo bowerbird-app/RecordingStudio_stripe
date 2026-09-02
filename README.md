@@ -57,6 +57,8 @@ That mounts billing at `/billing`, plans at `/plans`, and webhooks at `/webhooks
 
 Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave them blank in dummy to click through locally.
 
+Named usage counters default to `ai_tokens` and `api_calls`. Change `config.meters` in the initializer to add your own, then set `included_<name>` on each plan Price.
+
 ### Admin
 
 Install Recording Studio Admin and Accessible. Include `RecordingStudioStripe::AdminSupport` on the admin root. Enable the `:stripe` section. Grant Accessible access on that root. Mount Accessible under the admin path:
@@ -85,7 +87,7 @@ meter=ai_tokens
 allowance=5000000
 ```
 
-One Product per plan. Monthly and annual are Prices on that Product. Extra packs are a separate Product.
+One Product per plan. Monthly and annual are Prices on that Product. Extra packs are a separate Product. `/plans` groups by Product and toggles interval. Admin Prices shows the Product name and filters by Product or interval.
 
 ## Webhooks
 

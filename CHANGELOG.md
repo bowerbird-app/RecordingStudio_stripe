@@ -18,6 +18,11 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 - Recording Studio Admin section for Products, Prices, Meters, Customers, and Subscriptions
 - Stripe webhook intake that updates local state
 - Dummy catalogue (Starter, Pro, token packs) so the host app can be clicked without keys
+- Plan, billing, and pack cards keep title, copy, and actions in the card body
+- Prices admin lists the Product name and filters by Product or interval
+
+### Changed
+- Hosts register meters with `config.meters`. The gem writes those rows on boot. A plan Price sets included amounts per meter.
 
 ### Upgrade notes
 - Include `RecordingStudioStripe::Billable` on the workspace root. Do not put a Stripe customer on User.
@@ -25,6 +30,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 - Copy migrations with `bin/rails generate recording_studio_stripe:migrations`.
 - Point Stripe webhooks at `/webhooks/stripe`.
 - Tax stays in Stripe. Do not add a local tax engine.
+- Set `config.meters` for extra counters. Plan Prices store included amounts as `included_<meter_name>`.
 
 ## [0.2.1] - 2026-09-01
 

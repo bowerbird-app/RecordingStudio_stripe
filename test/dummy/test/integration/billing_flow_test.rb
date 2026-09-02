@@ -25,8 +25,22 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Pick a plan"
     assert_includes response.body, "Pro"
+    assert_includes response.body, "Starter"
     assert_includes response.body, "$29/month"
+    assert_includes response.body, "$9/month"
     assert_includes response.body, "10m ai tokens"
+    refute_includes response.body, "border-b border-[var(--card-border-color)]"
+    refute_includes response.body, "border-t border-[var(--card-border-color)]"
+  end
+
+  test "plans page shows yearly Prices on the same Products" do
+    get "/plans", params: { interval: "year" }
+
+    assert_response :success
+    assert_includes response.body, "Pro"
+    assert_includes response.body, "Starter"
+    assert_includes response.body, "$290/year"
+    assert_includes response.body, "$90/year"
   end
 
   test "checkout in local mode starts a subscription" do

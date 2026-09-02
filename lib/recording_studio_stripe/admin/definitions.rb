@@ -66,17 +66,30 @@ module RecordingStudioStripe
         klass.key "prices"
         klass.icon :banknotes
         klass.title "Prices"
-        klass.subtitle "Monthly, yearly, and one-time allowance Prices"
+        klass.subtitle "Monthly, yearly, and one-time Prices, grouped under a Product"
         klass.blast_radius :site
-        klass.query { |_context| RecordingStudioStripe::Price.includes(:product).order(:unit_amount) }
+        klass.query { |_context| RecordingStudioStripe::Admin::Definitions.prices_relation }
+        klass.filter :product,
+                     options: -> { RecordingStudioStripe::Product.order(:name).pluck(:name) },
+                     apply: lambda { |relation, value, _context|
+                       relation.where(recording_studio_stripe_products: { name: value })
+                     }
+        klass.filter :interval, options: %w[month year]
         klass.table do
-          column :stripe_id
+          column :product, sortable: false, value: ->(row, _context) { row.product.name }
+          column :interval
           column :unit_amount
           column :currency
-          column :interval
           column :active
+          column :stripe_id
         end
         RecordingStudioStripe::Admin::Definitions.const_set(:PricesScreen, klass)
+      end
+
+      def prices_relation
+        RecordingStudioStripe::Price.includes(:product).joins(:product).merge(
+          RecordingStudioStripe::Product.order(:name)
+        ).order(:interval, :unit_amount)
       end
 
       def meters_screen

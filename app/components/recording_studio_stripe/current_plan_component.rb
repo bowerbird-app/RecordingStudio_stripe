@@ -11,20 +11,20 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(style: :default) do |card|
-        card.header do
-          render FlatPack::PageTitle::Component.new(
-            title: @subscription.price&.product&.name || "Current plan",
-            subtitle: period_copy,
-            variant: :h3,
-            class: "mb-0 pb-0"
-          )
-        end
-        card.body { badges }
-        card.footer { actions }
+        card.body { helpers.stripe_card_stack(title, badges, actions) }
       end
     end
 
     private
+
+    def title
+      render FlatPack::PageTitle::Component.new(
+        title: @subscription.price&.product&.name || "Current plan",
+        subtitle: period_copy,
+        variant: :h3,
+        class: "mb-0 pb-0"
+      )
+    end
 
     def period_copy
       price = @subscription.price
