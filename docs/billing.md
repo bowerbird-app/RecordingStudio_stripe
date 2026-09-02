@@ -33,7 +33,7 @@ Included comes from Price metadata. Purchased comes from allowance packs bought 
 
 ## Screens
 
-Customer UI is a mountable engine slice at `/plans` and `/billing`. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter) live on the billing engine and link from those screens.
+Customer UI is a mountable engine slice at `/plans` and `/billing`. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter) live on the billing engine and link from those screens. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
 
 ## Local mode
 
