@@ -15,4 +15,4 @@ Sign in with `admin@admin.com` / `Password`.
 
 Local mode (no `STRIPE_SECRET_KEY`) writes Customers and Subscriptions in the dummy database so you can click through. With keys, Checkout and webhooks talk to Stripe.
 
-Authenticated pages use Recording Studio's default layout and Flatpack's rounded theme (`html` and `body` `data-theme="rounded"`). Dummy `config/importmap.rb` pins Turbo and Recording Studio Admin screen controllers so product tables load.
+Authenticated pages use a dummy copy of Recording Studio `default_layout` with `html data-theme="rounded"`. Recording Studio puts that attribute on `body`, which does not override Flatpack `:root` tokens. Dummy `config/importmap.rb` pins Turbo and Recording Studio Admin screen controllers so product tables load.

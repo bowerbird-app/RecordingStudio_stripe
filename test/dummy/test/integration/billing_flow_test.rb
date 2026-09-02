@@ -36,7 +36,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "border-b border-[var(--card-border-color)]"
     refute_includes response.body, "border-t border-[var(--card-border-color)]"
     assert_select "body[data-theme='rounded']", count: 1
-    assert_includes response.body, 'document.documentElement.setAttribute("data-theme", "rounded")'
+    assert_select "html[data-theme='rounded']", count: 1
   end
 
   test "plans page shows yearly Prices on the same Products" do

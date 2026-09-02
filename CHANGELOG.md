@@ -24,7 +24,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 ### Changed
 - Hosts register meters with `config.meters`. The gem writes those rows on boot. A plan Price sets included amounts per meter.
 - `/plans` uses Flatpack pill buttons for monthly and yearly, so the joined segmented border is gone
-- Dummy product screens set Flatpack `data-theme="rounded"` on `html`
+- Dummy copies Recording Studio `default_layout` with `html data-theme="rounded"` so rounded tokens override `:root` on first paint
 
 ### Upgrade notes
 - Include `RecordingStudioStripe::Billable` on the workspace root. Do not put a Stripe customer on User.

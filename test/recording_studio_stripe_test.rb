@@ -68,6 +68,14 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes controller_source, "flat_pack_sidebar"
   end
 
+  def test_dummy_default_layout_sets_rounded_theme_on_html
+    layout = File.read(File.expand_path("dummy/app/views/layouts/recording_studio/default_layout.html.erb", __dir__))
+
+    assert_includes layout, '<html data-theme="rounded">'
+    assert_includes layout, 'data-recording-studio-default-layout="true"'
+    refute_includes layout, "document.documentElement.setAttribute"
+  end
+
   def test_dummy_login_layout_keeps_flatpack_assets_without_tight_main_offset
     application_layout = File.read(File.expand_path("dummy/app/views/layouts/application.html.erb", __dir__))
 
