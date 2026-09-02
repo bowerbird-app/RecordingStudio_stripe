@@ -79,6 +79,13 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes application_layout, "flat_pack_sidebar"
   end
 
+  def test_dummy_importmap_pins_admin_screen_controllers
+    importmap = File.read(File.expand_path("dummy/config/importmap.rb", __dir__))
+
+    assert_includes importmap, "@hotwired/turbo-rails"
+    assert_includes importmap, "controllers/recording_studio_admin"
+  end
+
   def test_dummy_tailwind_scans_engine_components
     tailwind_source = File.read(File.expand_path("dummy/app/assets/tailwind/application.css", __dir__))
 
