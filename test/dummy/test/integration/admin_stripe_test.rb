@@ -16,6 +16,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     @admin_recording = RecordingStudio.root_recording_for(@admin_root)
     grant_owner_access!(recording: @admin_recording, actor: @user)
     sign_in @user
+    switch_to_root!(@admin_recording)
   end
 
   test "admin stripe section lists Products and past due" do

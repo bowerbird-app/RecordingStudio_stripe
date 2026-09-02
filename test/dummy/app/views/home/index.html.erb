@@ -13,7 +13,8 @@
     <%= dummy_admin_button %>
   </div>
 
-  <% handle = current_root_recording&.recordable&.billing %>
+  <% recordable = current_root_recording&.recordable %>
+  <% handle = recordable.respond_to?(:billing) ? recordable.billing : nil %>
   <% subscription = handle&.subscription %>
   <% if subscription&.active? %>
     <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: subscription) %>
@@ -22,6 +23,12 @@
         <%= render RecordingStudioStripe::MeterCardComponent.new(handle: handle.meter(meter.name)) %>
       <% end %>
     <% end %>
+  <% elsif recordable.is_a?(AdminRoot) %>
+    <%= render FlatPack::EmptyState::Component.new(
+      title: "Staff desk",
+      description: "Products and Prices live in Admin. Switch back to a workspace for customer billing.",
+      icon: :inbox
+    ) %>
   <% else %>
     <%= render FlatPack::EmptyState::Component.new(
       title: "No plan on this workspace",

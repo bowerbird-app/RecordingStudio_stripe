@@ -28,6 +28,18 @@ class ActionDispatch::IntegrationTest
 
   MODERN_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
+  def switch_to_root!(recording)
+    patch "/recording_studio_root_switchable/v1/root_switch", params: {
+      scope: "all_workspaces",
+      root_switch: {
+        root_recording_id: recording.id,
+        return_to: "/"
+      }
+    }
+    follow_redirect! if response.redirect?
+    get "/up"
+  end
+
   %i[get post patch put delete head].each do |http_method|
     define_method(http_method) do |path, **args|
       headers = args.fetch(:headers, {}).dup

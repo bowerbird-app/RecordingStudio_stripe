@@ -16,10 +16,11 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     @root = RecordingStudio.root_recording_for(@workspace)
     grant_owner_access!(recording: @root, actor: @user)
     sign_in @user
+    switch_to_root!(@root)
   end
 
   test "plans page lists monthly Products" do
-    get plans_path
+    get "/plans"
 
     assert_response :success
     assert_includes response.body, "Pick a plan"
