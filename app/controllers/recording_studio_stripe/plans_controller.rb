@@ -5,7 +5,7 @@ module RecordingStudioStripe
     before_action :authorize_view!
 
     def index
-      intervals = PlanIntervals.from(params)
+      intervals = RecordingStudioStripe::PlanIntervals.from(params)
       @groups = Catalog.plan_groups.map do |group|
         key = group[:key]
         group.merge(
