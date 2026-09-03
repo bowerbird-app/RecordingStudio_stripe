@@ -7,13 +7,6 @@
     variant: :h1
   ) %>
 
-  <% if notice = flash[:notice] %>
-    <%= render FlatPack::Alert::Component.new(title: notice, style: :success) %>
-  <% end %>
-  <% if alert = flash[:alert] %>
-    <%= render FlatPack::Alert::Component.new(title: alert, style: :warning) %>
-  <% end %>
-
   <% if @subscription&.active? %>
     <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: @subscription) %>
   <% else %>
