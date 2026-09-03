@@ -131,6 +131,12 @@ module RecordingStudioStripe
         @store[:prices][id] = object
         object
       end
+
+      def list(params = {})
+        records = @store[:prices].values
+        records = records.select { |price| price.product == params[:product] } if params[:product]
+        List.new(records)
+      end
     end
 
     class V1

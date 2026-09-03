@@ -104,9 +104,15 @@ Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy produc
 
 ## Local mode
 
-When `STRIPE_SECRET_KEY` is blank, Checkout writes a local Customer and Subscription (or allowance purchase) and returns the success URL. Dummy uses this so you can click through without Stripe keys. Webhooks still accept unsigned JSON events when `STRIPE_WEBHOOK_SECRET` is blank.
+When `STRIPE_SECRET_KEY` (or `Stripe_secret_key`) is blank, Checkout writes a local Customer and Subscription (or allowance purchase) and returns the success URL. Dummy uses this so you can click through without Stripe keys. Webhooks still accept unsigned JSON events when `STRIPE_WEBHOOK_SECRET` is blank.
 
 Manage billing on Stripe still shows after a local checkout so hosts can see the control. The POST does not call Stripe. It redirects back to `/billing` with a flash.
+
+When a test-mode secret is set, dummy `SeedDemoCatalog` creates (or reuses) Stripe Products and Prices tagged `recording_studio_demo`. Local `prod_local_` / `price_local_` ids are replaced so `/plans` Checkout can use the sandbox. Canonical env names win if both are set.
+
+## Sandbox tests
+
+`test/dummy/test/integration/stripe_sandbox_test.rb` talks to Stripe when `STRIPE_SECRET_KEY` or `Stripe_secret_key` is a test-mode key (`sk_test_` or `rk_test_`). GitHub CI has no keys, so that file skips. Set `STRIPE_SANDBOX_TEST=0` to skip it locally. It refuses live keys. The rest of the dummy suite stays in local mode even if the process has secrets.
 
 ## What this gem does not do
 

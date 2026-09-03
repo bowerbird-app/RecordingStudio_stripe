@@ -2,6 +2,42 @@
 
 module RecordingStudioStripe
   class Configuration
+    SECRET_KEY_ENV_NAMES = %w[STRIPE_SECRET_KEY Stripe_secret_key].freeze
+    PUBLISHABLE_KEY_ENV_NAMES = %w[STRIPE_PUBLISHABLE_KEY Stripe_publishable_key].freeze
+    WEBHOOK_SECRET_ENV_NAMES = %w[STRIPE_WEBHOOK_SECRET Stripe_webhook_secret].freeze
+    TEST_SECRET_PREFIXES = %w[sk_test_ rk_test_].freeze
+    LIVE_SECRET_PREFIXES = %w[sk_live_ rk_live_].freeze
+
+    class << self
+      def env_secret_key
+        first_present_env(*SECRET_KEY_ENV_NAMES)
+      end
+
+      def env_publishable_key
+        first_present_env(*PUBLISHABLE_KEY_ENV_NAMES)
+      end
+
+      def env_webhook_secret
+        first_present_env(*WEBHOOK_SECRET_ENV_NAMES)
+      end
+
+      def sandbox_test_key?(value = env_secret_key)
+        value.present? && TEST_SECRET_PREFIXES.any? { |prefix| value.start_with?(prefix) }
+      end
+
+      def live_secret_key?(value = env_secret_key)
+        value.present? && LIVE_SECRET_PREFIXES.any? { |prefix| value.start_with?(prefix) }
+      end
+
+      def first_present_env(*names)
+        names.each do |name|
+          value = ENV.fetch(name, nil)
+          return value if value.present?
+        end
+        nil
+      end
+    end
+
     attr_accessor :secret_key,
                   :publishable_key,
                   :webhook_secret,
@@ -18,9 +54,9 @@ module RecordingStudioStripe
     attr_reader :hooks
 
     def initialize
-      @secret_key = ENV.fetch("STRIPE_SECRET_KEY", nil)
-      @publishable_key = ENV.fetch("STRIPE_PUBLISHABLE_KEY", nil)
-      @webhook_secret = ENV.fetch("STRIPE_WEBHOOK_SECRET", nil)
+      @secret_key = self.class.env_secret_key
+      @publishable_key = self.class.env_publishable_key
+      @webhook_secret = self.class.env_webhook_secret
       @api_version = "2026-07-29.dahlia"
       @client = nil
       @meters = default_meters

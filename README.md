@@ -75,7 +75,9 @@ Render the same plan cards on a host screen:
 
 Use `align: :center` on a public pricing page. Use `align: :left` on a signed-in billing page. Copy inside each card stays left either way.
 
-Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave them blank in dummy to click through locally.
+Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Cursor Cloud secrets named `Stripe_secret_key` and `Stripe_publishable_key` also work. Leave them blank in dummy to click through locally. Dummy `SeedDemoCatalog` creates real Stripe Products and Prices when a test-mode secret is set, so `/plans` Checkout can charge the sandbox.
+
+Dummy tests stay in local mode. `test/dummy/test/integration/stripe_sandbox_test.rb` hits the sandbox when a test-mode secret is present. Set `STRIPE_SANDBOX_TEST=0` to skip that file. It refuses live keys.
 
 Named usage counters default to `ai_tokens` and `api_calls`. Change `config.meters` in the initializer to add your own, then set `included_<name>` on each plan Price.
 

@@ -230,6 +230,18 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Invoices and cards live in Stripe. Add keys to open them."
   end
 
+  test "checkout with a Stripe client sends people to Checkout" do
+    previous_client = RecordingStudioStripe.configuration.client
+    RecordingStudioStripe.configuration.client = RecordingStudioStripe::Testing::Client.new
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+
+    post recording_studio_stripe.checkout_path, params: { price_id: price.id }
+
+    assert_redirected_to %r{\Ahttps://checkout.stripe.test}
+  ensure
+    RecordingStudioStripe.configuration.client = previous_client
+  end
+
   test "portal redirects to Stripe when a client is set" do
     previous_client = RecordingStudioStripe.configuration.client
     RecordingStudioStripe.configuration.client = RecordingStudioStripe::Testing::Client.new

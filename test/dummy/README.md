@@ -14,7 +14,7 @@ Sign in with `admin@admin.com` / `Password`.
 - `/webhooks/stripe` — Stripe webhook intake
 - `/users/sign_in` — Devise
 
-Local mode (no `STRIPE_SECRET_KEY`) writes Customers and Subscriptions in the dummy database so you can click through. With keys, Checkout and webhooks talk to Stripe.
+Local mode (no `STRIPE_SECRET_KEY` or `Stripe_secret_key`) writes Customers and Subscriptions in the dummy database so you can click through. With a test-mode secret, `SeedDemoCatalog` creates the Starter / Pro / pack catalogue in Stripe, and Checkout talks to Stripe.
 
 Authenticated pages use a dummy copy of Recording Studio `default_layout` with `html data-theme="rounded"`. Recording Studio puts that attribute on `body`, which does not override Flatpack `:root` tokens. Dummy `config/importmap.rb` pins Turbo and Recording Studio Admin screen controllers so product tables load.
 
