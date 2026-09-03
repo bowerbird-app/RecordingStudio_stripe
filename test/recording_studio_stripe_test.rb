@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.3.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.3.1", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -120,6 +120,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "config.paywalls"
     assert_includes readme, "authorized_action?"
     assert_includes readme, "Customer Portal"
+    assert_includes readme, "Stripe_secret_key"
     refute_includes readme, "ExampleService"
   end
 
@@ -129,6 +130,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes initializer, "config.paywalls"
     assert_includes initializer, "generate_image"
     assert_includes initializer, "export_csv"
+    assert_includes initializer, "Configuration.env_secret_key"
   end
 
   def test_install_initializer_template_documents_paywalls
@@ -138,6 +140,7 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes template, "config.paywalls"
     assert_includes template, "generate_image"
+    assert_includes template, "Configuration.env_secret_key"
   end
 
   def test_billing_docs_explain_paywalls
@@ -155,6 +158,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "Manage billing on Stripe"
     assert_includes docs, "Customer Portal"
     assert_includes docs, "Do not copy invoices"
+    assert_includes docs, "Stripe_secret_key"
+    assert_includes docs, "stripe_sandbox_test.rb"
   end
 
   def test_billing_view_offers_manage_billing

@@ -80,7 +80,6 @@ class StripeSandboxTest < ActiveSupport::TestCase
     assert_match(/\Arecording-studio-[a-z0-9]{8}\z/, identifier.to_s) if identifier.present?
 
     subscription = pay_and_project!(customer: customer, price: price)
-    @created[:subscriptions] << subscription.stripe_id
 
     local = @workspace.billing.subscription
     assert_predicate local, :active?
@@ -122,8 +121,9 @@ class StripeSandboxTest < ActiveSupport::TestCase
         metadata: { root_recording_id: @root.id.to_s }
       }
     )
+    @created[:subscriptions] << stripe_subscription.id
 
-    ProcessWebhook.call(
+    RecordingStudioStripe::ProcessWebhook.call(
       payload: subscription_event_payload(stripe_subscription).to_json,
       signature: nil
     )
