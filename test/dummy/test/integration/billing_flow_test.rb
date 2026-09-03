@@ -194,7 +194,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     get recording_studio_stripe.root_path
 
     assert_response :success
-    refute_includes response.body, "Manage billing"
+    refute_includes response.body, "Manage billing on Stripe"
   end
 
   test "manage billing shows when a customer exists without an active plan" do
@@ -204,7 +204,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "No plan yet"
-    assert_includes response.body, "Manage billing"
+    assert_includes response.body, "Manage billing on Stripe"
   end
 
   test "manage billing shows after checkout and stays local without keys" do
@@ -214,7 +214,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     follow_redirect!
 
     assert_response :success
-    assert_includes response.body, "Manage billing"
+    assert_includes response.body, "Manage billing on Stripe"
+    assert_includes response.body, "viewBox=\"0 0 24 24\""
     assert_includes response.body, recording_studio_stripe.portal_path
 
     post recording_studio_stripe.portal_path
@@ -252,7 +253,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     get recording_studio_stripe.root_path
 
     assert_response :success
-    refute_includes response.body, "Manage billing"
+    refute_includes response.body, "Manage billing on Stripe"
 
     post recording_studio_stripe.portal_path
 

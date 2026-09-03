@@ -7,6 +7,17 @@
     variant: :h1
   ) %>
 
+  <% if @show_manage_billing %>
+    <%= button_to recording_studio_stripe.portal_path, class: "inline-flex" do %>
+      <%= render FlatPack::Button::Component.new(
+        text: manage_billing_on_stripe_label,
+        style: :secondary,
+        size: :md,
+        type: "submit"
+      ) %>
+    <% end %>
+  <% end %>
+
   <% if @subscription&.active? %>
     <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: @subscription) %>
   <% else %>
@@ -18,12 +29,6 @@
       <% empty.slot do %>
         <%= render FlatPack::Button::Component.new(text: "See plans", style: :primary, size: :md, href: main_app.plans_path) %>
       <% end %>
-    <% end %>
-  <% end %>
-
-  <% if @show_manage_billing %>
-    <%= button_to recording_studio_stripe.portal_path, class: "inline-flex" do %>
-      <%= render FlatPack::Button::Component.new(text: "Manage billing", style: :secondary, size: :md, type: "submit") %>
     <% end %>
   <% end %>
 

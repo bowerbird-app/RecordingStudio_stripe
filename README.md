@@ -22,7 +22,7 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Included usage on a Price (`included_ai_tokens`, `included_api_calls` metadata)
 - Extra packs as one-time Prices (`meter`, `allowance` metadata)
 - Customer plans page and billing page
-- Manage billing on `/billing` opens the Stripe Customer Portal for invoices and cards
+- Manage billing on Stripe on `/billing` opens the Stripe Customer Portal for invoices and cards
 - `PlansComponent` for those cards on a public page (`align: :center`) or a billing page (`align: :left`)
 - Recording Studio Admin section for Products, Prices, Meters, Paywalls, Customers, and Subscriptions
 - Named paywalls on a Product, checked with Accessible `authorized_action?`
@@ -58,7 +58,7 @@ draw_recording_studio_stripe
 
 That mounts billing at `/billing`, plans at `/plans`, and webhooks at `/webhooks/stripe`.
 
-Turn on the Customer Portal in the Stripe Dashboard. Manage billing mints a portal session for the workspace Customer and sends the browser to Stripe. The gem does not copy invoices or cards. Leave keys blank in dummy and the button still shows after a local checkout, then flashes instead of calling Stripe.
+Turn on the Customer Portal in the Stripe Dashboard. Manage billing on Stripe mints a portal session for the workspace Customer and sends the browser to Stripe. The gem does not copy invoices or cards. Leave keys blank in dummy and the button still shows after a local checkout, then flashes instead of calling Stripe.
 
 Render the same plan cards on a host screen:
 

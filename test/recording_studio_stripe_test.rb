@@ -152,16 +152,18 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_billing_docs_explain_customer_portal
     docs = File.read(File.expand_path("../docs/billing.md", __dir__))
 
-    assert_includes docs, "Manage billing"
+    assert_includes docs, "Manage billing on Stripe"
     assert_includes docs, "Customer Portal"
     assert_includes docs, "Do not copy invoices"
   end
 
   def test_billing_view_offers_manage_billing
     view_source = File.read(File.expand_path("../app/views/recording_studio_stripe/billing/show.html.erb", __dir__))
+    helper_source = File.read(File.expand_path("../app/helpers/recording_studio_stripe/application_helper.rb", __dir__))
 
-    assert_includes view_source, "Manage billing"
+    assert_includes view_source, "manage_billing_on_stripe_label"
     assert_includes view_source, "portal_path"
+    assert_includes helper_source, "Manage billing on Stripe"
     refute_includes view_source, "dashboard.stripe.com"
   end
 

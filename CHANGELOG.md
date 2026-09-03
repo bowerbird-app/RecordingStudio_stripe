@@ -22,7 +22,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 - Prices admin lists the Product name and filters by Product or interval
 - `PlansComponent` renders the plan cards. `align: :left` for a billing page. `align: :center` for a public pricing page.
 - Named paywalls: register names in `config.paywalls`, tick them on a plan Product, check with Accessible `authorized_action?`
-- Manage billing opens the Stripe Customer Portal for invoices and cards
+- Manage billing on Stripe opens the Stripe Customer Portal for invoices and cards
 
 ### Changed
 - Hosts register meters with `config.meters`. The gem writes those rows on boot. A plan Price sets included amounts per meter.
@@ -40,7 +40,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 - Set `config.meters` for extra counters. Plan Prices store included amounts as `included_<meter_name>`.
 - Set `config.paywalls` for named plan features. Tick them on the Product in Admin. Check with `RecordingStudioAccessible.authorized_action?(action: :generate_image, recording: root)`. Copy migrations again so paywall tables exist.
 - Render `RecordingStudioStripe::PlansComponent` on a host screen. Pass `align: :center` on a public page and `align: :left` on a signed-in billing page.
-- Turn on the Customer Portal in the Stripe Dashboard. Manage billing sends people there for invoices and cards. Do not copy those rows locally.
+- Turn on the Customer Portal in the Stripe Dashboard. Manage billing on Stripe sends people there for invoices and cards. Do not copy those rows locally.
 
 ## [0.2.1] - 2026-09-01
 
