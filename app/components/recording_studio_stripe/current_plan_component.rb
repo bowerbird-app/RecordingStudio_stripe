@@ -11,7 +11,7 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(style: :default) do |card|
-        card.body { helpers.stripe_card_stack(title, badges, actions) }
+        card.body { helpers.stripe_card_stack(badges, title, actions) }
       end
     end
 
@@ -40,7 +40,7 @@ module RecordingStudioStripe
                elsif @subscription.scheduled_downgrade?
                  render(FlatPack::Badge::Component.new(text: "Change scheduled", style: :info, size: :sm))
                else
-                 render(FlatPack::Badge::Component.new(text: "Active", style: :success, size: :sm))
+                 render(FlatPack::Badge::Component.new(text: "Active", style: :primary, size: :sm))
                end
       helpers.tag.div(safe_join(parts), class: "flex flex-wrap gap-2")
     end

@@ -167,7 +167,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute meter.available?(14_000_001)
   end
 
-  test "billing page shows remaining copy" do
+  test "billing page shows usage percent" do
     pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
 
@@ -176,7 +176,12 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Usage this period"
     assert_includes response.body, "AI tokens"
+    assert_includes response.body, "0%"
     assert_includes response.body, "+5m ai tokens"
+    refute_includes response.body, "10m left"
+    refute_includes response.body, "Included 10m"
+    assert_includes response.body, "md:grid-cols-2"
+    assert_includes response.body, "badge-primary-background-color"
   end
 
   test "buying an extra pack increases remaining" do

@@ -163,7 +163,23 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "Manage billing on Stripe"
     assert_includes view_source, 'icon: "credit-card"'
     assert_includes view_source, "portal_path"
+    assert_match(/Grid::Component.new\(cols: 2.*CurrentPlanComponent/m, view_source)
     refute_includes view_source, "dashboard.stripe.com"
+  end
+
+  def test_current_plan_puts_active_badge_above_the_name
+    source = File.read(File.expand_path("../app/components/recording_studio_stripe/current_plan_component.rb", __dir__))
+
+    assert_includes source, "stripe_card_stack(badges, title, actions)"
+    assert_includes source, "text: \"Active\", style: :primary"
+  end
+
+  def test_meter_card_shows_percent_used
+    source = File.read(File.expand_path("../app/components/recording_studio_stripe/meter_card_component.rb", __dir__))
+
+    assert_includes source, "show_label: true"
+    refute_includes source, "left"
+    refute_includes source, "Included"
   end
 
   def test_dummy_home_page_points_at_plans

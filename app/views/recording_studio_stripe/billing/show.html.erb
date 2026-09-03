@@ -20,7 +20,9 @@
   <% end %>
 
   <% if @subscription&.active? %>
-    <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: @subscription) %>
+    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
+      <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: @subscription) %>
+    <% end %>
   <% else %>
     <%= render FlatPack::EmptyState::Component.new(
       title: "No plan yet",

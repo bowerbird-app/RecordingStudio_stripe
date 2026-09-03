@@ -20,7 +20,6 @@ module RecordingStudioStripe
     def title
       render FlatPack::PageTitle::Component.new(
         title: @handle.meter.label,
-        subtitle: "#{stripe_quantity_label(@handle.remaining)} left",
         variant: :h3,
         class: "mb-0 pb-0"
       )
@@ -29,21 +28,13 @@ module RecordingStudioStripe
     def details
       cap = [@handle.included + @handle.purchased, 1].max
       used = [@handle.usage, cap].min
-      helpers.tag.div(class: "flex flex-col gap-3") do
-        safe_join(
-          [
-            render(FlatPack::Progress::Component.new(value: used, max: cap, style: progress_style, size: :md)),
-            helpers.tag.p(breakdown, class: "text-sm text-[var(--surface-muted-content-color)]")
-          ]
-        )
-      end
-    end
-
-    def breakdown
-      included = stripe_quantity_label(@handle.included)
-      bought = stripe_quantity_label(@handle.purchased)
-      used = stripe_quantity_label(@handle.usage)
-      "Included #{included}. Bought #{bought}. Used #{used}."
+      render FlatPack::Progress::Component.new(
+        value: used,
+        max: cap,
+        style: progress_style,
+        size: :md,
+        show_label: true
+      )
     end
 
     def progress_style
