@@ -27,6 +27,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Products"
     assert_includes response.body, "Past due"
     assert_includes response.body, "Active subscriptions"
+    assert_includes response.body, "Paywalls"
   end
 
   test "products screen lists the demo catalogue" do
@@ -41,23 +42,95 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
+    assert_includes response.body, "Opens"
+    assert_includes response.body, "Generate an image"
+    assert_includes response.body, "Edit"
+  end
+
+  test "paywalls screen lists registered names" do
+    get "/admin/screens/paywalls"
+
+    assert_response :success
+    assert_includes response.body, "Paywalls"
+    assert_includes response.body, "New paywall"
+
+    get "/admin/screens/paywalls/table"
+
+    assert_response :success
+    assert_includes response.body, "generate_image"
+    assert_includes response.body, "Generate an image"
+    assert_includes response.body, "export_csv"
+  end
+
+  test "staff can create a paywall from the engine form" do
+    get RecordingStudioStripe.configuration.mount_path + "/admin/paywalls/new"
+
+    assert_response :success
+    assert_includes response.body, "New paywall"
+
+    assert_difference -> { RecordingStudioStripe::Paywall.count }, 1 do
+      post RecordingStudioStripe.configuration.mount_path + "/admin/paywalls", params: {
+        name: "share_link",
+        label: "Share a link"
+      }
+    end
+
+    follow_redirect!
+    assert RecordingStudioStripe::Paywall.exists?(name: "share_link")
   end
 
   test "staff can create a Product from the engine form" do
     get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
 
     assert_response :success
+    assert_includes response.body, "What this plan opens"
+    assert_includes response.body, "Generate an image"
 
     assert_difference -> { RecordingStudioStripe::Product.count }, 1 do
       post RecordingStudioStripe.configuration.mount_path + "/admin/products", params: {
         name: "Studio",
         kind: "plan",
-        description: "For people who ship every week."
+        description: "For people who ship every week.",
+        paywall_names: %w[generate_image export_csv]
       }
     end
 
     follow_redirect!
     assert_includes response.body, "Studio"
+    product = RecordingStudioStripe::Product.find_by!(name: "Studio")
+    assert_equal %w[export_csv generate_image], product.paywalls.order(:name).pluck(:name)
+  end
+
+  test "staff can edit a Product and tick paywalls" do
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter")
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/#{starter.id}/edit"
+
+    assert_response :success
+    assert_includes response.body, "What this plan opens"
+
+    patch RecordingStudioStripe.configuration.mount_path + "/admin/products/#{starter.id}", params: {
+      name: "Starter",
+      description: starter.description,
+      paywall_names: %w[export_csv]
+    }
+
+    follow_redirect!
+    assert_equal %w[export_csv], starter.reload.paywalls.order(:name).pluck(:name)
+  end
+
+  test "allowance Products ignore paywall ticks" do
+    assert_difference -> { RecordingStudioStripe::Product.count }, 1 do
+      post RecordingStudioStripe.configuration.mount_path + "/admin/products", params: {
+        name: "Extra seats",
+        kind: "allowance",
+        description: "One-time seats.",
+        paywall_names: %w[generate_image]
+      }
+    end
+
+    product = RecordingStudioStripe::Product.find_by!(name: "Extra seats")
+    assert_predicate product, :allowance?
+    assert_empty product.paywalls
   end
 
   test "prices screen groups Prices under their Product" do

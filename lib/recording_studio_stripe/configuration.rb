@@ -8,6 +8,7 @@ module RecordingStudioStripe
                   :api_version,
                   :client,
                   :meters,
+                  :paywalls,
                   :success_path,
                   :cancel_path,
                   :mount_path,
@@ -23,6 +24,7 @@ module RecordingStudioStripe
       @api_version = "2026-07-29.dahlia"
       @client = nil
       @meters = default_meters
+      @paywalls = {}
       @success_path = "/billing"
       @cancel_path = "/plans"
       @mount_path = "/billing"
@@ -47,6 +49,7 @@ module RecordingStudioStripe
         webhook_secret: webhook_secret.present? ? "[set]" : nil,
         api_version: api_version,
         meters: meters,
+        paywalls: paywalls,
         success_path: success_path,
         cancel_path: cancel_path,
         local_mode: local_mode?,

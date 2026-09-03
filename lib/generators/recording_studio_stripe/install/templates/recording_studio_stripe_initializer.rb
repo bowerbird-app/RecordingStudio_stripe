@@ -10,4 +10,10 @@ RecordingStudioStripe.configure do |config|
   #   "ai_tokens" => { "label" => "AI tokens" },
   #   "api_calls" => { "label" => "API calls" }
   # }
+  # Named plan features. Tick them on a Product in Admin.
+  # Check with RecordingStudioAccessible.authorized_action?(action: :generate_image, recording: root)
+  # config.paywalls = {
+  #   "generate_image" => { "label" => "Generate an image" },
+  #   "export_csv" => { "label" => "Export CSV" }
+  # }
 end

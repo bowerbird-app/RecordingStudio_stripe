@@ -1,0 +1,18 @@
+<% recording_studio_page_nav(title: "Edit Product", page_nav_back_url: "/admin/screens/products", page_nav_back_label: "Products") %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Edit Product",
+    subtitle: @product.plan? ? "Tick what this plan opens." : "Extra packs do not open paywalls.",
+    variant: :h1
+  ) %>
+
+  <%= form_with url: recording_studio_stripe.admin_product_path(@product), method: :patch, local: true, class: "flex max-w-xl flex-col gap-4" do %>
+    <%= render FlatPack::TextInput::Component.new(name: "name", label: "Name", required: true, value: @product.name) %>
+    <%= render FlatPack::TextInput::Component.new(name: "description", label: "Description", value: @product.description) %>
+    <% if @product.plan? %>
+      <%= render "paywalls" %>
+    <% end %>
+    <%= render FlatPack::Button::Component.new(text: "Save Product", style: :primary, size: :md, type: "submit") %>
+  <% end %>
+</div>

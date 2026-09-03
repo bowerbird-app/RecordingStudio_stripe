@@ -12,6 +12,7 @@ module RecordingStudioStripe
         products_screen
         prices_screen
         meters_screen
+        paywalls_screen
         customers_screen
         subscriptions_screen
         widgets
@@ -22,11 +23,12 @@ module RecordingStudioStripe
         klass.key "stripe"
         klass.icon :credit_card
         klass.title "Stripe"
-        klass.subtitle "Products, Prices, meters, and who is paying"
+        klass.subtitle "Products, Prices, meters, paywalls, and who is paying"
         klass.blast_radius :site
         klass.link :products, text: "Products", url: ->(context) { context.admin_screen_path("products") }
         klass.link :prices, text: "Prices", url: ->(context) { context.admin_screen_path("prices") }
         klass.link :meters, text: "Meters", url: ->(context) { context.admin_screen_path("meters") }
+        klass.link :paywalls, text: "Paywalls", url: ->(context) { context.admin_screen_path("paywalls") }
         klass.link :customers, text: "Customers", url: ->(context) { context.admin_screen_path("customers") }
         klass.link :subscriptions,
                    text: "Subscriptions",
@@ -43,15 +45,24 @@ module RecordingStudioStripe
         klass.title "Products"
         klass.subtitle "One Product per plan. Extra packs are Products too."
         klass.blast_radius :site
-        klass.query { |_context| RecordingStudioStripe::Product.order(:name) }
+        klass.query { |_context| RecordingStudioStripe::Product.includes(:paywalls).order(:name) }
         klass.button :new_product,
                      text: "New Product",
                      url: ->(_context) { "#{RecordingStudioStripe.configuration.mount_path}/admin/products/new" }
         klass.table do
           column :name
           column :kind
+          column :opens,
+                 title: "Opens",
+                 sortable: false,
+                 value: ->(row, _context) { row.opens_labels.join(", ").presence || "—" }
           column :active
           column :stripe_id
+          action :edit,
+                 text: "Edit",
+                 url: lambda { |row, _context|
+                   "#{RecordingStudioStripe.configuration.mount_path}/admin/products/#{row.id}/edit"
+                 }
           action :add_price,
                  text: "Add Price",
                  url: lambda { |row, _context|
@@ -109,6 +120,24 @@ module RecordingStudioStripe
           column :stripe_meter_id
         end
         RecordingStudioStripe::Admin::Definitions.const_set(:MetersScreen, klass)
+      end
+
+      def paywalls_screen
+        klass = Class.new(RecordingStudioAdmin::Screen)
+        klass.key "paywalls"
+        klass.icon :lock_closed
+        klass.title "Paywalls"
+        klass.subtitle "Named things a plan can open. Tick them on the Product."
+        klass.blast_radius :site
+        klass.query { |_context| RecordingStudioStripe::Paywall.order(:name) }
+        klass.button :new_paywall,
+                     text: "New paywall",
+                     url: ->(_context) { "#{RecordingStudioStripe.configuration.mount_path}/admin/paywalls/new" }
+        klass.table do
+          column :name
+          column :label
+        end
+        RecordingStudioStripe::Admin::Definitions.const_set(:PaywallsScreen, klass)
       end
 
       def customers_screen

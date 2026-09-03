@@ -1,0 +1,15 @@
+<% paywalls = RecordingStudioStripe::Paywall.order(:name) %>
+<% if paywalls.any? %>
+  <div class="flex flex-col gap-2">
+    <p class="text-sm font-medium text-[var(--surface-content-color)]">What this plan opens</p>
+    <p class="text-sm text-[var(--surface-muted-content-color)]">Plans only. Extra packs skip this.</p>
+    <% paywalls.each do |paywall| %>
+      <%= render FlatPack::Checkbox::Component.new(
+        name: "paywall_names[]",
+        value: paywall.name,
+        checked: Array(@selected_paywall_names).include?(paywall.name),
+        label: paywall.label
+      ) %>
+    <% end %>
+  </div>
+<% end %>

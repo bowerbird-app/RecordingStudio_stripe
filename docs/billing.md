@@ -12,8 +12,9 @@ Stripe is the source of truth for Products, Prices, Customers, Subscriptions, in
 | Meter | Local named counter (`ai_tokens`, `api_calls`) |
 | Usage | Append-only `recording_studio_stripe_usage_entries` |
 | Extra packs | `recording_studio_stripe_allowance_purchases` after Checkout |
+| Paywall | Local named feature (`generate_image`). Staff tick them on a plan Product |
 
-Usage is a fact table, not a Recording. High volume stays off the tree.
+Usage is a fact table, not a Recording. High volume stays off the tree. Paywalls are not Recordings either.
 
 ## Products and Prices
 
@@ -23,7 +24,7 @@ Starter is one Product. Monthly and yearly are two Prices on that Product. Extra
 
 `/plans` groups by Product. A Monthly / Yearly toggle picks which Price each card shows. Admin Products is one row per Product, with Add Price. Admin Prices lists every Price with the Product name, and filters by Product or interval.
 
-Included usage lives on the Price, not the Product. Two Prices on Starter can include different amounts, though dummy uses the same numbers for month and year.
+Included usage lives on the Price, not the Product. Two Prices on Starter can include different amounts, though dummy uses the same numbers for month and year. Paywalls live on the Product, so monthly and yearly Pro share the same features.
 
 ## Meters
 
@@ -47,6 +48,35 @@ account.billing.meter(:seats).record(1)
 
 A plan Price nominates how many of each meter it includes with `included_<meter_name>` metadata. Zero or missing means that meter is not part of the plan. The New Price form shows one included field per meter. Allowance packs name a meter and a quantity on a one-time Price (`meter`, `allowance`).
 
+## Paywalls
+
+A paywall is a named feature the host checks before a job. Hosts register names only:
+
+```ruby
+RecordingStudioStripe.configure do |config|
+  config.paywalls = {
+    "generate_image" => { "label" => "Generate an image" },
+    "export_csv" => { "label" => "Export CSV" }
+  }
+end
+```
+
+The gem writes those rows on boot. Staff can add more in Admin. Then tick which paywalls a **Product** opens on New Product or Edit Product. Do not put them on a Price. Extra packs skip this.
+
+The gem registers each paywall as an Accessible named action. The policy is `:view` on the recording **and** the current plan Product includes that paywall:
+
+```ruby
+RecordingStudioAccessible.authorized_action?(
+  actor: current_user,
+  action: :generate_image,
+  recording: current_root_recording
+)
+```
+
+Meter spend stays `available?` / `record`. Buying a plan does not grant `:admin`. Paywalls are not Stripe Entitlements and not a `plan_id` on User.
+
+Dummy registers `generate_image` and `export_csv`, and ticks `generate_image` on Pro only.
+
 ## Remaining
 
 For the current subscription period:
@@ -67,7 +97,7 @@ Included comes from Price metadata. Purchased comes from allowance packs bought 
 
 Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy product screens use Flatpack's rounded theme. `/plans` switches monthly and yearly with pill buttons, not a joined segmented control.
 
-`RecordingStudioStripe::PlansComponent` is the reusable plans block. Pass `align: :left` on a signed-in billing page and `align: :center` on a public pricing page. Dummy `/plans` is left. Dummy `/pricing` is centered and does not require a login. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter) live on the billing engine and link from those screens. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
+`RecordingStudioStripe::PlansComponent` is the reusable plans block. Pass `align: :left` on a signed-in billing page and `align: :center` on a public pricing page. Dummy `/plans` is left. Dummy `/pricing` is centered and does not require a login. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Paywalls, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter, Paywall, and edit Product) live on the billing engine and link from those screens. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
 
 ## Local mode
 
@@ -75,4 +105,4 @@ When `STRIPE_SECRET_KEY` is blank, Checkout writes a local Customer and Subscrip
 
 ## What this gem does not do
 
-Stripe keeps invoices, cards, tax, and proration. This gem does not wrap other processors, invent wallets, or score entitlements beyond `remaining`.
+Stripe keeps invoices, cards, tax, and proration. This gem does not wrap other processors, invent wallets, or use Stripe Entitlements as a second catalogue. Plan features are paywall rows ticked on the Product.

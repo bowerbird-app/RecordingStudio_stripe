@@ -33,5 +33,14 @@ module RecordingStudioStripe
     def subscribed?
       subscription&.active?
     end
+
+    def unlocked?(paywall_name)
+      return false unless subscribed?
+
+      product = subscription.price&.product
+      return false unless product&.plan?
+
+      product.paywalls.exists?(name: paywall_name.to_s)
+    end
   end
 end

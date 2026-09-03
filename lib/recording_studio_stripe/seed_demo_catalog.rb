@@ -8,9 +8,12 @@ module RecordingStudioStripe
 
     def call
       Meter.sync_from_config!
+      Paywall.sync_from_config!
       starter = upsert_product("Starter", "plan", "A quiet start.")
       pro = upsert_product("Pro", "plan", "The usual working plan.")
       tokens = upsert_product("AI token packs", "allowance", "Extra AI tokens for this period.")
+      pro.assign_paywalls(%w[generate_image])
+      RegisterPaywallActions.call
 
       upsert_price(starter, 900, "month", { "included_ai_tokens" => "1000000", "included_api_calls" => "10000" })
       upsert_price(starter, 9000, "year", { "included_ai_tokens" => "1000000", "included_api_calls" => "10000" })

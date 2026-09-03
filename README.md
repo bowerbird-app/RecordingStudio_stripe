@@ -23,7 +23,8 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Extra packs as one-time Prices (`meter`, `allowance` metadata)
 - Customer plans page and billing page
 - `PlansComponent` for those cards on a public page (`align: :center`) or a billing page (`align: :left`)
-- Recording Studio Admin section for Products, Prices, Meters, Customers, and Subscriptions
+- Recording Studio Admin section for Products, Prices, Meters, Paywalls, Customers, and Subscriptions
+- Named paywalls on a Product, checked with Accessible `authorized_action?`
 - Stripe webhooks that keep the local projection honest
 
 ## Install
@@ -74,6 +75,18 @@ Use `align: :center` on a public pricing page. Use `align: :left` on a signed-in
 Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave them blank in dummy to click through locally.
 
 Named usage counters default to `ai_tokens` and `api_calls`. Change `config.meters` in the initializer to add your own, then set `included_<name>` on each plan Price.
+
+Named plan features live in `config.paywalls`. The gem writes those rows on boot. Staff tick which paywalls a Product opens. Monthly and yearly Prices on the same Product share them. Extra packs do not. Then:
+
+```ruby
+RecordingStudioAccessible.authorized_action?(
+  actor: current_user,
+  action: :generate_image,
+  recording: current_root_recording
+)
+```
+
+That is true when the actor has `:view` on the workspace root **and** the current plan Product includes that paywall. Meter spend stays `available?` / `record`. Buying Pro does not grant `:admin`.
 
 ### Admin
 

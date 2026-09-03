@@ -130,6 +130,18 @@ module RecordingStudioStripe
       end
     end
 
+    initializer "recording_studio_stripe.sync_paywalls" do
+      config.to_prepare do
+        next unless defined?(ActiveRecord::Base)
+        next unless RecordingStudioStripe::Paywall.table_exists?
+
+        RecordingStudioStripe::Paywall.sync_from_config!
+        RecordingStudioStripe::RegisterPaywallActions.call
+      rescue ActiveRecord::ActiveRecordError
+        nil
+      end
+    end
+
     initializer "recording_studio_stripe.helpers" do
       ActiveSupport.on_load(:action_controller) do
         helper RecordingStudioStripe::ApplicationHelper

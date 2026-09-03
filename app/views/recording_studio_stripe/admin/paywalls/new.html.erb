@@ -1,0 +1,15 @@
+<% recording_studio_page_nav(title: "New paywall", page_nav_back_url: "/admin/screens/paywalls", page_nav_back_label: "Paywalls") %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "New paywall",
+    subtitle: "A named thing a plan can open. Tick it on the Product.",
+    variant: :h1
+  ) %>
+
+  <%= form_with url: recording_studio_stripe.admin_paywalls_path, method: :post, local: true, class: "flex max-w-xl flex-col gap-4" do %>
+    <%= render FlatPack::TextInput::Component.new(name: "name", label: "Name", required: true, placeholder: "generate_image", help_text: "Lowercase, like generate_image.") %>
+    <%= render FlatPack::TextInput::Component.new(name: "label", label: "Label", required: true, placeholder: "Generate an image") %>
+    <%= render FlatPack::Button::Component.new(text: "Create paywall", style: :primary, size: :md, type: "submit") %>
+  <% end %>
+</div>

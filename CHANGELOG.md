@@ -15,15 +15,17 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 - Upgrade immediately (Stripe proration), downgrade at renewal, cancel at period end
 - Usage remaining: included + purchased - usage
 - Customer plans and billing pages in Flatpack on Recording Studio's default layout
-- Recording Studio Admin section for Products, Prices, Meters, Customers, and Subscriptions
+- Recording Studio Admin section for Products, Prices, Meters, Paywalls, Customers, and Subscriptions
 - Stripe webhook intake that updates local state
 - Dummy catalogue (Starter, Pro, token packs) so the host app can be clicked without keys
 - Plan, billing, and pack cards keep title, copy, and actions in the card body
 - Prices admin lists the Product name and filters by Product or interval
 - `PlansComponent` renders the plan cards. `align: :left` for a billing page. `align: :center` for a public pricing page.
+- Named paywalls: register names in `config.paywalls`, tick them on a plan Product, check with Accessible `authorized_action?`
 
 ### Changed
 - Hosts register meters with `config.meters`. The gem writes those rows on boot. A plan Price sets included amounts per meter.
+- Hosts register paywalls with `config.paywalls`. Staff tick them on a plan Product. Accessible `authorized_action?` is `:view` on the root plus that Product.
 - `/plans` uses Flatpack pill buttons for monthly and yearly, so the joined segmented border is gone
 - Dummy copies Recording Studio `default_layout` with `html data-theme="rounded"` so rounded tokens override `:root` on first paint
 - The gem loads `ApplicationHelper` on host controllers so `PlansComponent` works outside the engine screens
@@ -35,6 +37,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 - Point Stripe webhooks at `/webhooks/stripe`.
 - Tax stays in Stripe. Do not add a local tax engine.
 - Set `config.meters` for extra counters. Plan Prices store included amounts as `included_<meter_name>`.
+- Set `config.paywalls` for named plan features. Tick them on the Product in Admin. Check with `RecordingStudioAccessible.authorized_action?(action: :generate_image, recording: root)`. Copy migrations again so paywall tables exist.
 - Render `RecordingStudioStripe::PlansComponent` on a host screen. Pass `align: :center` on a public page and `align: :left` on a signed-in billing page.
 
 ## [0.2.1] - 2026-09-01

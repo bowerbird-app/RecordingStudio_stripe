@@ -72,6 +72,11 @@ class ConfigurationTest < Minitest::Test
     assert_equal "AI tokens", @configuration.meters.fetch("ai_tokens").fetch("label")
   end
 
+  def test_default_paywalls_are_empty
+    assert_equal({}, @configuration.paywalls)
+    assert_includes @configuration.to_h.keys, :paywalls
+  end
+
   def test_local_mode_when_no_secret
     ENV["STRIPE_SECRET_KEY"] = nil
     configuration = RecordingStudioStripe::Configuration.new

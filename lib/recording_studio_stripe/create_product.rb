@@ -2,22 +2,29 @@
 
 module RecordingStudioStripe
   class CreateProduct
-    def self.call(name:, kind:, description: nil, active: true)
-      new(name: name, kind: kind, description: description, active: active).call
+    def self.call(name:, kind:, description: nil, active: true, paywall_names: [])
+      new(
+        name: name,
+        kind: kind,
+        description: description,
+        active: active,
+        paywall_names: paywall_names
+      ).call
     end
 
-    def initialize(name:, kind:, description:, active:)
+    def initialize(name:, kind:, description:, active:, paywall_names:)
       @name = name
       @kind = kind
       @description = description
       @active = active
+      @paywall_names = paywall_names
     end
 
     def call
       raise InvalidPrice, "Kind must be plan or allowance" unless Product::KINDS.include?(@kind)
 
       stripe_id = create_stripe_id
-      Product.create!(
+      product = Product.create!(
         stripe_id: stripe_id,
         name: @name,
         description: @description,
@@ -25,6 +32,8 @@ module RecordingStudioStripe
         active: @active,
         metadata: { "kind" => @kind }
       )
+      product.assign_paywalls(@paywall_names)
+      product
     end
 
     private

@@ -17,6 +17,7 @@
       options: [["Plan", "plan"], ["Allowance pack", "allowance"]]
     ) %>
     <%= render FlatPack::TextInput::Component.new(name: "description", label: "Description", placeholder: "For teams that ship") %>
+    <%= render "paywalls" %>
     <%= render FlatPack::Button::Component.new(text: "Create Product", style: :primary, size: :md, type: "submit") %>
   <% end %>
 </div>

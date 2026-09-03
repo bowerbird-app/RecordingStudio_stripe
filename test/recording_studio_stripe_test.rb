@@ -117,7 +117,35 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes readme, "RecordingStudioStripe"
     assert_includes readme, "remaining"
+    assert_includes readme, "config.paywalls"
+    assert_includes readme, "authorized_action?"
     refute_includes readme, "ExampleService"
+  end
+
+  def test_dummy_stripe_initializer_registers_paywalls
+    initializer = File.read(File.expand_path("dummy/config/initializers/recording_studio_stripe.rb", __dir__))
+
+    assert_includes initializer, "config.paywalls"
+    assert_includes initializer, "generate_image"
+    assert_includes initializer, "export_csv"
+  end
+
+  def test_install_initializer_template_documents_paywalls
+    template = File.read(
+      File.expand_path("../lib/generators/recording_studio_stripe/install/templates/recording_studio_stripe_initializer.rb", __dir__)
+    )
+
+    assert_includes template, "config.paywalls"
+    assert_includes template, "generate_image"
+  end
+
+  def test_billing_docs_explain_paywalls
+    docs = File.read(File.expand_path("../docs/billing.md", __dir__))
+
+    assert_includes docs, "## Paywalls"
+    assert_includes docs, "config.paywalls"
+    assert_includes docs, "authorized_action?"
+    refute_includes docs, "plan_id"
   end
 
   def test_dummy_home_page_points_at_plans
@@ -128,6 +156,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "dummy_page_nav"
     assert_includes view_source, "FlatPack::EmptyState::Component"
     assert_includes view_source, "Public pricing"
+    assert_includes view_source, "What this plan opens"
+    assert_includes view_source, "dummy_paywall_open?"
   end
 
   def test_plans_component_aligns_left_or_center

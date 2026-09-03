@@ -100,6 +100,18 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Pro"
     assert_predicate @workspace.billing.subscription, :active?
+    assert @workspace.billing.unlocked?(:generate_image)
+    refute @workspace.billing.unlocked?(:export_csv)
+    assert RecordingStudioAccessible.authorized_action?(
+      actor: @user,
+      action: :generate_image,
+      recording: @root
+    )
+    refute RecordingStudioAccessible.authorized_action?(
+      actor: @user,
+      action: :export_csv,
+      recording: @root
+    )
   end
 
   test "upgrade takes effect immediately" do
@@ -176,5 +188,43 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     follow_redirect!
     assert_equal 15_000_000, @workspace.billing.meter(:ai_tokens).remaining
+  end
+
+  test "starter does not open generate_image" do
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)
+
+    refute @workspace.billing.unlocked?(:generate_image)
+    refute RecordingStudioAccessible.authorized_action?(
+      actor: @user,
+      action: :generate_image,
+      recording: @root
+    )
+  end
+
+  test "home shows paywalls off without a plan and on after Pro" do
+    get "/"
+
+    assert_response :success
+    assert_includes response.body, "What this plan opens"
+    assert_includes response.body, "Generate an image"
+    assert_includes response.body, "Export CSV"
+    refute RecordingStudioAccessible.authorized_action?(
+      actor: @user,
+      action: :generate_image,
+      recording: @root
+    )
+
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+
+    get "/"
+
+    assert_response :success
+    assert RecordingStudioAccessible.authorized_action?(
+      actor: @user,
+      action: :generate_image,
+      recording: @root
+    )
   end
 end

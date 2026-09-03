@@ -7,6 +7,8 @@ module RecordingStudioStripe
     KINDS = %w[plan allowance].freeze
 
     has_many :prices, class_name: "RecordingStudioStripe::Price", dependent: :destroy
+    has_many :product_paywalls, class_name: "RecordingStudioStripe::ProductPaywall", dependent: :delete_all
+    has_many :paywalls, through: :product_paywalls, class_name: "RecordingStudioStripe::Paywall"
 
     validates :stripe_id, presence: true, uniqueness: true
     validates :name, presence: true
@@ -30,6 +32,17 @@ module RecordingStudioStripe
 
     def annual_price
       prices.active.recurring.find_by(interval: "year")
+    end
+
+    def assign_paywalls(names)
+      return if allowance?
+
+      selected = Array(names).map(&:to_s).reject(&:blank?)
+      self.paywalls = Paywall.where(name: selected)
+    end
+
+    def opens_labels
+      paywalls.order(:name).map(&:label)
     end
   end
 end

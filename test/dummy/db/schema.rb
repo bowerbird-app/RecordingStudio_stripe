@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_02_121000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_03_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -136,6 +136,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_02_121000) do
     t.index ["name"], name: "index_recording_studio_stripe_meters_on_name", unique: true
   end
 
+  create_table "recording_studio_stripe_paywalls", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "label", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_recording_studio_stripe_paywalls_on_name", unique: true
+  end
+
   create_table "recording_studio_stripe_prices", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
@@ -149,6 +157,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_02_121000) do
     t.index ["product_id", "interval"], name: "idx_on_product_id_interval_239437eeae"
     t.index ["product_id"], name: "index_recording_studio_stripe_prices_on_product_id"
     t.index ["stripe_id"], name: "index_recording_studio_stripe_prices_on_stripe_id", unique: true
+  end
+
+  create_table "recording_studio_stripe_product_paywalls", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "paywall_id", null: false
+    t.uuid "product_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["paywall_id"], name: "index_recording_studio_stripe_product_paywalls_on_paywall_id"
+    t.index ["product_id", "paywall_id"], name: "idx_rs_stripe_product_paywalls_unique", unique: true
+    t.index ["product_id"], name: "index_recording_studio_stripe_product_paywalls_on_product_id"
   end
 
   create_table "recording_studio_stripe_products", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -232,6 +250,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_02_121000) do
   add_foreign_key "recording_studio_stripe_allowance_purchases", "recording_studio_stripe_meters", column: "meter_id"
   add_foreign_key "recording_studio_stripe_allowance_purchases", "recording_studio_stripe_prices", column: "price_id"
   add_foreign_key "recording_studio_stripe_prices", "recording_studio_stripe_products", column: "product_id"
+  add_foreign_key "recording_studio_stripe_product_paywalls", "recording_studio_stripe_paywalls", column: "paywall_id"
+  add_foreign_key "recording_studio_stripe_product_paywalls", "recording_studio_stripe_products", column: "product_id"
   add_foreign_key "recording_studio_stripe_subscriptions", "recording_studio_stripe_customers", column: "customer_id"
   add_foreign_key "recording_studio_stripe_subscriptions", "recording_studio_stripe_prices", column: "price_id"
   add_foreign_key "recording_studio_stripe_subscriptions", "recording_studio_stripe_prices", column: "scheduled_price_id"

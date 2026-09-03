@@ -11,6 +11,7 @@ module RecordingStudioStripe
         RecordingStudioAdmin.register_screen(Definitions::ProductsScreen)
         RecordingStudioAdmin.register_screen(Definitions::PricesScreen)
         RecordingStudioAdmin.register_screen(Definitions::MetersScreen)
+        RecordingStudioAdmin.register_screen(Definitions::PaywallsScreen)
         RecordingStudioAdmin.register_screen(Definitions::CustomersScreen)
         RecordingStudioAdmin.register_screen(Definitions::SubscriptionsScreen)
         RecordingStudioAdmin.register_widget(Definitions::PastDueWidget)

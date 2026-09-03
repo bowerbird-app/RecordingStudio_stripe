@@ -10,8 +10,9 @@ RecordingStudioStripe::Engine.routes.draw do
   post "allowances", to: "allowances#create"
 
   namespace :admin do
-    resources :products, only: %i[new create]
+    resources :products, only: %i[new create edit update]
     resources :prices, only: %i[new create]
     resources :meters, only: %i[new create]
+    resources :paywalls, only: %i[new create]
   end
 end
