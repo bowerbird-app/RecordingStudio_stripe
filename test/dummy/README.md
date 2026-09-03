@@ -1,44 +1,21 @@
 # Dummy App
 
-This Rails app exists to validate the Recording Studio addon template in a real host application.
+This Rails app proves Recording Studio Stripe in a host.
 
-## What It Covers
+Sign in with `admin@admin.com` / `Password`.
 
-- Devise authentication with a seeded admin user
-- `Current.actor` wiring for Recording Studio events
-- Root workspace plus seeded folder and page recordables
-- Recording Studio default layout, FlatPack assets, and Tailwind source scanning
-- Mounted `RecordingStudio::Engine` route behavior inside a host app
-- Dummy-only `/docs/*` pages for gem-specific onboarding
+## Routes
 
-## Quick Start
+- `/` — current workspace plan, usage, and what the plan opens
+- `/plans` — Products and Prices, left aligned for a signed-in workspace
+- `/pricing` — the same plan cards, centered, no login
+- `/billing` — current plan, usage percent, extra packs, and Manage billing on Stripe (Customer Portal)
+- `/admin` — Stripe admin section. The Admin button switches to Studio Admin first, because Admin authorizes against that root.
+- `/webhooks/stripe` — Stripe webhook intake
+- `/users/sign_in` — Devise
 
-```bash
-cd test/dummy
-bundle install
-bin/rails db:setup
-bin/dev
-```
+Local mode (no `STRIPE_SECRET_KEY`) writes Customers and Subscriptions in the dummy database so you can click through. With keys, Checkout and webhooks talk to Stripe.
 
-Run the commands above from the dummy app directory, not the repository root.
+Authenticated pages use a dummy copy of Recording Studio `default_layout` with `html data-theme="rounded"`. Recording Studio puts that attribute on `body`, which does not override Flatpack `:root` tokens. Dummy `config/importmap.rb` pins Turbo and Recording Studio Admin screen controllers so product tables load.
 
-Then open the app and sign in with:
-
-- Email: `admin@admin.com`
-- Password: `Password`
-
-## Useful Routes
-
-- `/` - dummy app home page and template guidance
-- `/recording_studio` - redirects to `/` while the mounted Recording Studio engine stays available under that prefix for non-root routes
-- `/users/sign_in` - Devise sign-in page
-- `/docs/install`, `/docs/config`, `/docs/recordable_types`, `/docs/recordings_tree`, `/docs/gem_views`, `/docs/methods` - dummy-only starter pages
-- `/up` - Rails health check
-
-## Why This App Exists
-
-Use this app to verify the generated addon experience before renaming the gem or copying patterns into another host app. If a layout, route, asset source, or Recording Studio initializer change breaks here, the template likely needs adjustment before reuse.
-
-Authenticated pages use Recording Studio's shared default layout. Devise sign-in keeps `layouts/application`. Replace dummy docs page content so it matches the gem's actual concepts.
-
-The home page in `app/views/home/index.html.erb` should stay a minimal demo surface for the gem's core feature. Do not turn it into a wall of documentation; the dummy docs pages exist so deeper explanations can live in focused sections.
+Dummy registers `generate_image` and `export_csv` paywalls. Pro opens image generation. CSV export is registered so staff can tick it on a Product. Home shows those as chips.

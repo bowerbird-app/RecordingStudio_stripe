@@ -1,0 +1,62 @@
+<% recording_studio_page_nav(title: "Billing", page_nav_back_url: main_app.root_path, page_nav_back_label: "Home") %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Billing",
+    subtitle: billing_subtitle(@subscription),
+    variant: :h1
+  ) %>
+
+  <% if @show_manage_billing %>
+    <%= button_to recording_studio_stripe.portal_path, class: "inline-flex" do %>
+      <%= render FlatPack::Button::Component.new(
+        text: "Manage billing on Stripe",
+        icon: "credit-card",
+        style: :secondary,
+        size: :md,
+        type: "submit"
+      ) %>
+    <% end %>
+  <% end %>
+
+  <% if @subscription&.active? %>
+    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
+      <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: @subscription) %>
+    <% end %>
+  <% else %>
+    <%= render FlatPack::EmptyState::Component.new(
+      title: "No plan yet",
+      description: "Pick a plan when you’re ready. Usage stays at zero until then.",
+      icon: :inbox
+    ) do |empty| %>
+      <% empty.slot do %>
+        <%= render FlatPack::Button::Component.new(text: "See plans", style: :primary, size: :md, href: main_app.plans_path) %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <%= render FlatPack::SectionTitle::Component.new(title: "Usage this period") %>
+
+  <% if @meters.empty? %>
+    <%= render FlatPack::EmptyState::Component.new(
+      title: "No meters yet",
+      description: "Staff add meters in admin, then your app can record usage.",
+      icon: :inbox
+    ) %>
+  <% else %>
+    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
+      <% @meters.each do |handle| %>
+        <%= render RecordingStudioStripe::MeterCardComponent.new(handle: handle) %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <% if @allowance_prices.any? %>
+    <%= render FlatPack::SectionTitle::Component.new(title: "Need a bit more?") %>
+    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md) do %>
+      <% @allowance_prices.each do |price| %>
+        <%= render RecordingStudioStripe::AllowanceCardComponent.new(price: price) %>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>

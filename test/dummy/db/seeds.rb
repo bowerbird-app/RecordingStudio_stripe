@@ -41,6 +41,30 @@ begin
   folder_recording = find_or_record_child.call(folder, root_recording, root_recording)
 
   find_or_record_child.call(page, root_recording, folder_recording)
+
+  admin_root = AdminRoot.find_or_create_by!(name: "Studio Admin")
+  admin_root_recording = RecordingStudio.root_recording_for(admin_root)
+
+  [
+    root_recording,
+    accessible_root_recording,
+    private_root_recording,
+    admin_root_recording
+  ].each do |recording|
+    next if RecordingStudioAccessible.authorized?(actor: user, recording: recording, role: :admin)
+
+    RecordingStudioAccessible::AccessCreationContext.allow do
+      RecordingStudio.root_recording_or_self(recording).record(
+        RecordingStudio::Access,
+        parent_recording: recording
+      ) do |access|
+        access.actor = user
+        access.role = :admin
+      end
+    end
+  end
+
+  RecordingStudioStripe::SeedDemoCatalog.call
 ensure
   Current.actor = previous_actor
 end
@@ -50,3 +74,5 @@ puts "Seeded: Workspace '#{workspace.name}' with root recording ##{root_recordin
 puts "Seeded: Workspace '#{accessible_workspace.name}' with root recording ##{accessible_root_recording.id}"
 puts "Seeded: Workspace '#{private_workspace.name}' with root recording ##{private_root_recording.id}"
 puts "Seeded: Folder '#{folder.name}' and page '#{page.title}'"
+puts "Seeded: Admin '#{admin_root.name}'"
+puts "Seeded: Stripe demo catalogue"

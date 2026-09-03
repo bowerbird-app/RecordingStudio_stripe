@@ -1,0 +1,23 @@
+<% recording_studio_page_nav(title: "New Product", page_nav_back_url: "/admin/screens/products", page_nav_back_label: "Products") %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "New Product",
+    subtitle: "One Product per plan. Extra packs get their own Product.",
+    variant: :h1
+  ) %>
+
+  <%= form_with url: recording_studio_stripe.admin_products_path, method: :post, local: true, class: "flex max-w-xl flex-col gap-4" do %>
+    <%= render FlatPack::TextInput::Component.new(name: "name", label: "Name", required: true, placeholder: "Pro") %>
+    <%= render FlatPack::Select::Component.new(
+      name: "kind",
+      label: "Kind",
+      required: true,
+      value: @kind,
+      options: [["Plan", "plan"], ["Allowance pack", "allowance"]]
+    ) %>
+    <%= render FlatPack::TextInput::Component.new(name: "description", label: "Description", placeholder: "For teams that ship") %>
+    <%= render "paywalls" %>
+    <%= render FlatPack::Button::Component.new(text: "Create Product", style: :primary, size: :md, type: "submit") %>
+  <% end %>
+</div>

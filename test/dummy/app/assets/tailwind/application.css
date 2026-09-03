@@ -1,15 +1,34 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
 
-/* Include dummy app views for Tailwind CSS */
+/* Dummy views */
 @source "../../views/**/*.erb";
+@source "../../helpers/**/*.rb";
 
-/* Include RecordingStudio engine views for Tailwind CSS */
-@source "../../../vendor/bundle/**/recording_studio/app/views/**/*.erb";
-@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/recordingstudio-*/app/views/**/*.erb";
-
-/* Scan FlatPack components for classes used by the bundled ViewComponents */
-@source "../../../vendor/bundle/**/flatpack/app/components/**/*.{rb,erb}";
-@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/flatpack-*/app/components/**/*.{rb,erb}";
-
-/* Include the engine's views in the Tailwind build */
+/* This engine */
 @source "../../../../../app/views/**/*.erb";
+@source "../../../../../app/components/**/*.{rb,erb}";
+@source "../../../../../app/helpers/**/*.rb";
+
+/* FlatPack, vendor and system gem paths used by dummy, CI, and Codespaces */
+@source "../../../vendor/bundle/**/bundler/gems/flatpack-*/app/components/**/*.rb";
+@source "../../../vendor/bundle/**/bundler/gems/flatpack-*/app/components/**/*.erb";
+@source "../../../../../vendor/bundle/**/bundler/gems/flatpack-*/app/components/**/*.rb";
+@source "../../../../../vendor/bundle/**/bundler/gems/flatpack-*/app/components/**/*.erb";
+@source "../../../../../../usr/local/bundle/**/bundler/gems/flatpack-*/app/components/**/*.rb";
+@source "../../../../../../usr/local/bundle/**/bundler/gems/flatpack-*/app/components/**/*.erb";
+@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/flatpack-*/app/components/**/*.rb";
+@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/flatpack-*/app/components/**/*.erb";
+@source "../../../../../../home/*/.rbenv/**/bundler/gems/flatpack-*/app/components/**/*.rb";
+@source "../../../../../../home/*/.rbenv/**/bundler/gems/flatpack-*/app/components/**/*.erb";
+
+/* Recording Studio and addons */
+@source "../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
+@source "../../../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
+@source "../../../../../../usr/local/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
+@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
+@source "../../../../../../home/*/.rbenv/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
+@source "../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/components/**/*.{rb,erb}";
+@source "../../../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/components/**/*.{rb,erb}";
+@source "../../../../../../usr/local/bundle/**/bundler/gems/RecordingStudio*/app/components/**/*.{rb,erb}";
+@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/RecordingStudio*/app/components/**/*.{rb,erb}";
+@source "../../../../../../home/*/.rbenv/**/bundler/gems/RecordingStudio*/app/components/**/*.{rb,erb}";

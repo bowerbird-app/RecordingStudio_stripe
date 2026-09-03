@@ -1,170 +1,136 @@
-# GemTemplate
+# Recording Studio Stripe
 
-Internal template for building Rails engine addons on top of Recording Studio 4.x.
-
-## What's Included
-
-- **Recording Studio** 4.x gem pinned and configured
-- **Devise** authentication with a pre-seeded admin user
-- **Workspace**, **Folder**, and **Page** recordables seeded into the dummy host app
-- **FlatPack** UI component library for all views
-- **Dummy app** (`test/dummy/`) with a FlatPack sign-in screen, a home page on Recording Studio's default layout, mounted Recording Studio routes, and FlatPack's built-in rounded theme
-
-Authenticated dummy pages use Recording Studio's shared default layout (`RecordingStudio::UsesDefaultLayout`) plus FlatPack CSS and JS. Devise keeps its own sign-in layout. Dummy `/docs/*` pages stay in the dummy app as a host-app sandbox; they are not the product README.
-
-## Quick Start
-
-### Cursor Cloud Agent (Recommended)
-
-A Cloud Agent boots this repo into a ready-to-use dev environment with no manual steps. The setup lives in `.cursor/`:
-
-- `install.sh` provisions Ruby (pinned by `.ruby-version`), PostgreSQL 16, all gems, the seeded dummy database, and compiled CSS at build time, then fetches Recording Studio skills.
-- `start.sh` starts PostgreSQL on every boot.
-- `environment.json` runs the `rails-server` and `tailwind-watch` terminals and exposes port 3000.
-
-Open port 3000 and sign in at `/users/sign_in`. No environment variables are required — the dummy app's `database.yml` defaults match the provisioned PostgreSQL cluster.
-
-### GitHub Codespaces
-
-1. Click **Code** → **Codespaces** → **Create codespace**
-2. Wait for setup to complete
-3. Run:
-   ```bash
-   cd test/dummy
-   bin/rails db:setup
-   bin/dev
-   ```
-4. Open port 3000 — you'll land on the dummy app home page and can sign in at `/users/sign_in`
-
-The dummy app is intended as a host-app validation surface for authentication, FlatPack rendering, Tailwind source scanning, and Recording Studio route wiring.
-
-### Login Credentials
-
-| Field    | Value             |
-|----------|-------------------|
-| Email    | admin@admin.com   |
-| Password | Password          |
-
-The login form is prefilled with these credentials for fast access.
-
-### Useful Routes
-
-- `/` — dummy app home page
-- `/users/sign_in` — Devise sign-in page
-- `/recording_studio` — redirect to `/` while the mounted Recording Studio engine remains data/API-focused
-- `/docs/install`, `/docs/config`, `/docs/recordable_types`, `/docs/recordings_tree`, `/docs/gem_views`, `/docs/methods` — dummy-only starter pages
-
-The home page in `test/dummy/app/views/home/index.html.erb` is a starting point for a minimal demo of the gem's primary behavior. Keep deeper explanations on the dummy docs pages, not in this README.
-
-## Architecture
-
-### Root Recording Pattern
-
-This template follows Recording Studio's root recording pattern:
-
-- **Workspace** is the top-level recordable
-- **Folder** and **Page** demonstrate nested recordables under the workspace root
-- Each configured recordable declares `recording_studio_recordable(...)`; strict declaration validation stays enabled
-- A root `RecordingStudio::Recording` wraps the Workspace
-- `Current.actor` is set from `current_user` (Devise) in `ApplicationController`
-
-### Extending Recording Studio
-
-To add new recordable types:
-
-1. Create your model (e.g., `Page`, `Comment`)
-2. Register it in `config/initializers/recording_studio.rb`:
-   ```ruby
-   RecordingStudio.configure do |config|
-     config.recordable_types = ["Workspace", "YourNewType"]
-   end
-   ```
-3. Declare whether the model can be a root and which parents may contain it:
-   ```ruby
-   class YourNewType < ApplicationRecord
-     recording_studio_recordable label: "Your new type",
-                                 root: false,
-                                 allowed_parent_types: ["Workspace", "Folder"]
-   end
-   ```
-4. Validate declarations and create recordings under the root:
-   ```ruby
-   RecordingStudio.validate_recordable_declarations!
-   root_recording = RecordingStudio.root_recording_for(workspace)
-   root_recording.record(YourNewType) do |record|
-     record.title = "Example"
-   end
-   ```
-
-### Recordable Declarations
-
-Every configured ActiveRecord recordable type must declare its hierarchy rules. Declarations are required; they are not version-specific.
-
-- `Workspace` declares `root: true`
-- `Folder` and `Page` declare `root: false, allowed_parent_types: ["Workspace", "Folder"]`
-- `config.require_recordable_declarations = true` remains enabled in the dummy app initializer
-
-Useful console checks:
+Stripe billing for Recording Studio roots. Stripe owns money. This gem owns the Rails layer that lets a workspace decide quickly:
 
 ```ruby
-RecordingStudio.validate_recordable_declarations!
-RecordingStudio.root_recordable_types
-RecordingStudio.allowed_parent_types_for("Page")
+account.billing.meter(:ai_tokens).record(100_000)
+account.billing.meter(:ai_tokens).remaining
+account.billing.meter(:ai_tokens).available?(100_000)
 ```
 
-### Capabilities
+`remaining` is included allowance plus purchased allowance minus usage, for the current Stripe period.
 
-Capability mixins are opt-in. Installing this gem does not enable mixins on host types.
+This is a Stripe gem. It does not wrap other processors, invent wallets, or calculate tax. Turn Stripe Tax on in the Dashboard if you charge in the US or EU.
 
-The dummy Workspace enables Accessible because that addon is bundled:
+## What you get
+
+- Stripe Products and Prices, including monthly and annual
+- Checkout for a Customer
+- Upgrade now with Stripe proration
+- Downgrade at the next renewal
+- Cancel at period end
+- Included usage on a Price (`included_ai_tokens`, `included_api_calls` metadata)
+- Extra packs as one-time Prices (`meter`, `allowance` metadata)
+- Customer plans page and billing page
+- Manage billing on Stripe on `/billing` opens the Stripe Customer Portal for invoices and cards
+- `PlansComponent` for those cards on a public page (`align: :center`) or a billing page (`align: :left`)
+- Recording Studio Admin section for Products, Prices, Meters, Paywalls, Customers, and Subscriptions
+- Named paywalls on a Product, checked with Accessible `authorized_action?`
+- Stripe webhooks that keep the local projection honest
+
+## Install
 
 ```ruby
-RecordingStudio.enable_capability(:accessible, on: Workspace)
+# Gemfile
+gem "recording_studio_stripe", github: "bowerbird-app/RecordingStudio_stripe"
 ```
 
-The template also ships one example mixin that uses core 4.2.0's `include_for` factory:
+```bash
+bin/rails generate recording_studio_stripe:install
+bin/rails generate recording_studio_stripe:migrations
+bin/rails db:migrate
+```
+
+Include billing on the workspace root:
 
 ```ruby
-include RecordingStudio::Capabilities::Example.to(label: "dummy workspace")
+class Workspace < ApplicationRecord
+  recording_studio_recordable label: "Workspace", root: true
+  include RecordingStudioStripe::Billable
+end
 ```
 
-`.to` wraps `RecordingStudio::Capabilities.include_for`. It does not add a fourth verb and it does not call `enable_capability` / `set_capability_options` itself. Folder and Page stay without the example mixin.
+Routes from the install generator:
 
-Use core `RecordingStudio::Hooks` and `RecordingStudio::Services::BaseService`. Do not copy those classes into a new addon.
+```ruby
+draw_recording_studio_stripe
+```
 
-### FlatPack UI Components
+That mounts billing at `/billing`, plans at `/plans`, and webhooks at `/webhooks/stripe`.
 
-All views use FlatPack ViewComponents. Available components include:
+Turn on the Customer Portal in the Stripe Dashboard. Manage billing on Stripe mints a portal session for the workspace Customer and sends the browser to Stripe. The gem does not copy invoices or cards. Leave keys blank in dummy and the button still shows after a local checkout, then flashes instead of calling Stripe.
 
-- `FlatPack::Button::Component` — Buttons (`:primary`, `:secondary`, `:ghost`)
-- `FlatPack::Card::Component` — Cards (`:default`, `:elevated`, `:outlined`)
-- `FlatPack::Alert::Component` — Alerts (`:success`, `:error`, `:warning`, `:info`)
-- `FlatPack::Badge::Component` — Status badges
-- `FlatPack::Table::Component` — Data tables
-- `FlatPack::TextInput::Component`, `EmailInput`, `PasswordInput` — Form inputs
-- `FlatPack::PageNav::Component` — Default-layout page navigation
-- `FlatPack::PageTitle::Component` — Page titles
+Render the same plan cards on a host screen:
 
-Use the live FlatPack demo app at [flatpack.bowerbird.io](https://flatpack.bowerbird.io/) as the approved UI reference for current shared patterns. Its component table is the fastest way to discover available FlatPack components before introducing new custom UI.
+```erb
+<%= render RecordingStudioStripe::PlansComponent.new(
+  products: RecordingStudioStripe::Catalog.plan_products,
+  interval: "month",
+  subscription: account.billing.subscription,
+  align: :left,
+  monthly_href: plans_path(interval: "month"),
+  yearly_href: plans_path(interval: "year")
+) %>
+```
 
-See the [FlatPack README](https://github.com/bowerbird-app/flatpack) for full documentation.
+Use `align: :center` on a public pricing page. Use `align: :left` on a signed-in billing page. Copy inside each card stays left either way.
 
-## Tech Stack
+Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave them blank in dummy to click through locally.
 
-| Component       | Version |
-|-----------------|---------|
-| Ruby            | 3.3+    |
-| Rails           | 8.1+    |
-| PostgreSQL      | 16      |
-| TailwindCSS     | 4       |
-| RecordingStudio | 4.x (`~> 4.1` in the gemspec; dummy GitHub tag `v4.2.0`) |
-| Accessible      | dummy GitHub tag `v0.6.0` |
-| Root Switchable | dummy GitHub tag `v0.5.0` |
-| FlatPack        | dummy GitHub tag `v0.1.133` |
-| Devise          | latest  |
+Named usage counters default to `ai_tokens` and `api_calls`. Change `config.meters` in the initializer to add your own, then set `included_<name>` on each plan Price.
 
-The dummy Gemfile keeps `github:` sources so Bundler can fetch those gems. The gemspec still pins `recording_studio` to `~> 4.1` so copied addons declare the core dependency even when GitHub is the fetch source.
+Named plan features live in `config.paywalls`. The gem writes those rows on boot. Staff tick which paywalls a Product opens. Monthly and yearly Prices on the same Product share them. Extra packs do not. Then:
 
-## Documentation
+```ruby
+RecordingStudioAccessible.authorized_action?(
+  actor: current_user,
+  action: :generate_image,
+  recording: current_root_recording
+)
+```
 
-The original gem template documentation is preserved in `docs/gem_template/` as architectural reference material. Use it as background on the engine conventions; this README and the dummy app are the source of truth for the Recording Studio addon workflow.
+That is true when the actor has `:view` on the workspace root **and** the current plan Product includes that paywall. Meter spend stays `available?` / `record`. Buying Pro does not grant `:admin`.
+
+### Admin
+
+Install Recording Studio Admin and Accessible. Include `RecordingStudioStripe::AdminSupport` on the admin root. Enable the `:stripe` section. Grant Accessible access on that root. Mount Accessible under the admin path:
+
+```ruby
+mount RecordingStudioAccessible::Engine, at: "/admin/access"
+recording_studio_admin_for :admin, at: "/admin", root_section: :stripe
+```
+
+Do not invent a second admin.
+
+## Price metadata
+
+Plan Prices:
+
+```text
+included_ai_tokens=10000000
+included_api_calls=100000
+```
+
+Allowance Prices (one-time):
+
+```text
+kind=allowance on the Product
+meter=ai_tokens
+allowance=5000000
+```
+
+One Product per plan. Monthly and annual are Prices on that Product. Extra packs are a separate Product. `/plans` groups by Product and toggles interval. Admin Prices shows the Product name and filters by Product or interval.
+
+## Webhooks
+
+Point Stripe at `POST /webhooks/stripe`. The gem verifies the signature when `STRIPE_WEBHOOK_SECRET` is set, then projects:
+
+- `checkout.session.completed` for extra packs
+- `customer.subscription.*`
+- `product.*` and `price.*`
+
+Checkout return URLs do not fulfil anything. Stripe events do.
+
+## Dummy
+
+`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Admin is `/admin`.

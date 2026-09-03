@@ -1,101 +1,61 @@
-<% dummy_page_nav(title: "Template Demo", back_url: root_path) %>
+<% dummy_page_nav(title: "Studio Workspace", back_url: root_path) %>
 
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
-    title: "Template Demo",
-    subtitle: "This dummy app is the browser-facing demo surface for the template.",
+    title: current_root_recording&.recordable&.try(:name) || "This workspace",
+    subtitle: "Plans, usage, and Stripe billing for the selected workspace.",
     variant: :h1
   ) %>
 
-  <div class="grid gap-6 lg:grid-cols-2">
-    <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
-      <% card.header do %>
-        <%= render FlatPack::PageTitle::Component.new(
-          title: "What's working",
-          subtitle: "Core template capabilities already wired into the dummy app.",
-          variant: :h3,
-          class: "mb-0 pb-0"
-        ) %>
-      <% end %>
-
-      <% card.body do %>
-        <ul class="space-y-3 text-sm leading-6">
-          <li>Rails engine routes are mounted and responding.</li>
-          <li>PostgreSQL UUID-oriented migrations are included in the engine.</li>
-          <li>Tailwind sources can be wired into a host app through the install generator.</li>
-          <li>The dummy app exercises authentication, the Recording Studio default layout, and FlatPack.</li>
-        </ul>
-      <% end %>
-    <% end %>
-
-    <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
-      <% card.header do %>
-        <%= render FlatPack::PageTitle::Component.new(
-          title: "Next steps",
-          subtitle: "The usual first moves when turning the template into a real addon.",
-          variant: :h3,
-          class: "mb-0 pb-0"
-        ) %>
-      <% end %>
-
-      <% card.body do %>
-        <ol class="space-y-3 text-sm leading-6 list-decimal pl-5">
-          <li>Run <code>bin/rename_gem your_addon_name</code> when you are ready to rename the engine.</li>
-          <li>Replace the sample migration with your addon tables and install them into the host app.</li>
-          <li>Configure Recording Studio recordable types and capabilities in the host app initializer.</li>
-          <li>Use the dummy app to validate layout, asset scanning, and authentication flows.</li>
-        </ol>
-      <% end %>
-    <% end %>
-
-    <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
-      <% card.header do %>
-        <%= render FlatPack::PageTitle::Component.new(
-          title: "FlatPack usage",
-          subtitle: "This page uses FlatPack components for its primary UI structure.",
-          variant: :h3,
-          class: "mb-0 pb-0"
-        ) %>
-      <% end %>
-
-      <% card.body do %>
-        <p class="text-sm leading-6 text-(--surface-content-color)">
-          Use FlatPack cards, buttons, badges, inputs, and layout primitives as the default path for addon UI. Keep raw HTML for simple semantic content only.
-        </p>
-      <% end %>
-
-      <% card.footer do %>
-        <a href="https://github.com/bowerbird-app/flatpack"
-           target="_blank"
-           rel="noopener noreferrer"
-           class="inline-flex">
-          <%= render FlatPack::Button::Component.new(
-            text: "View FlatPack documentation",
-            style: :primary,
-            size: :md
-          ) %>
-        </a>
-      <% end %>
-    <% end %>
-
-    <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
-      <% card.header do %>
-        <%= render FlatPack::PageTitle::Component.new(
-          title: "Install flow",
-          subtitle: "What the host app generator path covers.",
-          variant: :h3,
-          class: "mb-0 pb-0"
-        ) %>
-      <% end %>
-
-      <% card.body do %>
-        <ul class="space-y-3 text-sm leading-6">
-          <li>Add the gem to your host app and run <code>bundle install</code>.</li>
-          <li>Run <code>rails generate gem_template:install</code> to mount the engine and add configuration.</li>
-          <li>Run <code>rails generate gem_template:migrations</code> to copy engine migrations into the host app.</li>
-          <li>Rebuild Tailwind if needed with <code>bin/rails tailwindcss:build</code>.</li>
-        </ul>
-      <% end %>
-    <% end %>
+  <div class="flex flex-wrap gap-2">
+    <%= render FlatPack::Button::Component.new(text: "Plans", style: :primary, size: :md, href: plans_path) %>
+    <%= render FlatPack::Button::Component.new(text: "Billing", style: :secondary, size: :md, href: recording_studio_stripe.root_path) %>
+    <%= render FlatPack::Button::Component.new(text: "Public pricing", style: :ghost, size: :md, href: pricing_path) %>
+    <%= dummy_admin_button %>
   </div>
+
+  <% recordable = current_root_recording&.recordable %>
+  <% handle = recordable.respond_to?(:billing) ? recordable.billing : nil %>
+  <% subscription = handle&.subscription %>
+  <% if subscription&.active? %>
+    <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: subscription) %>
+    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
+      <% RecordingStudioStripe::Meter.order(:name).each do |meter| %>
+        <%= render RecordingStudioStripe::MeterCardComponent.new(handle: handle.meter(meter.name)) %>
+      <% end %>
+    <% end %>
+  <% elsif recordable.is_a?(AdminRoot) %>
+    <%= render FlatPack::EmptyState::Component.new(
+      title: "Staff desk",
+      description: "Products and Prices live in Admin. Switch back to a workspace for customer billing.",
+      icon: :inbox
+    ) %>
+  <% else %>
+    <%= render FlatPack::EmptyState::Component.new(
+      title: "No plan on this workspace",
+      description: "Pick Pro when you want included AI tokens and API calls. Extra packs sit on the billing page.",
+      icon: :inbox
+    ) do |empty| %>
+      <% empty.slot do %>
+        <%= render FlatPack::Button::Component.new(text: "See plans", style: :primary, size: :md, href: plans_path) %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <% paywalls = RecordingStudioStripe::Paywall.order(:name) %>
+  <% if paywalls.any? && !recordable.is_a?(AdminRoot) %>
+    <%= render FlatPack::PageTitle::Component.new(
+      title: "What this plan opens",
+      subtitle: subscription&.active? ? "On this workspace, with this plan." : "Pick a plan to open these.",
+      variant: :h3
+    ) %>
+    <%= render FlatPack::ChipGroup::Component.new do %>
+      <% paywalls.each do |paywall| %>
+        <%= render FlatPack::Chip::Component.new(
+          text: paywall.label,
+          style: dummy_paywall_open?(paywall) ? :success : :default
+        ) %>
+      <% end %>
+    <% end %>
+  <% end %>
 </div>

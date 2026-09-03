@@ -13,10 +13,48 @@ module ApplicationHelper
           text: "Sign out",
           style: :ghost,
           size: :md,
-          url: main_app.destroy_user_session_path,
+          href: main_app.destroy_user_session_path,
           data: { turbo_method: :delete }
         )
       )
     end
+  end
+
+  def dummy_admin_button
+    admin_recording = studio_admin_recording
+    return unless admin_recording
+
+    if current_root_recording&.id == admin_recording.id
+      render FlatPack::Button::Component.new(text: "Admin", style: :ghost, size: :md, href: "/admin")
+    else
+      button_to "/recording_studio_root_switchable/v1/root_switch",
+                method: :patch,
+                params: {
+                  scope: "all_workspaces",
+                  root_switch: {
+                    root_recording_id: admin_recording.id,
+                    return_to: "/admin"
+                  }
+                },
+                class: "inline-flex" do
+        render FlatPack::Button::Component.new(text: "Admin", style: :ghost, size: :md, type: "submit")
+      end
+    end
+  end
+
+  def studio_admin_recording
+    admin_root = AdminRoot.find_by(name: "Studio Admin")
+    RecordingStudio.root_recording_for(admin_root) if admin_root
+  end
+
+  def dummy_paywall_open?(paywall)
+    return false unless defined?(RecordingStudioAccessible)
+    return false unless current_user && current_root_recording
+
+    RecordingStudioAccessible.authorized_action?(
+      actor: current_user,
+      action: paywall.action_name,
+      recording: current_root_recording
+    )
   end
 end
