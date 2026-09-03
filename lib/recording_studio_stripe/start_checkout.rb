@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "securerandom"
+
 module RecordingStudioStripe
   class StartCheckout
     def self.call(root_recording:, price:, actor:, success_url:, cancel_url:)
@@ -43,7 +45,8 @@ module RecordingStudioStripe
         metadata: {
           root_recording_id: @root_recording.id.to_s,
           price_id: @price.stripe_id
-        }
+        },
+        integration_identifier: "recording-studio-#{SecureRandom.alphanumeric(8).downcase}"
       }
       if @price.recurring?
         params[:subscription_data] = {

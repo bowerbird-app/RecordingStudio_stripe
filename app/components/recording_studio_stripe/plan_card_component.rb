@@ -73,7 +73,10 @@ module RecordingStudioStripe
     end
 
     def checkout_button
-      helpers.button_to recording_studio_stripe.checkout_path, params: { price_id: price.id }, class: "inline-flex" do
+      helpers.button_to recording_studio_stripe.checkout_path,
+                        params: { price_id: price.id },
+                        class: "inline-flex",
+                        form: { data: { turbo: false } } do
         render FlatPack::Button::Component.new(text: "Choose plan", style: :primary, size: :md, type: "submit")
       end
     end

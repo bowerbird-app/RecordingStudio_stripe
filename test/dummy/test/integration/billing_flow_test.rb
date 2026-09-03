@@ -39,6 +39,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='left']", count: 1
     assert_includes response.body, "justify-start"
+    assert_select "form[action*='checkout'][data-turbo=false]"
   end
 
   test "public pricing page centers the plan cards" do
@@ -228,6 +229,18 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_redirected_to %r{/billing}
     follow_redirect!
     assert_includes response.body, "Invoices and cards live in Stripe. Add keys to open them."
+  end
+
+  test "checkout with a Stripe client sends people to Checkout" do
+    previous_client = RecordingStudioStripe.configuration.client
+    RecordingStudioStripe.configuration.client = RecordingStudioStripe::Testing::Client.new
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+
+    post recording_studio_stripe.checkout_path, params: { price_id: price.id }
+
+    assert_redirected_to %r{\Ahttps://checkout.stripe.test}
+  ensure
+    RecordingStudioStripe.configuration.client = previous_client
   end
 
   test "portal redirects to Stripe when a client is set" do

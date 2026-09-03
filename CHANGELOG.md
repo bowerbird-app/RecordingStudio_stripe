@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-09-03
+
+### Added
+- Configuration reads Cursor Cloud secret names `Stripe_secret_key`, `Stripe_publishable_key`, and `Stripe_webhook_secret` when the canonical `STRIPE_*` names are blank
+- Dummy sandbox tests that create a Product, Customer, Checkout Session, and Subscription against Stripe test mode when a test-mode secret is present
+- Checkout Sessions send `integration_identifier` so hosted Checkout can be spotted in the Stripe Dashboard
+
+### Changed
+- Dummy `SeedDemoCatalog` creates or reuses Stripe Products and Prices when keys are set, instead of keeping `prod_local_` ids that Checkout cannot charge
+- Checkout, extra packs, and Manage billing on Stripe turn Turbo off on the form so the browser can leave for Stripe. A fetch follow of `checkout.stripe.com` is blocked by CORS.
+
+### Upgrade notes
+- Set `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY`. Cloud Agent secrets named `Stripe_secret_key` and `Stripe_publishable_key` also work. Canonical names win if both are set.
+- Re-run dummy seeds (or `RecordingStudioStripe::SeedDemoCatalog.call`) after adding keys so the demo catalogue exists in the Stripe sandbox.
+- Dummy tests stay local. `stripe_sandbox_test.rb` hits Stripe only with `sk_test_` / `rk_test_` keys. Set `STRIPE_SANDBOX_TEST=0` to skip it. Live keys are refused.
+- Turn on the Customer Portal in the Stripe Dashboard if `/billing` should open invoices and cards.
+
 ## [0.3.0] - 2026-09-02
 
 First product cut of Recording Studio Stripe. The repo started as the addon template.
@@ -49,5 +66,6 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
+[0.3.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.3.1
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.3.0
 [0.2.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.2.1

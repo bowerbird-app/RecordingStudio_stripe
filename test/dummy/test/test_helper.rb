@@ -19,9 +19,27 @@ module StripeBillingTestHelpers
       end
     end
   end
+
+  def reset_demo_catalog_to_local_ids
+    RecordingStudioStripe::Product.find_each do |product|
+      local_id = "prod_local_#{product.name.parameterize.underscore}"
+      product.update_column(:stripe_id, local_id) unless product.stripe_id == local_id
+      product.prices.find_each do |price|
+        local_price_id = "price_local_#{product.name.parameterize.underscore}_#{price.interval || 'once'}_#{price.unit_amount}"
+        price.update_column(:stripe_id, local_price_id) unless price.stripe_id == local_price_id
+      end
+    end
+  end
 end
 
 ActiveSupport::TestCase.include StripeBillingTestHelpers
+
+# Dummy tests stay in local mode. stripe_sandbox_test.rb restores test-mode keys
+# in setup. Keep the process env so that file can read Stripe_secret_key.
+RecordingStudioStripe.configuration.secret_key = nil
+RecordingStudioStripe.configuration.publishable_key = nil
+RecordingStudioStripe.configuration.webhook_secret = nil
+RecordingStudioStripe.configuration.client = nil
 
 class ActionDispatch::IntegrationTest
   include StripeBillingTestHelpers

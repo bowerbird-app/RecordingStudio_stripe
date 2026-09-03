@@ -11,7 +11,8 @@ module RecordingStudioStripe
                                         stripe_version: configuration.api_version)
       end
 
-      raise MissingStripeKey, "Set STRIPE_SECRET_KEY or RecordingStudioStripe.configuration.secret_key"
+      raise MissingStripeKey,
+            "Set STRIPE_SECRET_KEY (or Stripe_secret_key) or RecordingStudioStripe.configuration.secret_key"
     end
   end
 end
