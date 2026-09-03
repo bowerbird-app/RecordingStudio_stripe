@@ -9,6 +9,15 @@
 
   <%= form_with url: recording_studio_stripe.admin_product_path(@product), method: :patch, local: true, class: "flex max-w-xl flex-col gap-4" do %>
     <%= render FlatPack::TextInput::Component.new(name: "name", label: "Name", required: true, value: @product.name) %>
+    <% if RecordingStudioStripe::SubscriptionTypes.configured? && @product.plan? %>
+      <%= render FlatPack::Select::Component.new(
+        name: "subscription_type",
+        label: "Plan group",
+        required: true,
+        value: @product.subscription_type,
+        options: RecordingStudioStripe::SubscriptionTypes.select_options
+      ) %>
+    <% end %>
     <%= render FlatPack::TextInput::Component.new(name: "description", label: "Description", value: @product.description) %>
     <% if @product.plan? %>
       <%= render "paywalls" %>

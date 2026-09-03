@@ -6,23 +6,22 @@ module RecordingStudioStripe
 
     ALIGNS = %i[left center].freeze
 
-    def initialize(products:, interval:, monthly_href:, yearly_href:, subscription: nil, align: :left,
-                   title: "Pick a plan", subtitle: "Monthly or yearly. You can switch later.")
+    def initialize(interval:, monthly_href:, yearly_href:, products: [], subscription: nil, groups: nil,
+                   align: :left, title: "Pick a plan", subtitle: "Monthly or yearly. You can switch later.")
       super()
-      @products = products
       @interval = interval
-      @subscription = subscription
       @align = align.to_sym
       @monthly_href = monthly_href
       @yearly_href = yearly_href
       @title = title
       @subtitle = subtitle
+      @groups = Array(groups.presence || [{ products: products, subscription: subscription, label: nil }])
       validate_align!
     end
 
     def call
       helpers.tag.div(class: stack_class, data: { plans_align: @align }) do
-        helpers.safe_join([heading, interval_pills, cards].compact)
+        helpers.safe_join([heading, interval_pills, groups, empty_state].compact)
       end
     end
 
@@ -54,11 +53,32 @@ module RecordingStudioStripe
       )
     end
 
-    def cards
-      return empty_state if @products.empty?
+    def groups
+      blocks = @groups.filter_map { |group| group_block(group) }
+      return if blocks.empty?
 
+      helpers.safe_join(blocks)
+    end
+
+    def group_block(group)
+      products = Array(group_value(group, :products))
+      return if products.empty?
+
+      subscription = group_value(group, :subscription)
+      label = group_value(group, :label)
+      parts = []
+      parts << section_title(label) if label.present?
+      parts << cards_row(products, subscription)
+      helpers.tag.div(helpers.safe_join(parts.compact), class: "flex w-full flex-col gap-4")
+    end
+
+    def section_title(label)
+      render FlatPack::SectionTitle::Component.new(title: label)
+    end
+
+    def cards_row(products, subscription)
       helpers.tag.div(class: row_class) do
-        helpers.safe_join(@products.map { |product| card_for(product) })
+        helpers.safe_join(products.map { |product| card_for(product, subscription) })
       end
     end
 
@@ -70,17 +90,19 @@ module RecordingStudioStripe
       end
     end
 
-    def card_for(product)
+    def card_for(product, subscription)
       helpers.tag.div(class: "w-full md:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-3rem)/3)]") do
         render PlanCardComponent.new(
           product: product,
           interval: @interval,
-          subscription: @subscription
+          subscription: subscription
         )
       end
     end
 
     def empty_state
+      return if @groups.any? { |group| Array(group_value(group, :products)).any? }
+
       helpers.tag.div(class: "w-full") do
         render FlatPack::EmptyState::Component.new(
           title: "No plans yet",
@@ -88,6 +110,10 @@ module RecordingStudioStripe
           icon: :inbox
         )
       end
+    end
+
+    def group_value(group, key)
+      group[key] || group[key.to_s]
     end
 
     def validate_align!

@@ -6,8 +6,9 @@ module RecordingStudioStripe
 
     def index
       @interval = params[:interval].presence_in(%w[month year]) || "month"
-      @products = Catalog.plan_products
-      @current_subscription = billing.subscription
+      @groups = Catalog.plan_groups.map do |group|
+        group.merge(subscription: billing.line(group[:key]).subscription)
+      end
     end
   end
 end

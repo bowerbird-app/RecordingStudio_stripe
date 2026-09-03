@@ -13,7 +13,8 @@ module RecordingStudioStripe
           name: params.require(:name),
           kind: params.require(:kind),
           description: params[:description],
-          paywall_names: Array(params[:paywall_names])
+          paywall_names: Array(params[:paywall_names]),
+          subscription_type: params[:subscription_type]
         )
         redirect_to admin_screen_url("products"), notice: "#{product.name} is on the catalogue."
       rescue InvalidPrice, ActiveRecord::RecordInvalid => e
@@ -34,7 +35,8 @@ module RecordingStudioStripe
           product: @product,
           name: params.require(:name),
           description: params[:description],
-          paywall_names: Array(params[:paywall_names])
+          paywall_names: Array(params[:paywall_names]),
+          subscription_type: params[:subscription_type]
         )
         redirect_to admin_screen_url("products"), notice: "#{@product.name} is saved."
       rescue InvalidPrice, ActiveRecord::RecordInvalid => e

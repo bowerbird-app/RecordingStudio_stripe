@@ -40,17 +40,22 @@ module RecordingStudioStripe
         success_url: @success_url,
         cancel_url: @cancel_url,
         line_items: [{ price: @price.stripe_id, quantity: 1 }],
-        metadata: {
-          root_recording_id: @root_recording.id.to_s,
-          price_id: @price.stripe_id
-        }
+        metadata: checkout_metadata
       }
       if @price.recurring?
         params[:subscription_data] = {
-          metadata: { root_recording_id: @root_recording.id.to_s }
+          metadata: checkout_metadata.slice(:root_recording_id, :subscription_type)
         }
       end
       params
+    end
+
+    def checkout_metadata
+      {
+        root_recording_id: @root_recording.id.to_s,
+        price_id: @price.stripe_id,
+        subscription_type: SubscriptionTypes.normalize(@price.product&.subscription_type)
+      }
     end
 
     def checkout_mode

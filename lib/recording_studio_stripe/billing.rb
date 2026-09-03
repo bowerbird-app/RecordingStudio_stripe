@@ -18,8 +18,21 @@ module RecordingStudioStripe
       @root_recording = root_recording
     end
 
+    def line(type)
+      Line.new(root_recording: root_recording, subscription_type: SubscriptionTypes.normalize(type))
+    end
+
+    def lines
+      SubscriptionTypes.keys.map { |key| line(key) }
+    end
+
+    def active_lines
+      lines.select(&:subscribed?)
+    end
+
     def meter(name)
-      MeterHandle.new(root_recording: root_recording, meter: Meter.named(name))
+      type = subscription&.subscription_type
+      MeterHandle.new(root_recording: root_recording, meter: Meter.named(name), subscription_type: type)
     end
 
     def customer
@@ -31,16 +44,52 @@ module RecordingStudioStripe
     end
 
     def subscribed?
-      subscription&.active?
+      active_lines.any?
     end
 
     def unlocked?(paywall_name)
-      return false unless subscribed?
+      active_lines.any? { |entry| entry.unlocked?(paywall_name) }
+    end
 
-      product = subscription.price&.product
-      return false unless product&.plan?
+    class Line
+      attr_reader :root_recording, :subscription_type
 
-      product.paywalls.exists?(name: paywall_name.to_s)
+      def initialize(root_recording:, subscription_type:)
+        @root_recording = root_recording
+        @subscription_type = subscription_type.to_s
+      end
+
+      def label
+        SubscriptionTypes.label(subscription_type)
+      end
+
+      def subscription
+        Subscription.current_for(
+          root_recording_id: root_recording.id,
+          subscription_type: subscription_type
+        )
+      end
+
+      def subscribed?
+        subscription&.active? || false
+      end
+
+      def unlocked?(paywall_name)
+        return false unless subscribed?
+
+        product = subscription.price&.product
+        return false unless product&.plan?
+
+        product.paywalls.exists?(name: paywall_name.to_s)
+      end
+
+      def meter(name)
+        MeterHandle.new(
+          root_recording: root_recording,
+          meter: Meter.named(name),
+          subscription_type: subscription_type
+        )
+      end
     end
   end
 end

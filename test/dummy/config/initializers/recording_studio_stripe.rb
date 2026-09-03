@@ -16,4 +16,8 @@ RecordingStudioStripe.configure do |config|
     "generate_image" => { "label" => "Generate an image" },
     "export_csv" => { "label" => "Export CSV" }
   }
+  config.subscription_types = {
+    "studio" => { "label" => "Studio" },
+    "inbox" => { "label" => "Inbox" }
+  }
 end

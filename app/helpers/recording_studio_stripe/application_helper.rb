@@ -18,14 +18,35 @@ module RecordingStudioStripe
       tag.div(safe_join(parts.compact), class: "flex h-full flex-col gap-4")
     end
 
-    def billing_subtitle(subscription)
-      return "Usage resets when a paid period starts." unless subscription&.active?
+    def billing_subtitle(lines)
+      active = Array(lines).select(&:subscribed?)
+      return "Usage resets when a paid period starts." if active.empty?
+      return single_line_subtitle(active.first.subscription) if active.size == 1
+
+      names = active.map { |line| line.subscription.price&.product&.name }.compact
+      "You’re on #{names.to_sentence}."
+    end
+
+    def single_line_subtitle(subscription)
       return "This plan runs until #{subscription.current_period_end.to_date.to_fs(:long)}." if subscription.canceling?
       if subscription.scheduled_downgrade?
         return "Next period switches to #{subscription.scheduled_price.product.name}."
       end
 
       "You’re on #{subscription.price&.product&.name}."
+    end
+
+    def usage_section_title(line)
+      return "#{line.label} usage" if RecordingStudioStripe::SubscriptionTypes.configured?
+
+      "Usage this period"
+    end
+
+    def billing_line_meters(line)
+      handles = RecordingStudioStripe::Meter.order(:name).map { |meter| line.meter(meter.name) }
+      return handles unless RecordingStudioStripe::SubscriptionTypes.configured?
+
+      handles.select { |handle| handle.included.positive? || handle.purchased.positive? || handle.usage.positive? }
     end
   end
 end

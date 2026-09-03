@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_03_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_03_220000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -177,9 +177,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_120000) do
     t.jsonb "metadata", default: {}, null: false
     t.string "name", null: false
     t.string "stripe_id", null: false
+    t.string "subscription_type", default: "plan", null: false
     t.datetime "updated_at", null: false
     t.index ["kind", "active"], name: "index_recording_studio_stripe_products_on_kind_and_active"
     t.index ["stripe_id"], name: "index_recording_studio_stripe_products_on_stripe_id", unique: true
+    t.index ["subscription_type"], name: "index_recording_studio_stripe_products_on_subscription_type"
   end
 
   create_table "recording_studio_stripe_subscriptions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -194,10 +196,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_120000) do
     t.uuid "scheduled_price_id"
     t.string "status", null: false
     t.string "stripe_id", null: false
+    t.string "subscription_type", default: "plan", null: false
     t.datetime "updated_at", null: false
     t.index ["customer_id"], name: "index_recording_studio_stripe_subscriptions_on_customer_id"
     t.index ["price_id"], name: "index_recording_studio_stripe_subscriptions_on_price_id"
     t.index ["root_recording_id", "status"], name: "idx_on_root_recording_id_status_0c1c783865"
+    t.index ["root_recording_id", "subscription_type", "status"], name: "idx_rs_stripe_sub_root_type_status"
+    t.index ["root_recording_id", "subscription_type"], name: "idx_rs_stripe_one_live_sub_per_type", unique: true, where: "((status)::text = ANY ((ARRAY['active'::character varying, 'trialing'::character varying, 'past_due'::character varying])::text[]))"
     t.index ["scheduled_price_id"], name: "idx_on_scheduled_price_id_2cf55663e2"
     t.index ["stripe_id"], name: "index_recording_studio_stripe_subscriptions_on_stripe_id", unique: true
   end

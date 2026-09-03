@@ -5,8 +5,7 @@ module RecordingStudioStripe
     before_action :authorize_view!
 
     def show
-      @subscription = billing.subscription
-      @meters = Meter.order(:name).map { |meter| billing.meter(meter.name) }
+      @lines = billing.active_lines
       @allowance_prices = Catalog.allowance_prices
       @show_manage_billing = show_manage_billing?
     end

@@ -5,7 +5,7 @@ class PricingController < ApplicationController
 
   def show
     @interval = params[:interval].presence_in(%w[month year]) || "month"
-    @products = RecordingStudioStripe::Catalog.plan_products
+    @groups = RecordingStudioStripe::Catalog.plan_groups
   end
 
   private

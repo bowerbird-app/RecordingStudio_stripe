@@ -130,6 +130,17 @@ module RecordingStudioStripe
       end
     end
 
+    initializer "recording_studio_stripe.assign_subscription_types" do
+      config.to_prepare do
+        next unless defined?(ActiveRecord::Base)
+        next unless RecordingStudioStripe::Product.table_exists?
+
+        RecordingStudioStripe::AssignSubscriptionTypes.call
+      rescue ActiveRecord::ActiveRecordError
+        nil
+      end
+    end
+
     initializer "recording_studio_stripe.sync_paywalls" do
       config.to_prepare do
         next unless defined?(ActiveRecord::Base)

@@ -42,6 +42,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
+    assert_includes response.body, "Inbox"
     assert_includes response.body, "Opens"
     assert_includes response.body, "Generate an image"
     assert_includes response.body, "Edit"
@@ -85,6 +86,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "What this plan opens"
     assert_includes response.body, "Generate an image"
+    assert_includes response.body, "Plan group"
 
     assert_difference -> { RecordingStudioStripe::Product.count }, 1 do
       post RecordingStudioStripe.configuration.mount_path + "/admin/products", params: {
@@ -98,6 +100,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_includes response.body, "Studio"
     product = RecordingStudioStripe::Product.find_by!(name: "Studio")
+    assert_equal "studio", product.subscription_type
     assert_equal %w[export_csv generate_image], product.paywalls.order(:name).pluck(:name)
   end
 

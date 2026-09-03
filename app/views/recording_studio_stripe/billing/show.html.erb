@@ -3,12 +3,12 @@
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
     title: "Billing",
-    subtitle: billing_subtitle(@subscription),
+    subtitle: billing_subtitle(@lines),
     variant: :h1
   ) %>
 
   <% if @show_manage_billing %>
-    <%= button_to recording_studio_stripe.portal_path, class: "inline-flex" do %>
+    <%= button_to recording_studio_stripe.portal_path, class: "inline-flex", form: { data: { turbo: false } } do %>
       <%= render FlatPack::Button::Component.new(
         text: "Manage billing on Stripe",
         icon: "credit-card",
@@ -19,9 +19,23 @@
     <% end %>
   <% end %>
 
-  <% if @subscription&.active? %>
-    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
-      <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: @subscription) %>
+  <% if @lines.any? %>
+    <% @lines.each do |line| %>
+      <% if RecordingStudioStripe::SubscriptionTypes.configured? %>
+        <%= render FlatPack::SectionTitle::Component.new(title: line.label) %>
+      <% end %>
+      <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
+        <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: line.subscription) %>
+      <% end %>
+      <% meters = billing_line_meters(line) %>
+      <% if meters.any? %>
+        <%= render FlatPack::SectionTitle::Component.new(title: usage_section_title(line)) %>
+        <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
+          <% meters.each do |handle| %>
+            <%= render RecordingStudioStripe::MeterCardComponent.new(handle: handle) %>
+          <% end %>
+        <% end %>
+      <% end %>
     <% end %>
   <% else %>
     <%= render FlatPack::EmptyState::Component.new(
@@ -35,18 +49,11 @@
     <% end %>
   <% end %>
 
-  <%= render FlatPack::SectionTitle::Component.new(title: "Usage this period") %>
-
-  <% if @meters.empty? %>
-    <%= render FlatPack::EmptyState::Component.new(
-      title: "No meters yet",
-      description: "Staff add meters in admin, then your app can record usage.",
-      icon: :inbox
-    ) %>
-  <% else %>
+  <% if @lines.empty? && RecordingStudioStripe::Meter.exists? %>
+    <%= render FlatPack::SectionTitle::Component.new(title: "Usage this period") %>
     <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
-      <% @meters.each do |handle| %>
-        <%= render RecordingStudioStripe::MeterCardComponent.new(handle: handle) %>
+      <% RecordingStudioStripe::Meter.order(:name).each do |meter| %>
+        <%= render RecordingStudioStripe::MeterCardComponent.new(handle: billing.meter(meter.name)) %>
       <% end %>
     <% end %>
   <% end %>

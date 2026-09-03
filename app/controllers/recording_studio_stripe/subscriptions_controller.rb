@@ -13,14 +13,20 @@ module RecordingStudioStripe
     end
 
     def destroy
-      CancelSubscription.call(root_recording: current_billing_root)
+      CancelSubscription.call(
+        root_recording: current_billing_root,
+        subscription_type: params[:subscription_type]
+      )
       redirect_to recording_studio_stripe.root_path, notice: "This plan stays on until the period ends."
     rescue NoSubscription => e
       redirect_to recording_studio_stripe.root_path, alert: e.message
     end
 
     def resume
-      ResumeSubscription.call(root_recording: current_billing_root)
+      ResumeSubscription.call(
+        root_recording: current_billing_root,
+        subscription_type: params[:subscription_type]
+      )
       redirect_to recording_studio_stripe.root_path, notice: "Nice. Billing keeps going."
     rescue NoSubscription => e
       redirect_to recording_studio_stripe.root_path, alert: e.message
@@ -29,7 +35,8 @@ module RecordingStudioStripe
     private
 
     def plan_change_notice(price)
-      subscription = billing.subscription
+      type = SubscriptionTypes.normalize(price.product&.subscription_type)
+      subscription = billing.line(type).subscription
       if subscription&.scheduled_price_id == price.id
         "We’ll switch you at the next renewal."
       else

@@ -53,6 +53,10 @@ module RecordingStudioStripe
         klass.table do
           column :name
           column :kind
+          column :plan_group,
+                 title: "Plan group",
+                 sortable: false,
+                 value: ->(row, _context) { row.plan? ? row.subscription_type_label : "—" }
           column :opens,
                  title: "Opens",
                  sortable: false,
@@ -168,6 +172,10 @@ module RecordingStudioStripe
         klass.query { |_context| RecordingStudioStripe::Subscription.includes(:price, :customer).order(updated_at: :desc) }
         klass.table do
           column :stripe_id
+          column :subscription_type,
+                 title: "Plan group",
+                 sortable: false,
+                 value: ->(row, _context) { row.subscription_type_label }
           column :status
           column :cancel_at_period_end
           column :current_period_end

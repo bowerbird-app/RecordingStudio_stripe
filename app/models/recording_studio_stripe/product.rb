@@ -13,6 +13,10 @@ module RecordingStudioStripe
     validates :stripe_id, presence: true, uniqueness: true
     validates :name, presence: true
     validates :kind, inclusion: { in: KINDS }
+    validates :subscription_type, presence: true
+    validates :subscription_type, inclusion: { in: ->(_) { SubscriptionTypes.keys } }, if: :plan?
+
+    before_validation :assign_default_subscription_type
 
     scope :plans, -> { where(kind: "plan", active: true) }
     scope :allowances, -> { where(kind: "allowance", active: true) }
@@ -43,6 +47,16 @@ module RecordingStudioStripe
 
     def opens_labels
       paywalls.order(:name).map(&:label)
+    end
+
+    def subscription_type_label
+      SubscriptionTypes.label(subscription_type)
+    end
+
+    private
+
+    def assign_default_subscription_type
+      self.subscription_type = subscription_type.presence || SubscriptionTypes.keys.first
     end
   end
 end
