@@ -130,6 +130,12 @@ module RecordingStudioStripe
       end
     end
 
+    initializer "recording_studio_stripe.helpers" do
+      ActiveSupport.on_load(:action_controller) do
+        helper RecordingStudioStripe::ApplicationHelper
+      end
+    end
+
     initializer "recording_studio_stripe.append_migrations" do |app|
       engine_migrations = config.paths["db/migrate"].expanded
       next if engine_migrations.empty?
