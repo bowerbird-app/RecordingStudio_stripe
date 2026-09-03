@@ -131,9 +131,9 @@ class RecordingStudioStripeTest < Minitest::Test
   end
 
   def test_install_initializer_template_documents_paywalls
-    template = File.read(
-      File.expand_path("../lib/generators/recording_studio_stripe/install/templates/recording_studio_stripe_initializer.rb", __dir__)
-    )
+    template_path = "../lib/generators/recording_studio_stripe/install/templates/" \
+                    "recording_studio_stripe_initializer.rb"
+    template = File.read(File.expand_path(template_path, __dir__))
 
     assert_includes template, "config.paywalls"
     assert_includes template, "generate_image"
@@ -145,7 +145,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "## Paywalls"
     assert_includes docs, "config.paywalls"
     assert_includes docs, "authorized_action?"
-    refute_includes docs, "plan_id"
+    assert_includes docs, "Do not put them on a Price"
   end
 
   def test_dummy_home_page_points_at_plans

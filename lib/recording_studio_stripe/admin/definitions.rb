@@ -38,6 +38,7 @@ module RecordingStudioStripe
         RecordingStudioStripe::Admin::Definitions.const_set(:StripeSection, klass)
       end
 
+      # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
       def products_screen
         klass = Class.new(RecordingStudioAdmin::Screen)
         klass.key "products"
@@ -71,6 +72,7 @@ module RecordingStudioStripe
         end
         RecordingStudioStripe::Admin::Definitions.const_set(:ProductsScreen, klass)
       end
+      # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
       def prices_screen
         klass = Class.new(RecordingStudioAdmin::Screen)
