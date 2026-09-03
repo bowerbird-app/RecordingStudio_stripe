@@ -23,6 +23,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 - `PlansComponent` renders the plan cards. `align: :left` for a billing page. `align: :center` for a public pricing page.
 - Named paywalls: register names in `config.paywalls`, tick them on a plan Product, check with Accessible `authorized_action?`
 - Manage billing on Stripe opens the Stripe Customer Portal for invoices and cards
+- The billing portal button uses Flatpack’s `credit-card` Heroicon
 
 ### Changed
 - Hosts register meters with `config.meters`. The gem writes those rows on boot. A plan Price sets included amounts per meter.

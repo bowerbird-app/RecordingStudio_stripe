@@ -10,7 +10,8 @@
   <% if @show_manage_billing %>
     <%= button_to recording_studio_stripe.portal_path, class: "inline-flex" do %>
       <%= render FlatPack::Button::Component.new(
-        text: manage_billing_on_stripe_label,
+        text: "Manage billing on Stripe",
+        icon: "credit-card",
         style: :secondary,
         size: :md,
         type: "submit"

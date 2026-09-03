@@ -215,7 +215,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Manage billing on Stripe"
-    assert_includes response.body, "viewBox=\"0 0 24 24\""
+    assert_includes response.body, "credit-card"
     assert_includes response.body, recording_studio_stripe.portal_path
 
     post recording_studio_stripe.portal_path
