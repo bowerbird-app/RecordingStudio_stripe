@@ -190,6 +190,75 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_equal 15_000_000, @workspace.billing.meter(:ai_tokens).remaining
   end
 
+  test "billing hides manage billing before a customer exists" do
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    refute_includes response.body, "Manage billing"
+  end
+
+  test "manage billing shows when a customer exists without an active plan" do
+    RecordingStudioStripe::EnsureCustomer.call(root_recording: @root, email: @user.email)
+
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    assert_includes response.body, "No plan yet"
+    assert_includes response.body, "Manage billing"
+  end
+
+  test "manage billing shows after checkout and stays local without keys" do
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+
+    post recording_studio_stripe.checkout_path, params: { price_id: price.id }
+    follow_redirect!
+
+    assert_response :success
+    assert_includes response.body, "Manage billing"
+    assert_includes response.body, recording_studio_stripe.portal_path
+
+    post recording_studio_stripe.portal_path
+
+    assert_redirected_to %r{/billing}
+    follow_redirect!
+    assert_includes response.body, "Invoices and cards live in Stripe. Add keys to open them."
+  end
+
+  test "portal redirects to Stripe when a client is set" do
+    previous_client = RecordingStudioStripe.configuration.client
+    RecordingStudioStripe.configuration.client = RecordingStudioStripe::Testing::Client.new
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+
+    post recording_studio_stripe.portal_path
+
+    assert_redirected_to %r{\Ahttps://billing.stripe.test}
+  ensure
+    RecordingStudioStripe.configuration.client = previous_client
+  end
+
+  test "view access can see billing and cannot open the portal" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+    viewer = User.find_or_create_by!(email: "viewer@example.com") do |user|
+      user.password = "Password"
+      user.password_confirmation = "Password"
+    end
+    grant_owner_access!(recording: @root, actor: viewer, role: :view)
+    sign_out @user
+    sign_in viewer
+    switch_to_root!(@root)
+
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    refute_includes response.body, "Manage billing"
+
+    post recording_studio_stripe.portal_path
+
+    assert_response :forbidden
+  end
+
   test "starter does not open generate_image" do
     starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)

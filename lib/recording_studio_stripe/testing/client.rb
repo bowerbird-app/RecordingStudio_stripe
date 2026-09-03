@@ -5,7 +5,7 @@ module RecordingStudioStripe
     StripeObject = Struct.new(
       :id, :object, :url, :mode, :customer, :client_reference_id, :metadata, :status,
       :cancel_at_period_end, :items, :name, :description, :active, :unit_amount, :currency,
-      :recurring, :product, :current_period_start, :current_period_end, :data, :type,
+      :recurring, :product, :current_period_start, :current_period_end, :data, :type, :email,
       keyword_init: true
     ) do
       def [](key)
@@ -56,6 +56,30 @@ module RecordingStudioStripe
         )
         @store[:sessions][id] = object
         object
+      end
+    end
+
+    class BillingPortalSessions < Resource
+      def create(params)
+        id = "bps_#{SecureRandom.hex(6)}"
+        object = StripeObject.new(
+          id: id,
+          object: "billing_portal.session",
+          url: "https://billing.stripe.test/session/#{id}",
+          customer: params[:customer]
+        )
+        @store[:portal_sessions][id] = object
+        object
+      end
+    end
+
+    class BillingPortal
+      def initialize(store)
+        @store = store
+      end
+
+      def sessions
+        BillingPortalSessions.new(@store)
       end
     end
 
@@ -141,11 +165,15 @@ module RecordingStudioStripe
       def prices
         Prices.new(@store)
       end
+
+      def billing_portal
+        BillingPortal.new(@store)
+      end
     end
 
     class Client
       def initialize
-        @store = { customers: {}, sessions: {}, subscriptions: {}, products: {}, prices: {} }
+        @store = { customers: {}, sessions: {}, subscriptions: {}, products: {}, prices: {}, portal_sessions: {} }
       end
 
       def v1

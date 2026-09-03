@@ -6,4 +6,5 @@ module RecordingStudioStripe
   class Forbidden < Error; end
   class InvalidPrice < Error; end
   class NoSubscription < Error; end
+  class NoCustomer < Error; end
 end

@@ -12,6 +12,7 @@ Stripe is the source of truth for Products, Prices, Customers, Subscriptions, in
 | Meter | Local named counter (`ai_tokens`, `api_calls`) |
 | Usage | Append-only `recording_studio_stripe_usage_entries` |
 | Extra packs | `recording_studio_stripe_allowance_purchases` after Checkout |
+| Invoices, cards | Stripe Customer Portal. Not copied locally |
 | Paywall | Local named feature (`generate_image`). Staff tick them on a plan Product |
 
 Usage is a fact table, not a Recording. High volume stays off the tree. Paywalls are not Recordings either.
@@ -97,12 +98,16 @@ Included comes from Price metadata. Purchased comes from allowance packs bought 
 
 Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy product screens use Flatpack's rounded theme. `/plans` switches monthly and yearly with pill buttons, not a joined segmented control.
 
+`/billing` shows **Manage billing** when the workspace has a Customer and the actor can `:edit`. That POST creates a Stripe Billing Portal session and redirects there. The return URL is the billing page (`success_path`). `:view` can read `/billing` and cannot open the portal. Hosts turn the portal on in the Stripe Dashboard. Do not link to dashboard.stripe.com. Do not copy invoices or cards into local tables.
+
 `RecordingStudioStripe::PlansComponent` is the reusable plans block. Pass `align: :left` on a signed-in billing page and `align: :center` on a public pricing page. Dummy `/plans` is left. Dummy `/pricing` is centered and does not require a login. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Paywalls, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter, Paywall, and edit Product) live on the billing engine and link from those screens. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
 
 ## Local mode
 
 When `STRIPE_SECRET_KEY` is blank, Checkout writes a local Customer and Subscription (or allowance purchase) and returns the success URL. Dummy uses this so you can click through without Stripe keys. Webhooks still accept unsigned JSON events when `STRIPE_WEBHOOK_SECRET` is blank.
 
+Manage billing still shows after a local checkout so hosts can see the control. The POST does not call Stripe. It redirects back to `/billing` with a flash.
+
 ## What this gem does not do
 
-Stripe keeps invoices, cards, tax, and proration. This gem does not wrap other processors, invent wallets, or use Stripe Entitlements as a second catalogue. Plan features are paywall rows ticked on the Product.
+Stripe keeps invoices, cards, tax, and proration. This gem does not wrap other processors, invent wallets, or use Stripe Entitlements as a second catalogue. Plan features are paywall rows ticked on the Product. Do not copy invoices or payment methods locally.

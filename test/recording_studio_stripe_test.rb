@@ -119,6 +119,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "remaining"
     assert_includes readme, "config.paywalls"
     assert_includes readme, "authorized_action?"
+    assert_includes readme, "Customer Portal"
     refute_includes readme, "ExampleService"
   end
 
@@ -146,6 +147,22 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "config.paywalls"
     assert_includes docs, "authorized_action?"
     assert_includes docs, "Do not put them on a Price"
+  end
+
+  def test_billing_docs_explain_customer_portal
+    docs = File.read(File.expand_path("../docs/billing.md", __dir__))
+
+    assert_includes docs, "Manage billing"
+    assert_includes docs, "Customer Portal"
+    assert_includes docs, "Do not copy invoices"
+  end
+
+  def test_billing_view_offers_manage_billing
+    view_source = File.read(File.expand_path("../app/views/recording_studio_stripe/billing/show.html.erb", __dir__))
+
+    assert_includes view_source, "Manage billing"
+    assert_includes view_source, "portal_path"
+    refute_includes view_source, "dashboard.stripe.com"
   end
 
   def test_dummy_home_page_points_at_plans

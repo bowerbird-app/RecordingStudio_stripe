@@ -28,6 +28,12 @@
     <% end %>
   <% end %>
 
+  <% if @show_manage_billing %>
+    <%= button_to recording_studio_stripe.portal_path, class: "inline-flex" do %>
+      <%= render FlatPack::Button::Component.new(text: "Manage billing", style: :secondary, size: :md, type: "submit") %>
+    <% end %>
+  <% end %>
+
   <%= render FlatPack::SectionTitle::Component.new(title: "Usage this period") %>
 
   <% if @meters.empty? %>
