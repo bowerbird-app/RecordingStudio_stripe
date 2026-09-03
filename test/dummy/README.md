@@ -7,7 +7,8 @@ Sign in with `admin@admin.com` / `Password`.
 ## Routes
 
 - `/` — current workspace plan and usage
-- `/plans` — Products and Prices
+- `/plans` — Products and Prices, left aligned for a signed-in workspace
+- `/pricing` — the same plan cards, centered, no login
 - `/billing` — usage remaining and extra packs
 - `/admin` — Stripe admin section. The Admin button switches to Studio Admin first, because Admin authorizes against that root.
 - `/webhooks/stripe` — Stripe webhook intake

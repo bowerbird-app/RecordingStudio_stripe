@@ -20,6 +20,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 - Dummy catalogue (Starter, Pro, token packs) so the host app can be clicked without keys
 - Plan, billing, and pack cards keep title, copy, and actions in the card body
 - Prices admin lists the Product name and filters by Product or interval
+- `PlansComponent` renders the plan cards. `align: :left` for a billing page. `align: :center` for a public pricing page.
 
 ### Changed
 - Hosts register meters with `config.meters`. The gem writes those rows on boot. A plan Price sets included amounts per meter.
@@ -33,6 +34,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 - Point Stripe webhooks at `/webhooks/stripe`.
 - Tax stays in Stripe. Do not add a local tax engine.
 - Set `config.meters` for extra counters. Plan Prices store included amounts as `included_<meter_name>`.
+- Render `RecordingStudioStripe::PlansComponent` on a host screen. Pass `align: :center` on a public page and `align: :left` on a signed-in billing page.
 
 ## [0.2.1] - 2026-09-01
 

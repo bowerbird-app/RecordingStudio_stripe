@@ -22,6 +22,7 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Included usage on a Price (`included_ai_tokens`, `included_api_calls` metadata)
 - Extra packs as one-time Prices (`meter`, `allowance` metadata)
 - Customer plans page and billing page
+- `PlansComponent` for those cards on a public page (`align: :center`) or a billing page (`align: :left`)
 - Recording Studio Admin section for Products, Prices, Meters, Customers, and Subscriptions
 - Stripe webhooks that keep the local projection honest
 
@@ -54,6 +55,21 @@ draw_recording_studio_stripe
 ```
 
 That mounts billing at `/billing`, plans at `/plans`, and webhooks at `/webhooks/stripe`.
+
+Render the same plan cards on a host screen:
+
+```erb
+<%= render RecordingStudioStripe::PlansComponent.new(
+  products: RecordingStudioStripe::Catalog.plan_products,
+  interval: "month",
+  subscription: account.billing.subscription,
+  align: :left,
+  monthly_href: plans_path(interval: "month"),
+  yearly_href: plans_path(interval: "year")
+) %>
+```
+
+Use `align: :center` on a public pricing page. Use `align: :left` on a signed-in billing page. Copy inside each card stays left either way.
 
 Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave them blank in dummy to click through locally.
 
@@ -101,4 +117,4 @@ Checkout return URLs do not fulfil anything. Stripe events do.
 
 ## Dummy
 
-`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` and `/billing`. Admin is `/admin`.
+`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Admin is `/admin`.

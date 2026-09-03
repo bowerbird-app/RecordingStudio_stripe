@@ -65,7 +65,9 @@ Included comes from Price metadata. Purchased comes from allowance packs bought 
 
 ## Screens
 
-Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy product screens use Flatpack's rounded theme. `/plans` switches monthly and yearly with pill buttons, not a joined segmented control. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter) live on the billing engine and link from those screens. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
+Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy product screens use Flatpack's rounded theme. `/plans` switches monthly and yearly with pill buttons, not a joined segmented control.
+
+`RecordingStudioStripe::PlansComponent` is the reusable plans block. Pass `align: :left` on a signed-in billing page and `align: :center` on a public pricing page. Dummy `/plans` is left. Dummy `/pricing` is centered and does not require a login. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter) live on the billing engine and link from those screens. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
 
 ## Local mode
 

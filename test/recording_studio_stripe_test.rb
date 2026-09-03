@@ -127,5 +127,18 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "See plans"
     assert_includes view_source, "dummy_page_nav"
     assert_includes view_source, "FlatPack::EmptyState::Component"
+    assert_includes view_source, "Public pricing"
+  end
+
+  def test_plans_component_aligns_left_or_center
+    component = File.read(File.expand_path("../app/components/recording_studio_stripe/plans_component.rb", __dir__))
+    plans_view = File.read(File.expand_path("../app/views/recording_studio_stripe/plans/index.html.erb", __dir__))
+    pricing_view = File.read(File.expand_path("dummy/app/views/pricing/show.html.erb", __dir__))
+
+    assert_includes component, "align: :left"
+    assert_includes component, "justify-start"
+    assert_includes component, "justify-center"
+    assert_includes plans_view, "align: :left"
+    assert_includes pricing_view, "align: :center"
   end
 end

@@ -1,34 +1,10 @@
 <% recording_studio_page_nav(title: "Plans", page_nav_back_url: main_app.root_path, page_nav_back_label: "Home") %>
 
-<div class="flex w-full flex-col gap-6">
-  <%= render FlatPack::PageTitle::Component.new(
-    title: "Pick a plan",
-    subtitle: "Monthly or yearly. You can switch later.",
-    variant: :h1
-  ) %>
-
-  <%= render FlatPack::Button::Pill::Component.new(
-    items: [
-      { text: "Monthly", href: url_for(interval: "month"), active: @interval == "month" },
-      { text: "Yearly", href: url_for(interval: "year"), active: @interval == "year" }
-    ]
-  ) %>
-
-  <% if @products.empty? %>
-    <%= render FlatPack::EmptyState::Component.new(
-      title: "No plans yet",
-      description: "Staff add Products and Prices in admin. Come back when the shop is stocked.",
-      icon: :inbox
-    ) %>
-  <% else %>
-    <%= render FlatPack::Grid::Component.new(cols: 3, gap: :lg) do %>
-      <% @products.each do |product| %>
-        <%= render RecordingStudioStripe::PlanCardComponent.new(
-          product: product,
-          interval: @interval,
-          subscription: @current_subscription
-        ) %>
-      <% end %>
-    <% end %>
-  <% end %>
-</div>
+<%= render RecordingStudioStripe::PlansComponent.new(
+  products: @products,
+  interval: @interval,
+  subscription: @current_subscription,
+  align: :left,
+  monthly_href: url_for(interval: "month"),
+  yearly_href: url_for(interval: "year")
+) %>

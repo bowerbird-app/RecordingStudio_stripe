@@ -12,7 +12,7 @@ module RecordingStudioStripe
     end
 
     def call
-      render FlatPack::Card::Component.new(style: current? ? :elevated : :outlined) do |card|
+      render FlatPack::Card::Component.new(style: current? ? :elevated : :outlined, class: "h-full") do |card|
         card.body { helpers.stripe_card_stack(title, inclusions, action) }
       end
     end

@@ -37,6 +37,33 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "border-t border-[var(--card-border-color)]"
     assert_select "body[data-theme='rounded']", count: 1
     assert_select "html[data-theme='rounded']", count: 1
+    assert_select "[data-plans-align='left']", count: 1
+    assert_includes response.body, "justify-start"
+  end
+
+  test "public pricing page centers the plan cards" do
+    sign_out @user
+    get "/pricing"
+
+    assert_response :success
+    assert_includes response.body, "Pick a plan"
+    assert_includes response.body, "Pro"
+    assert_includes response.body, "Starter"
+    assert_includes response.body, "$29/month"
+    assert_select "html[data-theme='rounded']", count: 1
+    assert_select "[data-plans-align='center']", count: 1
+    assert_includes response.body, "justify-center"
+    refute_includes response.body, "data-recording-studio-default-layout"
+  end
+
+  test "public pricing page shows yearly Prices" do
+    sign_out @user
+    get "/pricing", params: { interval: "year" }
+
+    assert_response :success
+    assert_includes response.body, "$290/year"
+    assert_includes response.body, "$90/year"
+    assert_select "[data-plans-align='center']", count: 1
   end
 
   test "plans page shows yearly Prices on the same Products" do
@@ -47,6 +74,20 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Starter"
     assert_includes response.body, "$290/year"
     assert_includes response.body, "$90/year"
+  end
+
+  test "plans component rejects an unknown align" do
+    error = assert_raises ArgumentError do
+      RecordingStudioStripe::PlansComponent.new(
+        products: [],
+        interval: "month",
+        monthly_href: "/plans",
+        yearly_href: "/plans?interval=year",
+        align: :right
+      )
+    end
+
+    assert_match(/left or :center/, error.message)
   end
 
   test "checkout in local mode starts a subscription" do
