@@ -30,6 +30,8 @@ class MultipleSubscriptionsTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Inbox Plus"
     assert_includes response.body, "$25/month"
     assert_includes response.body, "$50/month"
+    assert_select "[data-plan-group='studio'] a", text: "Monthly"
+    assert_select "[data-plan-group='inbox'] a", text: "Monthly"
     assert_equal "studio", RecordingStudioStripe::Product.find_by!(name: "Pro").subscription_type
     assert_equal "inbox", RecordingStudioStripe::Product.find_by!(name: "Inbox").subscription_type
   end

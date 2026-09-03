@@ -64,18 +64,20 @@ Turn on the Customer Portal in the Stripe Dashboard. Manage billing on Stripe mi
 Render the same plan cards on a host screen. Pass `groups:` from `Catalog.plan_groups` when you sell more than one kind of plan:
 
 ```erb
+<% intervals = RecordingStudioStripe::PlanIntervals.from(params) %>
 <%= render RecordingStudioStripe::PlansComponent.new(
   groups: RecordingStudioStripe::Catalog.plan_groups.map { |group|
-    group.merge(subscription: account.billing.line(group[:key]).subscription)
+    key = group[:key]
+    group.merge(
+      subscription: account.billing.line(key).subscription,
+      **intervals.hrefs_for(key) { |query| plans_path(**query) }
+    )
   },
-  interval: "month",
-  align: :left,
-  monthly_href: plans_path(interval: "month"),
-  yearly_href: plans_path(interval: "year")
+  align: :left
 ) %>
 ```
 
-A single-type host can still pass `products:` and `subscription:`. Use `align: :center` on a public pricing page. Use `align: :left` on a signed-in billing page. Copy inside each card stays left either way.
+A single-type host can still pass `products:`, `subscription:`, and one pair of monthly/yearly hrefs. Use `align: :center` on a public pricing page. Use `align: :left` on a signed-in billing page. Copy inside each card stays left either way.
 
 Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave them blank in dummy to click through locally.
 

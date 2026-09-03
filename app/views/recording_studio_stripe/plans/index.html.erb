@@ -1,9 +1,6 @@
 <% recording_studio_page_nav(title: "Plans", page_nav_back_url: main_app.root_path, page_nav_back_label: "Home") %>
 
 <%= render RecordingStudioStripe::PlansComponent.new(
-  interval: @interval,
   groups: @groups,
-  align: :left,
-  monthly_href: url_for(interval: "month"),
-  yearly_href: url_for(interval: "year")
+  align: :left
 ) %>

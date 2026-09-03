@@ -85,6 +85,24 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "$250/year"
   end
 
+  test "plans page toggles monthly and yearly per group" do
+    get "/plans", params: { interval: { studio: "year" } }
+
+    assert_response :success
+    assert_select "[data-plan-group='studio']", count: 1
+    assert_select "[data-plan-group='inbox']", count: 1
+    assert_select "[data-plan-group='studio'] a", text: "Yearly"
+    assert_select "[data-plan-group='inbox'] a", text: "Yearly"
+    assert_select "[aria-label='Studio yearly']"
+    assert_select "[aria-label='Inbox monthly']"
+    assert_includes response.body, "$290/year"
+    assert_includes response.body, "$90/year"
+    assert_includes response.body, "$25/month"
+    assert_includes response.body, "$50/month"
+    refute_includes response.body, "$250/year"
+    refute_includes response.body, "$500/year"
+  end
+
   test "plans component rejects an unknown align" do
     error = assert_raises ArgumentError do
       RecordingStudioStripe::PlansComponent.new(

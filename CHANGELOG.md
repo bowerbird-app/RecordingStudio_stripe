@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional `config.subscription_types` so a workspace can hold one live plan per named group on the same Stripe Customer
 - `account.billing.line(:press_kits)` for that group's subscription, meters, and paywalls
 - `Catalog.plan_groups` and `PlansComponent` `groups:` so `/plans` can section cards by type
+- Monthly and yearly pills sit on each plan group, not once for the whole page. `PlanIntervals` keeps the other group's cadence in the URL
 - Admin plan-group picker when types are configured
 - Dummy Studio and Inbox catalogues so two live plans can be clicked in local mode
 
@@ -28,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prefer `account.billing.line(:press_kits).subscription` and `account.billing.line(:press_kits).meter(:kits).remaining`. `account.billing.subscription` is still the latest live plan
 - `account.billing.unlocked?(:export_csv)` stays the any-plan check. Use `billing.line(:press_kits).unlocked?(:export_csv)` when the paywall belongs to one group
 - Re-run dummy seeds after upgrade so Inbox plans exist
+- Hosts that render `PlansComponent` themselves should pass per-group `interval`, `monthly_href`, and `yearly_href` through `PlanIntervals`. A leftover page-level toggle still applies to groups that omit their own. `?interval=year` still sets every group
 
 ## [0.3.0] - 2026-09-02
 
