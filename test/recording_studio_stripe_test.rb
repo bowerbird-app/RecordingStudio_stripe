@@ -168,6 +168,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "Manage billing on Stripe"
     assert_includes view_source, 'icon: "credit-card"'
     assert_includes view_source, "portal_path"
+    assert_includes view_source, "data: { turbo: false }"
     assert_match(/Grid::Component.new\(cols: 2.*CurrentPlanComponent/m, view_source)
     refute_includes view_source, "dashboard.stripe.com"
   end
@@ -197,6 +198,13 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "Public pricing"
     assert_includes view_source, "What this plan opens"
     assert_includes view_source, "dummy_paywall_open?"
+  end
+
+  def test_plan_card_turns_turbo_off_for_checkout
+    source = File.read(File.expand_path("../app/components/recording_studio_stripe/plan_card_component.rb", __dir__))
+
+    assert_includes source, "form: { data: { turbo: false } }"
+    assert_includes source, "checkout_path"
   end
 
   def test_plans_component_aligns_left_or_center

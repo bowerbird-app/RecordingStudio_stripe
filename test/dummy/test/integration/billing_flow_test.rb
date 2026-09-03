@@ -39,6 +39,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='left']", count: 1
     assert_includes response.body, "justify-start"
+    assert_select "form[action*='checkout'][data-turbo=false]"
   end
 
   test "public pricing page centers the plan cards" do

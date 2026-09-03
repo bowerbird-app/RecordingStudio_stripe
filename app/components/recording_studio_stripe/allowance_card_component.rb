@@ -33,8 +33,10 @@ module RecordingStudioStripe
     end
 
     def buy_button
-      helpers.button_to recording_studio_stripe.allowances_path, params: { price_id: @price.id },
-                                                                 class: "inline-flex" do
+      helpers.button_to recording_studio_stripe.allowances_path,
+                        params: { price_id: @price.id },
+                        class: "inline-flex",
+                        form: { data: { turbo: false } } do
         render FlatPack::Button::Component.new(text: "Add this pack", style: :secondary, size: :md, type: "submit")
       end
     end

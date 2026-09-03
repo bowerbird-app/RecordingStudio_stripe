@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Dummy `SeedDemoCatalog` creates or reuses Stripe Products and Prices when keys are set, instead of keeping `prod_local_` ids that Checkout cannot charge
+- Checkout, extra packs, and Manage billing on Stripe turn Turbo off on the form so the browser can leave for Stripe. A fetch follow of `checkout.stripe.com` is blocked by CORS.
 
 ### Upgrade notes
 - Set `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY`. Cloud Agent secrets named `Stripe_secret_key` and `Stripe_publishable_key` also work. Canonical names win if both are set.

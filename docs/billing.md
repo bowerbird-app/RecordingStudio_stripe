@@ -25,6 +25,8 @@ Starter is one Product. Monthly and yearly are two Prices on that Product. Extra
 
 `/plans` groups by Product. A Monthly / Yearly toggle picks which Price each card shows. Admin Products is one row per Product, with Add Price. Admin Prices lists every Price with the Product name, and filters by Product or interval.
 
+Choose plan and extra packs submit without Turbo so the browser can follow Stripe’s hosted Checkout URL. Turbo fetch cannot follow `checkout.stripe.com`.
+
 Included usage lives on the Price, not the Product. Two Prices on Starter can include different amounts, though dummy uses the same numbers for month and year. Paywalls live on the Product, so monthly and yearly Pro share the same features.
 
 ## Meters
