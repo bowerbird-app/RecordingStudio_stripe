@@ -35,6 +35,10 @@ module RecordingStudioStripe
 
     def badges
       parts = []
+      if RecordingStudioStripe::SubscriptionTypes.configured?
+        parts << render(FlatPack::Badge::Component.new(text: @subscription.subscription_type_label, style: :info,
+                                                       size: :sm))
+      end
       parts << if @subscription.canceling?
                  render(FlatPack::Badge::Component.new(text: "Ends this period", style: :warning, size: :sm))
                elsif @subscription.scheduled_downgrade?
@@ -59,11 +63,15 @@ module RecordingStudioStripe
 
     def cancel_or_resume
       if @subscription.canceling?
-        helpers.button_to recording_studio_stripe.subscription_resume_path, class: "inline-flex" do
+        helpers.button_to recording_studio_stripe.subscription_resume_path,
+                          params: { subscription_type: @subscription.subscription_type },
+                          class: "inline-flex" do
           render FlatPack::Button::Component.new(text: "Keep this plan", style: :primary, size: :md, type: "submit")
         end
       else
-        helpers.button_to recording_studio_stripe.subscription_cancel_path, class: "inline-flex" do
+        helpers.button_to recording_studio_stripe.subscription_cancel_path,
+                          params: { subscription_type: @subscription.subscription_type },
+                          class: "inline-flex" do
           render FlatPack::Button::Component.new(text: "Cancel", style: :ghost, size: :md, type: "submit")
         end
       end

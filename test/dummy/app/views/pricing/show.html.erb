@@ -1,7 +1,4 @@
 <%= render RecordingStudioStripe::PlansComponent.new(
-  products: @products,
-  interval: @interval,
-  align: :center,
-  monthly_href: pricing_path(interval: "month"),
-  yearly_href: pricing_path(interval: "year")
+  groups: @groups,
+  align: :center
 ) %>

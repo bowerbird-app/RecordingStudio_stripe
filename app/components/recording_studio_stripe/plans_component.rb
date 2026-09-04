@@ -6,23 +6,23 @@ module RecordingStudioStripe
 
     ALIGNS = %i[left center].freeze
 
-    def initialize(products:, interval:, monthly_href:, yearly_href:, subscription: nil, align: :left,
-                   title: "Pick a plan", subtitle: "Monthly or yearly. You can switch later.")
+    def initialize(interval: "month", monthly_href: nil, yearly_href: nil, products: [], subscription: nil,
+                   groups: nil, align: :left, title: "Pick a plan",
+                   subtitle: "Monthly or yearly. You can switch later.")
       super()
-      @products = products
       @interval = interval
-      @subscription = subscription
       @align = align.to_sym
       @monthly_href = monthly_href
       @yearly_href = yearly_href
       @title = title
       @subtitle = subtitle
+      @groups = Array(groups.presence || [{ products: products, subscription: subscription, label: nil }])
       validate_align!
     end
 
     def call
       helpers.tag.div(class: stack_class, data: { plans_align: @align }) do
-        helpers.safe_join([heading, interval_pills, cards].compact)
+        helpers.safe_join([heading, groups, empty_state].compact)
       end
     end
 
@@ -45,20 +45,84 @@ module RecordingStudioStripe
       )
     end
 
-    def interval_pills
+    def groups
+      blocks = @groups.filter_map { |group| group_block(group) }
+      return if blocks.empty?
+
+      helpers.tag.div(helpers.safe_join(blocks), class: groups_stack_class)
+    end
+
+    def groups_stack_class
+      if @align == :center
+        "flex w-full flex-col gap-10 items-center"
+      else
+        "flex w-full flex-col gap-10 items-start"
+      end
+    end
+
+    def group_block(group)
+      products = Array(group_value(group, :products))
+      return if products.empty?
+
+      subscription = group_value(group, :subscription)
+      label = group_value(group, :label)
+      key = group_value(group, :key)
+      interval = group_value(group, :interval).presence || @interval
+      monthly_href = group_value(group, :monthly_href).presence || @monthly_href
+      yearly_href = group_value(group, :yearly_href).presence || @yearly_href
+      parts = []
+      parts << group_heading(label, interval, monthly_href, yearly_href)
+      parts << cards_row(products, subscription, interval)
+      attrs = { class: "flex w-full flex-col gap-4" }
+      attrs[:data] = { plan_group: key } if key.present?
+      helpers.tag.div(helpers.safe_join(parts.compact), **attrs)
+    end
+
+    def group_heading(label, interval, monthly_href, yearly_href)
+      pills = interval_pills(interval, monthly_href, yearly_href, label)
+      return pills if label.blank?
+
+      helpers.tag.div(class: heading_stack_class, data: { plan_group_heading: true }) do
+        helpers.safe_join([section_title(label), pills].compact)
+      end
+    end
+
+    def heading_stack_class
+      if @align == :center
+        "flex w-full flex-col items-center gap-3"
+      else
+        "flex w-full flex-col items-start gap-3"
+      end
+    end
+
+    def interval_pills(interval, monthly_href, yearly_href, label)
+      return if monthly_href.blank? || yearly_href.blank?
+
       render FlatPack::Button::Pill::Component.new(
-        items: [
-          { text: "Monthly", href: @monthly_href, active: @interval == "month" },
-          { text: "Yearly", href: @yearly_href, active: @interval == "year" }
-        ]
+        items: pill_items(interval, monthly_href, yearly_href, label)
       )
     end
 
-    def cards
-      return empty_state if @products.empty?
+    def pill_items(interval, monthly_href, yearly_href, label)
+      [
+        pill_item("Monthly", monthly_href, interval == "month", label, "monthly"),
+        pill_item("Yearly", yearly_href, interval == "year", label, "yearly")
+      ]
+    end
 
+    def pill_item(text, href, active, label, cadence)
+      item = { text: text, href: href, active: active }
+      item[:aria] = { label: "#{label} #{cadence}" } if label.present?
+      item
+    end
+
+    def section_title(label)
+      render FlatPack::SectionTitle::Component.new(title: label, class: "my-0")
+    end
+
+    def cards_row(products, subscription, interval)
       helpers.tag.div(class: row_class) do
-        helpers.safe_join(@products.map { |product| card_for(product) })
+        helpers.safe_join(products.map { |product| card_for(product, subscription, interval) })
       end
     end
 
@@ -70,17 +134,19 @@ module RecordingStudioStripe
       end
     end
 
-    def card_for(product)
+    def card_for(product, subscription, interval)
       helpers.tag.div(class: "w-full md:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-3rem)/3)]") do
         render PlanCardComponent.new(
           product: product,
-          interval: @interval,
-          subscription: @subscription
+          interval: interval,
+          subscription: subscription
         )
       end
     end
 
     def empty_state
+      return if @groups.any? { |group| Array(group_value(group, :products)).any? }
+
       helpers.tag.div(class: "w-full") do
         render FlatPack::EmptyState::Component.new(
           title: "No plans yet",
@@ -88,6 +154,10 @@ module RecordingStudioStripe
           icon: :inbox
         )
       end
+    end
+
+    def group_value(group, key)
+      group[key] || group[key.to_s]
     end
 
     def validate_align!

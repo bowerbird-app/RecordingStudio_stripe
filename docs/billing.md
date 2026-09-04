@@ -7,8 +7,8 @@ Stripe is the source of truth for Products, Prices, Customers, Subscriptions, in
 | Thing | Where it lives |
 | --- | --- |
 | Product, Price | Stripe, copied into `recording_studio_stripe_products` / `_prices` |
-| Customer | Stripe Customer id on the workspace root |
-| Subscription | Stripe Subscription, plus a local status and period |
+| Customer | Stripe Customer id on the workspace root. One Customer per workspace |
+| Subscription | Stripe Subscription, plus a local status, period, and plan group |
 | Meter | Local named counter (`ai_tokens`, `api_calls`) |
 | Usage | Append-only `recording_studio_stripe_usage_entries` |
 | Extra packs | `recording_studio_stripe_allowance_purchases` after Checkout |
@@ -23,9 +23,37 @@ Stripe's shape is the shape here. A **Product** is the plan or pack. A **Price**
 
 Starter is one Product. Monthly and yearly are two Prices on that Product. Extra token packs are a separate Product with one-time Prices.
 
-`/plans` groups by Product. A Monthly / Yearly toggle picks which Price each card shows. Admin Products is one row per Product, with Add Price. Admin Prices lists every Price with the Product name, and filters by Product or interval.
+`/plans` groups by Product. A Monthly / Yearly toggle picks which Price each card shows. When the host sets `config.subscription_types`, `/plans` also sections those Products by group. Admin Products is one row per Product, with Add Price. Admin Prices lists every Price with the Product name, and filters by Product or interval.
 
 Included usage lives on the Price, not the Product. Two Prices on Starter can include different amounts, though dummy uses the same numbers for month and year. Paywalls live on the Product, so monthly and yearly Pro share the same features.
+
+## Plan groups
+
+A workspace has one Stripe Customer. It can hold one live plan per named group.
+
+```ruby
+RecordingStudioStripe.configure do |config|
+  config.subscription_types = {
+    "press_kits" => { "label" => "Press kits" },
+    "media_monitoring" => { "label" => "Media monitoring" }
+  }
+end
+```
+
+Omit that map and the gem keeps one implied group (`plan`) and one live plan, which is today's behaviour.
+
+Each plan Product belongs to one group. Starter and Pro for kits share `press_kits`. Monitoring Products share `media_monitoring`. Checkout for an empty group adds a Stripe Subscription on the same Customer. A different Product in a group you already have upgrades now or downgrades at renewal. Cancel stops that group only. Manage billing on Stripe stays one button. Stripe shows every Subscription for the Customer.
+
+```ruby
+account.billing.line(:press_kits).subscription
+account.billing.line(:press_kits).meter(:kits).remaining
+account.billing.unlocked?(:export_csv)
+account.billing.line(:press_kits).unlocked?(:export_csv)
+```
+
+Meters must go through a line when periods differ. `account.billing.subscription` is still the latest live plan. Dummy seeds Studio and Inbox so you can click both.
+
+Existing rows get type `plan`. If you configure exactly one type, `AssignSubscriptionTypes` remaps `plan` to that key on boot. If you configure more than one, assign each Product in Admin.
 
 ## Meters
 
@@ -64,7 +92,7 @@ end
 
 The gem writes those rows on boot. Staff can add more in Admin. Then tick which paywalls a **Product** opens on New Product or Edit Product. Do not put them on a Price. Extra packs skip this.
 
-The gem registers each paywall as an Accessible named action. The policy is `:view` on the recording **and** the current plan Product includes that paywall:
+The gem registers each paywall as an Accessible named action. The policy is `:view` on the recording **and** a live plan Product includes that paywall:
 
 ```ruby
 RecordingStudioAccessible.authorized_action?(
@@ -80,7 +108,7 @@ Dummy registers `generate_image` and `export_csv`, and ticks `generate_image` on
 
 ## Remaining
 
-For the current subscription period:
+For that plan's subscription period:
 
 ```text
 remaining = included + purchased - usage
@@ -92,15 +120,15 @@ Included comes from Price metadata. Purchased comes from allowance packs bought 
 
 - Higher monthly amount: update the Subscription now, `proration_behavior: always_invoice`
 - Lower monthly amount: keep the current Price, store `scheduled_price`, Stripe Subscription Schedule when keys are set
-- Cancel: `cancel_at_period_end`
+- Cancel: `cancel_at_period_end` on that group's Subscription
 
 ## Screens
 
-Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy product screens use Flatpack's rounded theme. `/plans` switches monthly and yearly with pill buttons, not a joined segmented control.
+Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy product screens use Flatpack's rounded theme. `/plans` puts monthly and yearly pills under each plan group name, left aligned, above that group's cards. A host with one implied type still uses `?interval=year`. Several types use `?interval[studio]=year` so Inbox can stay monthly. `RecordingStudioStripe::PlanIntervals` builds those hrefs.
 
-`/billing` shows **Manage billing on Stripe** above the plan card when the workspace has a Customer and the actor can `:edit`. The current plan sits in a two-column grid so it does not stretch on a wide screen. The Active badge sits above the plan name. Usage cards show percent used this period. That POST creates a Stripe Billing Portal session and redirects there. The return URL is the billing page (`success_path`). `:view` can read `/billing` and cannot open the portal. Hosts turn the portal on in the Stripe Dashboard. Do not link to dashboard.stripe.com. Do not copy invoices or cards into local tables.
+`/billing` shows **Manage billing on Stripe** above the plan cards when the workspace has a Customer and the actor can `:edit`. Each live plan group gets its own card. Usage cards show percent used this period for that group's meters. That POST creates a Stripe Billing Portal session and redirects there. The return URL is the billing page (`success_path`). `:view` can read `/billing` and cannot open the portal. Hosts turn the portal on in the Stripe Dashboard. Do not link to dashboard.stripe.com. Do not copy invoices or cards into local tables.
 
-`RecordingStudioStripe::PlansComponent` is the reusable plans block. Pass `align: :left` on a signed-in billing page and `align: :center` on a public pricing page. Dummy `/plans` is left. Dummy `/pricing` is centered and does not require a login. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Paywalls, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter, Paywall, and edit Product) live on the billing engine and link from those screens. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
+`RecordingStudioStripe::PlansComponent` is the reusable plans block. Pass `groups:` from `Catalog.plan_groups` when types are configured, with each group's own interval hrefs from `PlanIntervals`. Pass `align: :left` on a signed-in billing page and `align: :center` on a public pricing page. Dummy `/plans` is left. Dummy `/pricing` is centered and does not require a login. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Paywalls, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter, Paywall, and edit Product) live on the billing engine and link from those screens. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
 
 ## Local mode
 

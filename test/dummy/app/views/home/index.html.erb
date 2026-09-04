@@ -16,12 +16,17 @@
 
   <% recordable = current_root_recording&.recordable %>
   <% handle = recordable.respond_to?(:billing) ? recordable.billing : nil %>
-  <% subscription = handle&.subscription %>
-  <% if subscription&.active? %>
-    <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: subscription) %>
-    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
-      <% RecordingStudioStripe::Meter.order(:name).each do |meter| %>
-        <%= render RecordingStudioStripe::MeterCardComponent.new(handle: handle.meter(meter.name)) %>
+  <% lines = handle&.active_lines || [] %>
+  <% if lines.any? %>
+    <% lines.each do |line| %>
+      <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: line.subscription) %>
+      <% meters = billing_line_meters(line) %>
+      <% if meters.any? %>
+        <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
+          <% meters.each do |meter_handle| %>
+            <%= render RecordingStudioStripe::MeterCardComponent.new(handle: meter_handle) %>
+          <% end %>
+        <% end %>
       <% end %>
     <% end %>
   <% elsif recordable.is_a?(AdminRoot) %>
@@ -46,7 +51,7 @@
   <% if paywalls.any? && !recordable.is_a?(AdminRoot) %>
     <%= render FlatPack::PageTitle::Component.new(
       title: "What this plan opens",
-      subtitle: subscription&.active? ? "On this workspace, with this plan." : "Pick a plan to open these.",
+      subtitle: lines.any? ? "On this workspace, with these plans." : "Pick a plan to open these.",
       variant: :h3
     ) %>
     <%= render FlatPack::ChipGroup::Component.new do %>

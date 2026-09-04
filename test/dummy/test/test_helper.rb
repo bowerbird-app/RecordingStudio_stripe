@@ -23,6 +23,11 @@ end
 
 ActiveSupport::TestCase.include StripeBillingTestHelpers
 
+RecordingStudioStripe.configuration.secret_key = nil
+RecordingStudioStripe.configuration.publishable_key = nil
+RecordingStudioStripe.configuration.webhook_secret = nil
+RecordingStudioStripe.configuration.client = nil
+
 class ActionDispatch::IntegrationTest
   include StripeBillingTestHelpers
 

@@ -4,8 +4,11 @@ module RecordingStudioStripe
   class UsagePeriod
     attr_reader :root_recording, :meter, :starts_at, :ends_at
 
-    def self.for(root_recording:, meter:)
-      subscription = Subscription.current_for(root_recording_id: root_recording.id)
+    def self.for(root_recording:, meter:, subscription_type: nil)
+      subscription = Subscription.current_for(
+        root_recording_id: root_recording.id,
+        subscription_type: subscription_type
+      )
       starts_at, ends_at = if subscription&.current_period_start && subscription.current_period_end
                              [subscription.current_period_start, subscription.current_period_end]
                            else

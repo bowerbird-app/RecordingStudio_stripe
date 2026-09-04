@@ -35,13 +35,16 @@ module RecordingStudioStripe
       now = Time.current
       period_start = @current_period_start || now
       period_end = @current_period_end || default_period_end(period_start)
-      stripe_id = @stripe_subscription_id.presence || "sub_local_#{@root_recording.id.to_s.delete('-')}"
+      type = SubscriptionTypes.normalize(@price&.product&.subscription_type)
+      stripe_id = @stripe_subscription_id.presence || local_stripe_id(type)
 
-      subscription = Subscription.find_or_initialize_by(stripe_id: stripe_id)
+      subscription = find_subscription(stripe_id, type)
       subscription.assign_attributes(
+        stripe_id: stripe_id,
         root_recording_id: @root_recording.id,
         customer: customer,
         price: @price,
+        subscription_type: type,
         status: @status,
         cancel_at_period_end: @cancel_at_period_end,
         current_period_start: period_start,
@@ -53,6 +56,16 @@ module RecordingStudioStripe
     end
 
     private
+
+    def find_subscription(stripe_id, type)
+      Subscription.find_by(stripe_id: stripe_id) ||
+        Subscription.current_for(root_recording_id: @root_recording.id, subscription_type: type) ||
+        Subscription.new(stripe_id: stripe_id)
+    end
+
+    def local_stripe_id(type)
+      "sub_local_#{@root_recording.id.to_s.delete('-')}_#{type}"
+    end
 
     def find_or_create_customer
       if @stripe_customer_id.present?

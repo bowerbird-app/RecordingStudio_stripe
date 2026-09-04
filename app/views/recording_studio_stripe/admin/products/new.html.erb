@@ -16,6 +16,15 @@
       value: @kind,
       options: [["Plan", "plan"], ["Allowance pack", "allowance"]]
     ) %>
+    <% if RecordingStudioStripe::SubscriptionTypes.configured? %>
+      <%= render FlatPack::Select::Component.new(
+        name: "subscription_type",
+        label: "Plan group",
+        required: true,
+        value: params[:subscription_type].presence || RecordingStudioStripe::SubscriptionTypes.keys.first,
+        options: RecordingStudioStripe::SubscriptionTypes.select_options
+      ) %>
+    <% end %>
     <%= render FlatPack::TextInput::Component.new(name: "description", label: "Description", placeholder: "For teams that ship") %>
     <%= render "paywalls" %>
     <%= render FlatPack::Button::Component.new(text: "Create Product", style: :primary, size: :md, type: "submit") %>

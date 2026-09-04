@@ -5,9 +5,14 @@ module RecordingStudioStripe
     before_action :authorize_view!
 
     def index
-      @interval = params[:interval].presence_in(%w[month year]) || "month"
-      @products = Catalog.plan_products
-      @current_subscription = billing.subscription
+      intervals = RecordingStudioStripe::PlanIntervals.from(params)
+      @groups = Catalog.plan_groups.map do |group|
+        key = group[:key]
+        group.merge(
+          subscription: billing.line(key).subscription,
+          **intervals.hrefs_for(key) { |query| url_for(**query) }
+        )
+      end
     end
   end
 end

@@ -15,7 +15,10 @@ module RecordingStudioStripe
     def call
       raise InvalidPrice, "Choose a live Price" unless @price.active? && @price.recurring?
 
-      subscription = Subscription.current_for(root_recording_id: @root_recording.id)
+      subscription = Subscription.current_for(
+        root_recording_id: @root_recording.id,
+        subscription_type: SubscriptionTypes.normalize(@price.product&.subscription_type)
+      )
       raise NoSubscription, "Start a subscription first" unless subscription
 
       comparison = ComparePrices.new(from: subscription.price, to: @price)

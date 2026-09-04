@@ -4,9 +4,10 @@ module RecordingStudioStripe
   class MeterHandle
     attr_reader :root_recording, :meter
 
-    def initialize(root_recording:, meter:)
+    def initialize(root_recording:, meter:, subscription_type: nil)
       @root_recording = root_recording
       @meter = meter
+      @subscription_type = subscription_type
     end
 
     def included
@@ -42,7 +43,11 @@ module RecordingStudioStripe
     private
 
     def period
-      @period ||= UsagePeriod.for(root_recording: root_recording, meter: meter)
+      @period ||= UsagePeriod.for(
+        root_recording: root_recording,
+        meter: meter,
+        subscription_type: @subscription_type
+      )
     end
   end
 end

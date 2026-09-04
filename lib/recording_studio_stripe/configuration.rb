@@ -9,6 +9,7 @@ module RecordingStudioStripe
                   :client,
                   :meters,
                   :paywalls,
+                  :subscription_types,
                   :success_path,
                   :cancel_path,
                   :mount_path,
@@ -25,6 +26,7 @@ module RecordingStudioStripe
       @client = nil
       @meters = default_meters
       @paywalls = {}
+      @subscription_types = {}
       @success_path = "/billing"
       @cancel_path = "/plans"
       @mount_path = "/billing"
@@ -50,6 +52,7 @@ module RecordingStudioStripe
         api_version: api_version,
         meters: meters,
         paywalls: paywalls,
+        subscription_types: subscription_types,
         success_path: success_path,
         cancel_path: cancel_path,
         local_mode: local_mode?,

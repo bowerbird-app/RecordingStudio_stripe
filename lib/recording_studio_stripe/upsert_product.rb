@@ -13,11 +13,15 @@ module RecordingStudioStripe
     def call
       product = Product.find_or_initialize_by(stripe_id: @stripe_product.id)
       metadata = stringify(@stripe_product.try(:metadata))
+      type = SubscriptionTypes.normalize(
+        metadata["subscription_type"].presence || product.subscription_type
+      )
       product.assign_attributes(
         name: @stripe_product.name,
         description: @stripe_product.try(:description),
         kind: metadata["kind"].presence_in(Product::KINDS) || product.kind || "plan",
         active: @stripe_product.try(:active) != false,
+        subscription_type: type,
         metadata: metadata
       )
       product.save!

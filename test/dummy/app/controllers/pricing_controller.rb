@@ -4,8 +4,11 @@ class PricingController < ApplicationController
   skip_before_action :authenticate_user!
 
   def show
-    @interval = params[:interval].presence_in(%w[month year]) || "month"
-    @products = RecordingStudioStripe::Catalog.plan_products
+    intervals = RecordingStudioStripe::PlanIntervals.from(params)
+    @groups = RecordingStudioStripe::Catalog.plan_groups.map do |group|
+      key = group[:key]
+      group.merge(intervals.hrefs_for(key) { |query| pricing_path(**query) })
+    end
   end
 
   private

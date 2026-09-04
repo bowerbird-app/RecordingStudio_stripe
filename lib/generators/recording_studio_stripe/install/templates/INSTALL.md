@@ -5,3 +5,4 @@ Recording Studio Stripe is mounted.
 3. Run `bin/rails generate recording_studio_stripe:migrations` then `db:migrate`.
 4. Rebuild Tailwind if you use it.
 5. Plans live at /plans. Billing lives at the mount path. Webhooks at /webhooks/stripe.
+6. Optional: set config.subscription_types so a workspace can hold one live plan per group.

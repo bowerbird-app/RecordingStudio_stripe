@@ -24,10 +24,14 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Pick a plan"
+    assert_includes response.body, "Studio"
+    assert_includes response.body, "Inbox"
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
+    assert_includes response.body, "Inbox Plus"
     assert_includes response.body, "$29/month"
     assert_includes response.body, "$9/month"
+    assert_includes response.body, "$25/month"
     assert_includes response.body, "10m ai tokens"
     assert_includes response.body, "Monthly"
     assert_includes response.body, "Yearly"
@@ -39,6 +43,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='left']", count: 1
     assert_includes response.body, "justify-start"
+    assert_select "form[action*='checkout'][data-turbo=false]"
   end
 
   test "public pricing page centers the plan cards" do
@@ -47,6 +52,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Pick a plan"
+    assert_includes response.body, "Studio"
+    assert_includes response.body, "Inbox"
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
     assert_includes response.body, "$29/month"
@@ -72,8 +79,29 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
+    assert_includes response.body, "Inbox Plus"
     assert_includes response.body, "$290/year"
     assert_includes response.body, "$90/year"
+    assert_includes response.body, "$250/year"
+  end
+
+  test "plans page toggles monthly and yearly per group" do
+    get "/plans", params: { interval: { studio: "year" } }
+
+    assert_response :success
+    assert_select "[data-plan-group='studio'] [data-plan-group-heading]", count: 1
+    assert_select "[data-plan-group='inbox'] [data-plan-group-heading]", count: 1
+    assert_select "[data-plan-group-heading].items-start", count: 2
+    assert_select "[data-plan-group='studio'] a", text: "Yearly"
+    assert_select "[data-plan-group='inbox'] a", text: "Yearly"
+    assert_select "[aria-label='Studio yearly']"
+    assert_select "[aria-label='Inbox monthly']"
+    assert_includes response.body, "$290/year"
+    assert_includes response.body, "$90/year"
+    assert_includes response.body, "$25/month"
+    assert_includes response.body, "$50/month"
+    refute_includes response.body, "$250/year"
+    refute_includes response.body, "$500/year"
   end
 
   test "plans component rejects an unknown align" do
@@ -174,7 +202,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     get recording_studio_stripe.root_path
 
     assert_response :success
-    assert_includes response.body, "Usage this period"
+    assert_includes response.body, "Studio usage"
     assert_includes response.body, "AI tokens"
     assert_includes response.body, "0%"
     assert_includes response.body, "+5m ai tokens"

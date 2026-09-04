@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-09-03
+
+### Added
+- Optional `config.subscription_types` so a workspace can hold one live plan per named group on the same Stripe Customer
+- `account.billing.line(:press_kits)` for that group's subscription, meters, and paywalls
+- `Catalog.plan_groups` and `PlansComponent` `groups:` so `/plans` can section cards by type
+- Monthly and yearly pills sit under each plan group name, left aligned, above that group's cards. `PlanIntervals` keeps the other group's cadence in the URL
+- Admin plan-group picker when types are configured
+- Dummy Studio and Inbox catalogues so two live plans can be clicked in local mode
+
+### Changed
+- Checkout for an empty type adds a Stripe Subscription. A Product in a type you already have still upgrades now or downgrades at renewal
+- Cancel and resume take `subscription_type` and leave other live plans alone
+- `unlocked?` is true when any live plan Product opens that paywall
+- Meters on a line use that line's Stripe period
+- Existing Product and Subscription rows get type `plan`. If the host configures exactly one type, `AssignSubscriptionTypes` remaps `plan` to that key
+
+### Upgrade notes
+- Copy migrations with `bin/rails generate recording_studio_stripe:migrations` then `bin/rails db:migrate`
+- Hosts that omit `config.subscription_types` keep one implied type (`plan`) and one live plan
+- To sell more than one plan at once, set `config.subscription_types` and put each plan Product in a group in Admin
+- Prefer `account.billing.line(:press_kits).subscription` and `account.billing.line(:press_kits).meter(:kits).remaining`. `account.billing.subscription` is still the latest live plan
+- `account.billing.unlocked?(:export_csv)` stays the any-plan check. Use `billing.line(:press_kits).unlocked?(:export_csv)` when the paywall belongs to one group
+- Re-run dummy seeds after upgrade so Inbox plans exist
+- Hosts that render `PlansComponent` themselves should pass per-group `interval`, `monthly_href`, and `yearly_href` through `PlanIntervals`. A leftover page-level toggle still applies to groups that omit their own. `?interval=year` still sets every group
+
 ## [0.3.0] - 2026-09-02
 
 First product cut of Recording Studio Stripe. The repo started as the addon template.
@@ -49,5 +75,6 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
+[0.4.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.4.0
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.3.0
 [0.2.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.2.1

@@ -16,4 +16,10 @@ RecordingStudioStripe.configure do |config|
   #   "generate_image" => { "label" => "Generate an image" },
   #   "export_csv" => { "label" => "Export CSV" }
   # }
+  # Optional. Omit this to keep one live plan per workspace.
+  # Each plan Product belongs to one type. A workspace can hold one live plan per type.
+  # config.subscription_types = {
+  #   "press_kits" => { "label" => "Press kits" },
+  #   "media_monitoring" => { "label" => "Media monitoring" }
+  # }
 end

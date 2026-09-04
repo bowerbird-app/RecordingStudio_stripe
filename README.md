@@ -3,18 +3,19 @@
 Stripe billing for Recording Studio roots. Stripe owns money. This gem owns the Rails layer that lets a workspace decide quickly:
 
 ```ruby
-account.billing.meter(:ai_tokens).record(100_000)
-account.billing.meter(:ai_tokens).remaining
-account.billing.meter(:ai_tokens).available?(100_000)
+account.billing.line(:press_kits).meter(:kits).record(1)
+account.billing.line(:press_kits).meter(:kits).remaining
+account.billing.unlocked?(:export_csv)
 ```
 
-`remaining` is included allowance plus purchased allowance minus usage, for the current Stripe period.
+`remaining` is included allowance plus purchased allowance minus usage, for that plan's Stripe period. Omit `config.subscription_types` and `account.billing.meter(:ai_tokens)` still talks to the one live plan.
 
 This is a Stripe gem. It does not wrap other processors, invent wallets, or calculate tax. Turn Stripe Tax on in the Dashboard if you charge in the US or EU.
 
 ## What you get
 
 - Stripe Products and Prices, including monthly and annual
+- Optional plan groups (`config.subscription_types`) so one workspace can hold more than one live plan on the same Customer
 - Checkout for a Customer
 - Upgrade now with Stripe proration
 - Downgrade at the next renewal
@@ -60,24 +61,40 @@ That mounts billing at `/billing`, plans at `/plans`, and webhooks at `/webhooks
 
 Turn on the Customer Portal in the Stripe Dashboard. Manage billing on Stripe mints a portal session for the workspace Customer and sends the browser to Stripe. The gem does not copy invoices or cards. Leave keys blank in dummy and the button still shows after a local checkout, then flashes instead of calling Stripe.
 
-Render the same plan cards on a host screen:
+Render the same plan cards on a host screen. Pass `groups:` from `Catalog.plan_groups` when you sell more than one kind of plan:
 
 ```erb
+<% intervals = RecordingStudioStripe::PlanIntervals.from(params) %>
 <%= render RecordingStudioStripe::PlansComponent.new(
-  products: RecordingStudioStripe::Catalog.plan_products,
-  interval: "month",
-  subscription: account.billing.subscription,
-  align: :left,
-  monthly_href: plans_path(interval: "month"),
-  yearly_href: plans_path(interval: "year")
+  groups: RecordingStudioStripe::Catalog.plan_groups.map { |group|
+    key = group[:key]
+    group.merge(
+      subscription: account.billing.line(key).subscription,
+      **intervals.hrefs_for(key) { |query| plans_path(**query) }
+    )
+  },
+  align: :left
 ) %>
 ```
 
-Use `align: :center` on a public pricing page. Use `align: :left` on a signed-in billing page. Copy inside each card stays left either way.
+A single-type host can still pass `products:`, `subscription:`, and one pair of monthly/yearly hrefs. Use `align: :center` on a public pricing page. Use `align: :left` on a signed-in billing page. Copy inside each card stays left either way.
 
 Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave them blank in dummy to click through locally.
 
 Named usage counters default to `ai_tokens` and `api_calls`. Change `config.meters` in the initializer to add your own, then set `included_<name>` on each plan Price.
+
+To sell two plans at once, name the groups:
+
+```ruby
+RecordingStudioStripe.configure do |config|
+  config.subscription_types = {
+    "press_kits" => { "label" => "Press kits" },
+    "media_monitoring" => { "label" => "Media monitoring" }
+  }
+end
+```
+
+Each plan Product belongs to one group. A workspace holds one live Stripe Subscription per group, still one Customer. `account.billing.line(:press_kits).subscription` is that group's plan. `account.billing.unlocked?(:export_csv)` is true if any live plan opens it.
 
 Named plan features live in `config.paywalls`. The gem writes those rows on boot. Staff tick which paywalls a Product opens. Monthly and yearly Prices on the same Product share them. Extra packs do not. Then:
 
@@ -89,7 +106,7 @@ RecordingStudioAccessible.authorized_action?(
 )
 ```
 
-That is true when the actor has `:view` on the workspace root **and** the current plan Product includes that paywall. Meter spend stays `available?` / `record`. Buying Pro does not grant `:admin`.
+That is true when the actor has `:view` on the workspace root **and** a live plan Product includes that paywall. Meter spend stays `available?` / `record`. Buying Pro does not grant `:admin`.
 
 ### Admin
 
@@ -119,7 +136,7 @@ meter=ai_tokens
 allowance=5000000
 ```
 
-One Product per plan. Monthly and annual are Prices on that Product. Extra packs are a separate Product. `/plans` groups by Product and toggles interval. Admin Prices shows the Product name and filters by Product or interval.
+One Product per plan. Monthly and annual are Prices on that Product. Extra packs are a separate Product. `/plans` groups by Product, then by plan group when `config.subscription_types` is set. Admin Prices shows the Product name and filters by Product or interval.
 
 ## Webhooks
 
@@ -133,4 +150,4 @@ Checkout return URLs do not fulfil anything. Stripe events do.
 
 ## Dummy
 
-`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Admin is `/admin`.
+`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro) and Inbox (Inbox, Inbox Plus) so one workspace can hold two live plans. Admin is `/admin`.

@@ -35,6 +35,7 @@ module RecordingStudioStripe
     def billing
       @billing ||= RecordingStudioStripe::Billing.new(root_recording: current_billing_root)
     end
+    helper_method :billing
 
     def authorize_view!
       authorize_role!(:view)
