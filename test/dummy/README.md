@@ -7,7 +7,7 @@ Sign in with `admin@admin.com` / `Password`.
 ## Routes
 
 - `/` — current workspace plan, usage, and what the plan opens
-- `/plans` — Products and Prices, left aligned, with a monthly/yearly toggle on each plan group
+- `/plans` — Products and Prices, left aligned, with a monthly/yearly toggle under each plan group name
 - `/pricing` — the same plan cards, centered, no login
 - `/billing` — one card per live plan group, usage percent, extra packs, and Manage billing on Stripe (Customer Portal)
 - `/admin` — Stripe admin section. The Admin button switches to Studio Admin first, because Admin authorizes against that root.

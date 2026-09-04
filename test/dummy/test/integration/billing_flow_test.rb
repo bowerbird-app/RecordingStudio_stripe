@@ -89,8 +89,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     get "/plans", params: { interval: { studio: "year" } }
 
     assert_response :success
-    assert_select "[data-plan-group='studio']", count: 1
-    assert_select "[data-plan-group='inbox']", count: 1
+    assert_select "[data-plan-group='studio'] [data-plan-group-heading]", count: 1
+    assert_select "[data-plan-group='inbox'] [data-plan-group-heading]", count: 1
+    assert_select "[data-plan-group-heading].items-start", count: 2
     assert_select "[data-plan-group='studio'] a", text: "Yearly"
     assert_select "[data-plan-group='inbox'] a", text: "Yearly"
     assert_select "[aria-label='Studio yearly']"

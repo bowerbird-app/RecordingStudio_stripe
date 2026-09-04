@@ -124,7 +124,7 @@ Included comes from Price metadata. Purchased comes from allowance packs bought 
 
 ## Screens
 
-Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy product screens use Flatpack's rounded theme. `/plans` puts monthly and yearly pills on each plan group, not once for the whole page. A host with one implied type still uses `?interval=year`. Several types use `?interval[studio]=year` so Inbox can stay monthly. `RecordingStudioStripe::PlanIntervals` builds those hrefs.
+Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy product screens use Flatpack's rounded theme. `/plans` puts monthly and yearly pills under each plan group name, left aligned, above that group's cards. A host with one implied type still uses `?interval=year`. Several types use `?interval[studio]=year` so Inbox can stay monthly. `RecordingStudioStripe::PlanIntervals` builds those hrefs.
 
 `/billing` shows **Manage billing on Stripe** above the plan cards when the workspace has a Customer and the actor can `:edit`. Each live plan group gets its own card. Usage cards show percent used this period for that group's meters. That POST creates a Stripe Billing Portal session and redirects there. The return URL is the billing page (`success_path`). `:view` can read `/billing` and cannot open the portal. Hosts turn the portal on in the Stripe Dashboard. Do not link to dashboard.stripe.com. Do not copy invoices or cards into local tables.
 

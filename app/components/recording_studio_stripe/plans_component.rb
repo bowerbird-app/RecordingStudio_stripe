@@ -82,16 +82,16 @@ module RecordingStudioStripe
       pills = interval_pills(interval, monthly_href, yearly_href, label)
       return pills if label.blank?
 
-      helpers.tag.div(class: heading_row_class) do
+      helpers.tag.div(class: heading_stack_class, data: { plan_group_heading: true }) do
         helpers.safe_join([section_title(label), pills].compact)
       end
     end
 
-    def heading_row_class
+    def heading_stack_class
       if @align == :center
-        "flex w-full flex-wrap items-center justify-center gap-4"
+        "flex w-full flex-col items-center gap-3"
       else
-        "flex w-full flex-wrap items-center justify-between gap-4"
+        "flex w-full flex-col items-start gap-3"
       end
     end
 

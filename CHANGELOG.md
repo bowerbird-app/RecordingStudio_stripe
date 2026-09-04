@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional `config.subscription_types` so a workspace can hold one live plan per named group on the same Stripe Customer
 - `account.billing.line(:press_kits)` for that group's subscription, meters, and paywalls
 - `Catalog.plan_groups` and `PlansComponent` `groups:` so `/plans` can section cards by type
-- Monthly and yearly pills sit on each plan group, not once for the whole page. `PlanIntervals` keeps the other group's cadence in the URL
+- Monthly and yearly pills sit under each plan group name, left aligned, above that group's cards. `PlanIntervals` keeps the other group's cadence in the URL
 - Admin plan-group picker when types are configured
 - Dummy Studio and Inbox catalogues so two live plans can be clicked in local mode
 
