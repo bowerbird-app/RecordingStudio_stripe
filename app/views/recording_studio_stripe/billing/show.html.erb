@@ -26,6 +26,9 @@
       <% end %>
       <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
         <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: line.subscription) %>
+        <% billing_line_limits(line).each do |handle| %>
+          <%= render RecordingStudioStripe::LimitCardComponent.new(handle: handle) %>
+        <% end %>
       <% end %>
       <% meters = billing_line_meters(line) %>
       <% if meters.any? %>

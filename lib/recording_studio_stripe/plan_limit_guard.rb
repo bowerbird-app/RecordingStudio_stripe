@@ -1,0 +1,50 @@
+# frozen_string_literal: true
+
+module RecordingStudioStripe
+  module PlanLimitGuard
+    extend ActiveSupport::Concern
+
+    included do
+      before_create :recording_studio_stripe_enforce_plan_limit
+      before_update :recording_studio_stripe_enforce_plan_limit_on_restore
+    end
+
+    private
+
+    def recording_studio_stripe_enforce_plan_limit
+      return unless Limits.configured?
+      return unless Limits.covers_type?(recordable_type)
+
+      root = recording_studio_stripe_limit_root
+      return unless root
+
+      Limits.for_recordable_type(recordable_type).each do |definition|
+        handle = LimitHandle.new(
+          root_recording: root,
+          name: definition.name,
+          subscription_type: definition.subscription_type
+        )
+        next if handle.available?(1)
+
+        raise PlanLimitReached.new(handle: handle)
+      end
+    end
+
+    def recording_studio_stripe_enforce_plan_limit_on_restore
+      return unless self.class.column_names.include?("trashed_at")
+      return unless will_save_change_to_trashed_at?
+      return unless trashed_at.nil?
+      return if trashed_at_in_database.nil?
+
+      recording_studio_stripe_enforce_plan_limit
+    end
+
+    def recording_studio_stripe_limit_root
+      return root_recording if root_recording.present?
+      return self.class.find_by(id: root_recording_id) if root_recording_id.present?
+      return parent_recording.root_recording || parent_recording if parent_recording
+
+      self.class.find_by(id: parent_recording_id)
+    end
+  end
+end

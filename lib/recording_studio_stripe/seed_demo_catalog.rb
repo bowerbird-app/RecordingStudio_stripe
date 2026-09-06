@@ -14,6 +14,12 @@ module RecordingStudioStripe
       pro = upsert_product("Pro", "plan", "The usual working plan.", studio_type)
       tokens = upsert_product("AI token packs", "allowance", "Extra AI tokens for this period.")
       pro.assign_paywalls(%w[generate_image])
+      if Limits.known?("press_kits")
+        starter.assign_limits("press_kits" => 3)
+        starter.save!
+        pro.assign_limits("press_kits" => 10)
+        pro.save!
+      end
       seed_inbox_plans if typed?("inbox")
       RegisterPaywallActions.call
 

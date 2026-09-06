@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-09-07
+
+### Added
+- Optional `config.limits` so a plan can cap how many of a recordable type exist under the workspace (not trashed)
+- `account.billing.limit(:press_kits)` with `included`, `used`, `remaining`, `available?`, and `over?`
+- Product metadata `limit_<name>` (Admin integer fields). Monthly and yearly of the same plan share the number
+- Recording `before_create` / restore-from-trash gate that raises `RecordingStudioStripe::PlanLimitReached`
+- HTML rescue redirects to `/plans` with a human flash. JSON is 403 `{ code: "plan_limit_reached" }`
+- Plan cards and `/billing` show the standing cap next to meter usage
+- Dummy Press kits: Starter 3, Pro 10. A fourth create on Starter goes to `/plans`
+
+### Upgrade notes
+- Omit `config.limits` and nothing changes. No extra Stripe gem migrations
+- To cap a type, set `config.limits` and the count on each plan Product in Admin (`limit_press_kits` metadata)
+- `subscription_type` on a limit is optional: a matching plan group name wins, otherwise the first group
+- Missing or 0 means none on that plan. Downgrades do not delete extras; `over?` is true until someone archives
+- Do not `record` meter usage for these caps. Accessible stays access. This is billing
+- Dummy hosts need a `press_kits` table (dummy migration) and `PressKit` on `config.recordable_types`
+
 ## [0.4.0] - 2026-09-03
 
 ### Added
@@ -75,6 +94,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
+[0.5.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.5.0
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.4.0
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.3.0
 [0.2.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.2.1

@@ -48,5 +48,21 @@ module RecordingStudioStripe
 
       handles.select { |handle| handle.included.positive? || handle.purchased.positive? || handle.usage.positive? }
     end
+
+    def billing_line_limits(line)
+      RecordingStudioStripe::Limits.for_subscription_type(line.subscription_type).filter_map do |definition|
+        handle = line.limit(definition.name)
+        handle if handle.included.positive? || handle.used.positive?
+      end
+    end
+
+    def limit_field_value(name)
+      submitted = params.dig(:limits, name)
+      return submitted unless submitted.nil?
+      return unless defined?(@product) && @product
+
+      quantity = @product.limit_quantity(name)
+      quantity.positive? ? quantity.to_s : nil
+    end
   end
 end

@@ -6,7 +6,7 @@ Sign in with `admin@admin.com` / `Password`.
 
 ## Routes
 
-- `/` — current workspace plan, usage, and what the plan opens
+- `/` — current workspace plan, press kits, usage, and what the plan opens
 - `/plans` — Products and Prices, left aligned, with a monthly/yearly toggle under each plan group name
 - `/pricing` — the same plan cards, centered, no login
 - `/billing` — one card per live plan group, usage percent, extra packs, and Manage billing on Stripe (Customer Portal)
@@ -19,3 +19,5 @@ Local mode (no `STRIPE_SECRET_KEY`) writes Customers and Subscriptions in the du
 Authenticated pages use a dummy copy of Recording Studio `default_layout` with `html data-theme="rounded"`. Recording Studio puts that attribute on `body`, which does not override Flatpack `:root` tokens. Dummy `config/importmap.rb` pins Turbo and Recording Studio Admin screen controllers so product tables load.
 
 Dummy registers `generate_image` and `export_csv` paywalls. Pro opens image generation. Inbox Plus opens CSV export. Home shows those as chips.
+
+Dummy also registers a `press_kits` standing limit on Studio plans. Starter includes 3. Pro includes 10. Home lists press kits and an add form. Creating past the cap sends you to `/plans`.

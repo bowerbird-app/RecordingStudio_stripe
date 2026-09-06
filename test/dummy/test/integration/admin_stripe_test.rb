@@ -87,13 +87,16 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "What this plan opens"
     assert_includes response.body, "Generate an image"
     assert_includes response.body, "Plan group"
+    assert_includes response.body, "How many they can keep"
+    assert_includes response.body, "Press kits"
 
     assert_difference -> { RecordingStudioStripe::Product.count }, 1 do
       post RecordingStudioStripe.configuration.mount_path + "/admin/products", params: {
         name: "Studio",
         kind: "plan",
         description: "For people who ship every week.",
-        paywall_names: %w[generate_image export_csv]
+        paywall_names: %w[generate_image export_csv],
+        limits: { press_kits: 4 }
       }
     end
 
@@ -102,6 +105,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     product = RecordingStudioStripe::Product.find_by!(name: "Studio")
     assert_equal "studio", product.subscription_type
     assert_equal %w[export_csv generate_image], product.paywalls.order(:name).pluck(:name)
+    assert_equal 4, product.limit_quantity("press_kits")
   end
 
   test "staff can edit a Product and tick paywalls" do
@@ -114,11 +118,13 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     patch RecordingStudioStripe.configuration.mount_path + "/admin/products/#{starter.id}", params: {
       name: "Starter",
       description: starter.description,
-      paywall_names: %w[export_csv]
+      paywall_names: %w[export_csv],
+      limits: { press_kits: 5 }
     }
 
     follow_redirect!
     assert_equal %w[export_csv], starter.reload.paywalls.order(:name).pluck(:name)
+    assert_equal 5, starter.limit_quantity("press_kits")
   end
 
   test "allowance Products ignore paywall ticks" do

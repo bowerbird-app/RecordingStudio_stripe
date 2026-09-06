@@ -3,7 +3,7 @@
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
     title: current_root_recording&.recordable&.try(:name) || "This workspace",
-    subtitle: "Plans, usage, and Stripe billing for the selected workspace.",
+    subtitle: "Plans, press kits, and billing for this workspace.",
     variant: :h1
   ) %>
 
@@ -19,7 +19,12 @@
   <% lines = handle&.active_lines || [] %>
   <% if lines.any? %>
     <% lines.each do |line| %>
-      <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: line.subscription) %>
+      <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
+        <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: line.subscription) %>
+        <% billing_line_limits(line).each do |limit_handle| %>
+          <%= render RecordingStudioStripe::LimitCardComponent.new(handle: limit_handle) %>
+        <% end %>
+      <% end %>
       <% meters = billing_line_meters(line) %>
       <% if meters.any? %>
         <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
@@ -44,6 +49,24 @@
       <% empty.slot do %>
         <%= render FlatPack::Button::Component.new(text: "See plans", style: :primary, size: :md, href: plans_path) %>
       <% end %>
+    <% end %>
+  <% end %>
+
+  <% if dummy_show_press_kits? %>
+    <%= render FlatPack::SectionTitle::Component.new(title: "Press kits", subtitle: dummy_press_kits_subtitle) %>
+    <% kits = dummy_press_kit_recordings %>
+    <% if kits.any? %>
+      <%= render FlatPack::List::Component.new(divider: true) do %>
+        <% kits.each do |recording| %>
+          <%= render FlatPack::List::Item.new(icon: :queue_list) do %>
+            <%= recording.recordable.name %>
+          <% end %>
+        <% end %>
+      <% end %>
+    <% end %>
+    <%= form_with url: press_kits_path, method: :post, local: true, class: "flex max-w-xl flex-col gap-4" do %>
+      <%= render FlatPack::TextInput::Component.new(name: "name", label: "Name", required: true, placeholder: "Launch kit") %>
+      <%= render FlatPack::Button::Component.new(text: "Add press kit", style: :primary, size: :md, type: "submit") %>
     <% end %>
   <% end %>
 

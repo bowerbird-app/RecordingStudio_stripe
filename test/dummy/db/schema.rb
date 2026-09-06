@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_03_220000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_07_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -30,6 +30,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_220000) do
   create_table "pages", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "title"
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "press_kits", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name"
     t.datetime "updated_at", null: false
   end
 
@@ -202,7 +208,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_03_220000) do
     t.index ["price_id"], name: "index_recording_studio_stripe_subscriptions_on_price_id"
     t.index ["root_recording_id", "status"], name: "idx_on_root_recording_id_status_0c1c783865"
     t.index ["root_recording_id", "subscription_type", "status"], name: "idx_rs_stripe_sub_root_type_status"
-    t.index ["root_recording_id", "subscription_type"], name: "idx_rs_stripe_one_live_sub_per_type", unique: true, where: "((status)::text = ANY ((ARRAY['active'::character varying, 'trialing'::character varying, 'past_due'::character varying])::text[]))"
+    t.index ["root_recording_id", "subscription_type"], name: "idx_rs_stripe_one_live_sub_per_type", unique: true, where: "((status)::text = ANY (ARRAY[('active'::character varying)::text, ('trialing'::character varying)::text, ('past_due'::character varying)::text]))"
     t.index ["scheduled_price_id"], name: "idx_on_scheduled_price_id_2cf55663e2"
     t.index ["stripe_id"], name: "index_recording_studio_stripe_subscriptions_on_stripe_id", unique: true
   end

@@ -14,8 +14,9 @@ Stripe is the source of truth for Products, Prices, Customers, Subscriptions, in
 | Extra packs | `recording_studio_stripe_allowance_purchases` after Checkout |
 | Invoices, cards | Stripe Customer Portal. Not copied locally |
 | Paywall | Local named feature (`generate_image`). Staff tick them on a plan Product |
+| Limit | Config name plus Product metadata (`limit_press_kits`). Count of live recordings of that type |
 
-Usage is a fact table, not a Recording. High volume stays off the tree. Paywalls are not Recordings either.
+Usage is a fact table, not a Recording. High volume stays off the tree. Paywalls and limits are not Recordings either.
 
 ## Products and Prices
 
@@ -25,7 +26,7 @@ Starter is one Product. Monthly and yearly are two Prices on that Product. Extra
 
 `/plans` groups by Product. A Monthly / Yearly toggle picks which Price each card shows. When the host sets `config.subscription_types`, `/plans` also sections those Products by group. Admin Products is one row per Product, with Add Price. Admin Prices lists every Price with the Product name, and filters by Product or interval.
 
-Included usage lives on the Price, not the Product. Two Prices on Starter can include different amounts, though dummy uses the same numbers for month and year. Paywalls live on the Product, so monthly and yearly Pro share the same features.
+Included usage lives on the Price, not the Product. Two Prices on Starter can include different amounts, though dummy uses the same numbers for month and year. Paywalls and standing limits live on the Product, so monthly and yearly Pro share the same features and the same press-kit cap.
 
 ## Plan groups
 
@@ -106,6 +107,41 @@ Meter spend stays `available?` / `record`. Buying a plan does not grant `:admin`
 
 Dummy registers `generate_image` and `export_csv`, and ticks `generate_image` on Pro only.
 
+## Limits
+
+A limit is how many of a recordable type can exist under the workspace right now. It is not a meter. Meters spend this Stripe period and reset. Limits count live recordings of that type (not trashed) and do not reset.
+
+```ruby
+RecordingStudioStripe.configure do |config|
+  config.limits = {
+    "press_kits" => {
+      "label" => "Press kits",
+      "recordable_type" => "PressKit",
+      "subscription_type" => "studio"
+    }
+  }
+end
+```
+
+Omit that map and the gem never gates creates. The number lives on the **Product** as `limit_<name>` metadata, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. Admin New Product and Edit Product show one integer field per configured limit.
+
+```ruby
+kits = account.billing.limit(:press_kits)
+kits.included
+kits.used
+kits.remaining
+kits.available?(1)
+kits.over?
+```
+
+`line(:studio).limit(:press_kits)` is the same handle scoped to that group's live plan. `used` is `Recording.for_root(workspace).of_type("PressKit")` where `trashed_at` is nil.
+
+Creating another of that type is blocked at the Recording. `revise` does not consume a slot. Restore from trash does, because used ignores trashed rows. The gem raises `RecordingStudioStripe::PlanLimitReached`. HTML redirects to `/plans`. JSON is 403 `{ "code": "plan_limit_reached" }`. Dummy copy: “Pick a plan to add press kits.” or “Starter includes 3 press kits. Upgrade, or archive one.”
+
+Downgrades do not delete extras. `over?` is true and `available?` is false until they archive. Accessible stays access. Do not `record` usage for these caps.
+
+Dummy seeds Starter at 3 and Pro at 10 on Studio. Inbox plans do not include press kits. Home lists kits and the add form.
+
 ## Remaining
 
 For that plan's subscription period:
@@ -126,7 +162,7 @@ Included comes from Price metadata. Purchased comes from allowance packs bought 
 
 Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy product screens use Flatpack's rounded theme. `/plans` puts monthly and yearly pills under each plan group name, left aligned, above that group's cards. A host with one implied type still uses `?interval=year`. Several types use `?interval[studio]=year` so Inbox can stay monthly. `RecordingStudioStripe::PlanIntervals` builds those hrefs.
 
-`/billing` shows **Manage billing on Stripe** above the plan cards when the workspace has a Customer and the actor can `:edit`. Each live plan group gets its own card. Usage cards show percent used this period for that group's meters. That POST creates a Stripe Billing Portal session and redirects there. The return URL is the billing page (`success_path`). `:view` can read `/billing` and cannot open the portal. Hosts turn the portal on in the Stripe Dashboard. Do not link to dashboard.stripe.com. Do not copy invoices or cards into local tables.
+`/billing` shows **Manage billing on Stripe** above the plan cards when the workspace has a Customer and the actor can `:edit`. Each live plan group gets its own card. Standing caps sit next to that card. Usage cards show percent used this period for that group's meters. That POST creates a Stripe Billing Portal session and redirects there. The return URL is the billing page (`success_path`). `:view` can read `/billing` and cannot open the portal. Hosts turn the portal on in the Stripe Dashboard. Do not link to dashboard.stripe.com. Do not copy invoices or cards into local tables.
 
 `RecordingStudioStripe::PlansComponent` is the reusable plans block. Pass `groups:` from `Catalog.plan_groups` when types are configured, with each group's own interval hrefs from `PlanIntervals`. Pass `align: :left` on a signed-in billing page and `align: :center` on a public pricing page. Dummy `/plans` is left. Dummy `/pricing` is centered and does not require a login. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Paywalls, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter, Paywall, and edit Product) live on the billing engine and link from those screens. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
 

@@ -21,6 +21,7 @@
     <%= render FlatPack::TextInput::Component.new(name: "description", label: "Description", value: @product.description) %>
     <% if @product.plan? %>
       <%= render "paywalls" %>
+      <%= render "limits" %>
     <% end %>
     <%= render FlatPack::Button::Component.new(text: "Save Product", style: :primary, size: :md, type: "submit") %>
   <% end %>

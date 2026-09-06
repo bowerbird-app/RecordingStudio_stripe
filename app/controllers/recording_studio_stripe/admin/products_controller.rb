@@ -14,7 +14,8 @@ module RecordingStudioStripe
           kind: params.require(:kind),
           description: params[:description],
           paywall_names: Array(params[:paywall_names]),
-          subscription_type: params[:subscription_type]
+          subscription_type: params[:subscription_type],
+          limits: product_limits
         )
         redirect_to admin_screen_url("products"), notice: "#{product.name} is on the catalogue."
       rescue InvalidPrice, ActiveRecord::RecordInvalid => e
@@ -36,13 +37,23 @@ module RecordingStudioStripe
           name: params.require(:name),
           description: params[:description],
           paywall_names: Array(params[:paywall_names]),
-          subscription_type: params[:subscription_type]
+          subscription_type: params[:subscription_type],
+          limits: product_limits
         )
         redirect_to admin_screen_url("products"), notice: "#{@product.name} is saved."
       rescue InvalidPrice, ActiveRecord::RecordInvalid => e
         flash.now[:alert] = e.message
         @selected_paywall_names = Array(params[:paywall_names])
         render :edit, status: :unprocessable_entity
+      end
+
+      private
+
+      def product_limits
+        return {} unless Limits.configured?
+        return {} unless params[:limits]
+
+        params.require(:limits).permit(*Limits.keys).to_h
       end
     end
   end

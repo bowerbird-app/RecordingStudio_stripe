@@ -23,6 +23,7 @@ Metrics/ClassLength:
   Exclude:
     - 'test/**/*'
     - 'db/migrate/**/*'
+    - 'lib/recording_studio_stripe/engine.rb'
 
 Metrics/ModuleLength:
   Max: 150

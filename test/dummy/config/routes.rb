@@ -27,6 +27,7 @@ Rails.application.routes.draw do
   get "docs/gem_views", to: "docs#gem_views", as: :docs_gem_views
   get "docs/methods", to: "docs#methods", as: :docs_methods
   get "pricing", to: "pricing#show", as: :pricing
+  resources :press_kits, only: %i[create]
 
   # Defines the root path route ("/")
   root "home#index"

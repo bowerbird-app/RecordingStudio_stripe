@@ -77,6 +77,11 @@ class ConfigurationTest < Minitest::Test
     assert_includes @configuration.to_h.keys, :paywalls
   end
 
+  def test_default_limits_are_empty
+    assert_equal({}, @configuration.limits)
+    assert_includes @configuration.to_h.keys, :limits
+  end
+
   def test_default_subscription_types_are_empty
     assert_equal({}, @configuration.subscription_types)
     assert_includes @configuration.to_h.keys, :subscription_types

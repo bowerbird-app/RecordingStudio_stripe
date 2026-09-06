@@ -72,6 +72,8 @@ class RecordingStudioTemplateTest < ActiveSupport::TestCase
     refute RecordingStudio.capability_enabled?(:accessible, for: Page)
     refute RecordingStudio.capability_enabled?(:stripe, for: Folder)
     refute RecordingStudio.capability_enabled?(:stripe, for: Page)
+    refute RecordingStudio.capability_enabled?(:stripe, for: PressKit)
+    refute RecordingStudio.capability_enabled?(:accessible, for: PressKit)
     assert_includes ApplicationController.ancestors, RecordingStudio::UsesDefaultLayout
   end
 end

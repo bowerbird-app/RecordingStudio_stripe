@@ -33,6 +33,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "$9/month"
     assert_includes response.body, "$25/month"
     assert_includes response.body, "10m ai tokens"
+    assert_includes response.body, "3 press kits"
+    assert_includes response.body, "10 press kits"
     assert_includes response.body, "Monthly"
     assert_includes response.body, "Yearly"
     assert_includes response.body, "[border-radius:var(--tabs-pill-corner-radius)]"

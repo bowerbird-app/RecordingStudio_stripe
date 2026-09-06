@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.4.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.5.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -109,6 +109,7 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes initializer_source, "config.require_recordable_declarations = true"
     assert_includes initializer_source, "AdminRoot"
+    assert_includes initializer_source, "PressKit"
     refute_includes initializer_source, "v3"
   end
 
@@ -118,6 +119,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "RecordingStudioStripe"
     assert_includes readme, "remaining"
     assert_includes readme, "config.paywalls"
+    assert_includes readme, "config.limits"
     assert_includes readme, "authorized_action?"
     assert_includes readme, "Customer Portal"
     refute_includes readme, "ExampleService"
@@ -131,6 +133,9 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes initializer, "export_csv"
     assert_includes initializer, "config.subscription_types"
     assert_includes initializer, "studio"
+    assert_includes initializer, "config.limits"
+    assert_includes initializer, "press_kits"
+    assert_includes initializer, "PressKit"
   end
 
   def test_install_initializer_template_documents_paywalls
@@ -141,6 +146,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes template, "config.paywalls"
     assert_includes template, "generate_image"
     assert_includes template, "config.subscription_types"
+    assert_includes template, "config.limits"
+    assert_includes template, "recordable_type"
   end
 
   def test_billing_docs_explain_paywalls
@@ -152,6 +159,10 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "Do not put them on a Price"
     assert_includes docs, "## Plan groups"
     assert_includes docs, "config.subscription_types"
+    assert_includes docs, "## Limits"
+    assert_includes docs, "config.limits"
+    assert_includes docs, "PlanLimitReached"
+    assert_includes docs, "limit_press_kits"
   end
 
   def test_billing_docs_explain_customer_portal
@@ -168,6 +179,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "Manage billing on Stripe"
     assert_includes view_source, 'icon: "credit-card"'
     assert_includes view_source, "portal_path"
+    assert_includes view_source, "LimitCardComponent"
     assert_match(/Grid::Component.new\(cols: 2.*CurrentPlanComponent/m, view_source)
     refute_includes view_source, "dashboard.stripe.com"
   end
@@ -197,6 +209,15 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "Public pricing"
     assert_includes view_source, "What this plan opens"
     assert_includes view_source, "dummy_paywall_open?"
+    assert_includes view_source, "Add press kit"
+    assert_includes view_source, "press_kits_path"
+  end
+
+  def test_plan_card_lists_product_limits_before_meter_inclusions
+    source = File.read(File.expand_path("../app/components/recording_studio_stripe/plan_card_component.rb", __dir__))
+
+    assert_includes source, "limit_inclusion_lines"
+    assert_includes source, "meter_inclusion_lines"
   end
 
   def test_plans_component_aligns_left_or_center

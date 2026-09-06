@@ -2,24 +2,26 @@
 
 module RecordingStudioStripe
   class CreateProduct
-    def self.call(name:, kind:, description: nil, active: true, paywall_names: [], subscription_type: nil)
+    def self.call(name:, kind:, description: nil, active: true, paywall_names: [], subscription_type: nil, limits: {})
       new(
         name: name,
         kind: kind,
         description: description,
         active: active,
         paywall_names: paywall_names,
-        subscription_type: subscription_type
+        subscription_type: subscription_type,
+        limits: limits
       ).call
     end
 
-    def initialize(name:, kind:, description:, active:, paywall_names:, subscription_type:)
+    def initialize(name:, kind:, description:, active:, paywall_names:, subscription_type:, limits:)
       @name = name
       @kind = kind
       @description = description
       @active = active
       @paywall_names = paywall_names
       @subscription_type = subscription_type
+      @limits = limits
     end
 
     def call
@@ -29,7 +31,7 @@ module RecordingStudioStripe
       raise InvalidPrice, "Unknown plan group" if @kind == "plan" && !SubscriptionTypes.known?(type)
 
       stripe_id = create_stripe_id(type)
-      product = Product.create!(
+      product = Product.new(
         stripe_id: stripe_id,
         name: @name,
         description: @description,
@@ -38,6 +40,8 @@ module RecordingStudioStripe
         subscription_type: type,
         metadata: { "kind" => @kind, "subscription_type" => type }
       )
+      product.assign_limits(@limits)
+      product.save!
       product.assign_paywalls(@paywall_names)
       product
     end
@@ -51,10 +55,23 @@ module RecordingStudioStripe
         {
           name: @name,
           description: @description,
-          metadata: { kind: @kind, subscription_type: type }
+          metadata: stripe_metadata(type)
         }
       )
       result.id
+    end
+
+    def stripe_metadata(type)
+      data = { kind: @kind, subscription_type: type }
+      return data if @kind != "plan"
+
+      @limits.to_h.stringify_keys.each do |name, value|
+        next if value.blank? || !Limits.known?(name)
+        next unless Limits.fetch(name).subscription_type == type
+
+        data["limit_#{name}"] = value.to_i.to_s
+      end
+      data
     end
   end
 end

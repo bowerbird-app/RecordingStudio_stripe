@@ -9,6 +9,7 @@ module RecordingStudioStripe
                   :client,
                   :meters,
                   :paywalls,
+                  :limits,
                   :subscription_types,
                   :success_path,
                   :cancel_path,
@@ -26,6 +27,7 @@ module RecordingStudioStripe
       @client = nil
       @meters = default_meters
       @paywalls = {}
+      @limits = {}
       @subscription_types = {}
       @success_path = "/billing"
       @cancel_path = "/plans"
@@ -52,6 +54,7 @@ module RecordingStudioStripe
         api_version: api_version,
         meters: meters,
         paywalls: paywalls,
+        limits: limits,
         subscription_types: subscription_types,
         success_path: success_path,
         cancel_path: cancel_path,

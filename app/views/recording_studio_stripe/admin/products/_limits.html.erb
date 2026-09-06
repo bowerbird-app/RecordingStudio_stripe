@@ -1,0 +1,17 @@
+<% if RecordingStudioStripe::Limits.configured? && @kind != "allowance" && (@product.nil? || @product.plan?) %>
+  <% selected_type = @product&.subscription_type.presence || params[:subscription_type].presence || RecordingStudioStripe::SubscriptionTypes.keys.first %>
+  <div class="flex flex-col gap-2">
+    <p class="text-sm font-medium text-[var(--surface-content-color)]">How many they can keep</p>
+    <p class="text-sm text-[var(--surface-muted-content-color)]">Monthly and yearly share these. Leave blank for none.</p>
+    <% RecordingStudioStripe::Limits.all.each do |definition| %>
+      <% next unless definition.subscription_type == selected_type %>
+      <%= render FlatPack::TextInput::Component.new(
+        name: "limits[#{definition.name}]",
+        label: definition.label,
+        value: limit_field_value(definition.name),
+        placeholder: "3",
+        help_text: "How many #{definition.label.downcase} can exist on this plan."
+      ) %>
+    <% end %>
+  </div>
+<% end %>
