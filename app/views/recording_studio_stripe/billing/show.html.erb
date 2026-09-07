@@ -52,7 +52,7 @@
   <% else %>
     <%= render FlatPack::EmptyState::Component.new(
       title: "No plan yet",
-      description: "Pick a plan when you’re ready. Usage stays at zero until then.",
+      description: "Pick a plan when you’re ready. Usage still counts if you record it.",
       icon: :inbox
     ) do |empty| %>
       <% empty.slot do %>

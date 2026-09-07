@@ -26,6 +26,7 @@ class WebhooksTest < ActionDispatch::IntegrationTest
            {
              "id" => "cs_test_allowance",
              "mode" => "payment",
+             "payment_status" => "paid",
              "client_reference_id" => @root.id.to_s,
              "metadata" => {
                "root_recording_id" => @root.id.to_s,
@@ -106,6 +107,7 @@ class WebhooksTest < ActionDispatch::IntegrationTest
            {
              "id" => "cs_test_sub",
              "mode" => "subscription",
+             "payment_status" => "paid",
              "subscription" => "sub_from_checkout",
              "customer" => "cus_from_checkout",
              "client_reference_id" => @root.id.to_s,
@@ -160,6 +162,7 @@ class WebhooksTest < ActionDispatch::IntegrationTest
            {
              "id" => "cs_keep_periods",
              "mode" => "subscription",
+             "payment_status" => "paid",
              "subscription" => "sub_keep_periods",
              "customer" => "cus_keep_periods",
              "client_reference_id" => @root.id.to_s,
@@ -278,7 +281,7 @@ class WebhooksTest < ActionDispatch::IntegrationTest
 
   private
 
-  def stripe_event(id, type, object)
-    { "id" => id, "object" => "event", "type" => type, "data" => { "object" => object } }
+  def stripe_event(id, type, object, created: 1_700_000_000)
+    { "id" => id, "object" => "event", "type" => type, "created" => created, "data" => { "object" => object } }
   end
 end

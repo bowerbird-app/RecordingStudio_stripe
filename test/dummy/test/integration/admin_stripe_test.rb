@@ -181,4 +181,54 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_equal 2_500_000, price.included_quantity("ai_tokens")
     assert_equal 20_000, price.included_quantity("api_calls")
   end
+
+  test "staff can create a Price from the engine form" do
+    product = RecordingStudioStripe::Product.find_by!(name: "Starter")
+    get RecordingStudioStripe.configuration.mount_path + "/admin/prices/new", params: { product_id: product.id }
+
+    assert_response :success
+    assert_includes response.body, "Amount in cents"
+
+    assert_difference -> { RecordingStudioStripe::Price.count }, 1 do
+      post RecordingStudioStripe.configuration.mount_path + "/admin/prices", params: {
+        product_id: product.id,
+        unit_amount: "1500",
+        currency: "usd",
+        interval: "month",
+        included: { ai_tokens: "1000", api_calls: "10" }
+      }
+    end
+
+    price = RecordingStudioStripe::Price.order(:created_at).last
+    assert_equal 1500, price.unit_amount
+    assert_equal "month", price.interval
+    assert_equal 1000, price.included_quantity("ai_tokens")
+  end
+
+  test "staff can create a meter from the engine form" do
+    get RecordingStudioStripe.configuration.mount_path + "/admin/meters/new"
+
+    assert_response :success
+    assert_includes response.body, "New meter"
+
+    assert_difference -> { RecordingStudioStripe::Meter.count }, 1 do
+      post RecordingStudioStripe.configuration.mount_path + "/admin/meters", params: {
+        name: "seats",
+        label: "Seats"
+      }
+    end
+
+    assert RecordingStudioStripe::Meter.exists?(name: "seats")
+  end
+
+  test "blank included usage clears the old amount" do
+    price = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    patch RecordingStudioStripe.configuration.mount_path + "/admin/prices/#{price.id}", params: {
+      included: { ai_tokens: "", api_calls: "20000" }
+    }
+
+    price.reload
+    assert_equal 0, price.included_quantity("ai_tokens")
+    assert_equal 20_000, price.included_quantity("api_calls")
+  end
 end

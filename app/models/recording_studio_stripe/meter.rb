@@ -11,8 +11,11 @@ module RecordingStudioStripe
     validates :label, presence: true
 
     def self.named(name)
-      key = name.to_s
-      find_by(name: key) || ensure_named!(key)
+      find_by(name: name.to_s)
+    end
+
+    def self.fetch(name)
+      named(name) || raise(ArgumentError, "Unknown meter #{name}")
     end
 
     def self.sync_from_config!

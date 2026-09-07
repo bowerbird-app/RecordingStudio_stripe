@@ -8,7 +8,7 @@ module RecordingStudioStripe
 
     def initialize(product:, unit_amount:, currency:, interval:, metadata:)
       @product = product
-      @unit_amount = unit_amount.to_i
+      @unit_amount = parse_unit_amount(unit_amount)
       @currency = currency.to_s
       @interval = interval.presence
       @metadata = metadata.stringify_keys
@@ -27,6 +27,12 @@ module RecordingStudioStripe
     end
 
     private
+
+    def parse_unit_amount(value)
+      Integer(value)
+    rescue ArgumentError, TypeError
+      raise InvalidPrice, "Amount must be a whole number of cents."
+    end
 
     def create_stripe_id
       return "price_local_#{SecureRandom.hex(6)}" if RecordingStudioStripe.configuration.local_mode?

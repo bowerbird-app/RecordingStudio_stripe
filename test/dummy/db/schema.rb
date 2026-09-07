@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_07_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_07_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -115,6 +115,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_07_000000) do
     t.bigint "quantity", null: false
     t.uuid "root_recording_id", null: false
     t.string "stripe_checkout_session_id"
+    t.string "subscription_type"
     t.datetime "updated_at", null: false
     t.index ["customer_id"], name: "idx_on_customer_id_100eab8f3f"
     t.index ["meter_id"], name: "index_recording_studio_stripe_allowance_purchases_on_meter_id"
@@ -220,10 +221,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_07_000000) do
     t.bigint "quantity", null: false
     t.datetime "recorded_at", null: false
     t.uuid "root_recording_id", null: false
+    t.string "subscription_type"
     t.datetime "updated_at", null: false
-    t.index ["idempotency_key"], name: "index_recording_studio_stripe_usage_entries_on_idempotency_key", unique: true, where: "(idempotency_key IS NOT NULL)"
     t.index ["meter_id"], name: "index_recording_studio_stripe_usage_entries_on_meter_id"
+    t.index ["root_recording_id", "idempotency_key"], name: "idx_rs_stripe_usages_root_idempotency", unique: true, where: "(idempotency_key IS NOT NULL)"
     t.index ["root_recording_id", "meter_id", "recorded_at"], name: "idx_rs_stripe_usage_root_meter_recorded"
+    t.index ["root_recording_id", "subscription_type", "meter_id"], name: "idx_rs_stripe_usage_root_type_meter"
   end
 
   create_table "recording_studio_stripe_webhook_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

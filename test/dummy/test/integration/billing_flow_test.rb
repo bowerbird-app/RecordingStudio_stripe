@@ -46,6 +46,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "[data-plans-align='left']", count: 1
     assert_includes response.body, "justify-start"
     assert_select "form[action*='checkout'][data-turbo=false]"
+    refute_includes response.body, "Unlimited vibes"
+    refute_includes response.body, "Add included usage on the Price"
   end
 
   test "public pricing page centers the plan cards" do
@@ -205,7 +207,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     RecordingStudioStripe::ChangePlan.call(root_recording: @root, price: pro)
 
-    assert_equal pro.id, @workspace.billing.subscription.reload.price_id
+    assert_equal starter.id, @workspace.billing.subscription.reload.price_id
     assert_equal "si_item_lookup", @workspace.billing.subscription.metadata["stripe_item_id"]
   ensure
     RecordingStudioStripe.configuration.client = previous_client
@@ -329,6 +331,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     refute_includes response.body, "Manage billing on Stripe"
+    assert_includes response.body, "Usage still counts if you record it"
+    refute_includes response.body, "Unlimited vibes"
   end
 
   test "manage billing shows when a customer exists without an active plan" do
@@ -402,9 +406,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
   test "portal redirects to Stripe when a client is set" do
     previous_client = RecordingStudioStripe.configuration.client
-    RecordingStudioStripe.configuration.client = RecordingStudioStripe::Testing::Client.new
     pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+    RecordingStudioStripe.configuration.client = RecordingStudioStripe::Testing::Client.new
 
     post recording_studio_stripe.portal_path
 

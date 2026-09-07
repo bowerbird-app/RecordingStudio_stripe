@@ -43,12 +43,20 @@ module RecordingStudioStripe
       def price_metadata
         metadata = {}
         Meter.order(:name).each do |meter|
-          value = params.dig(:included, meter.name)
-          metadata["included_#{meter.name}"] = value if value.present?
+          next unless included_params&.key?(meter.name)
+
+          metadata["included_#{meter.name}"] = included_params[meter.name].to_s
         end
-        metadata["meter"] = params[:meter] if params[:meter].present?
-        metadata["allowance"] = params[:allowance] if params[:allowance].present?
+        metadata["meter"] = params[:meter] if params.key?(:meter)
+        metadata["allowance"] = params[:allowance] if params.key?(:allowance)
         metadata
+      end
+
+      def included_params
+        raw = params[:included]
+        return unless raw.respond_to?(:to_unsafe_h) || raw.is_a?(Hash)
+
+        raw.respond_to?(:to_unsafe_h) ? raw.to_unsafe_h.stringify_keys : raw.stringify_keys
       end
     end
   end

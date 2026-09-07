@@ -49,7 +49,7 @@ module RecordingStudioStripe
 
       lines = @product.limit_inclusion_lines
       lines += meter_inclusion_lines
-      lines.presence || ["Unlimited vibes. Add included usage on the Price."]
+      lines.presence || ["A seat. Standing caps show on billing."]
     end
 
     def meter_inclusion_lines

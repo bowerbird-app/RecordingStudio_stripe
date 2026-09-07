@@ -7,6 +7,7 @@ module RecordingStudioStripe
     included do
       before_create :recording_studio_stripe_enforce_plan_limit
       before_update :recording_studio_stripe_enforce_plan_limit_on_restore
+      before_update :recording_studio_stripe_enforce_plan_limit_on_move
     end
 
     private
@@ -14,6 +15,7 @@ module RecordingStudioStripe
     def recording_studio_stripe_enforce_plan_limit
       return unless Limits.configured?
       return unless Limits.covers_type?(recordable_type)
+      return unless recording_studio_stripe_billable_root?
 
       root = recording_studio_stripe_limit_root
       return unless root
@@ -38,6 +40,32 @@ module RecordingStudioStripe
       return if trashed_at_in_database.nil?
 
       recording_studio_stripe_enforce_plan_limit
+    end
+
+    def recording_studio_stripe_enforce_plan_limit_on_move
+      return unless recording_studio_stripe_parent_or_root_changing?
+
+      recording_studio_stripe_enforce_plan_limit
+    end
+
+    def recording_studio_stripe_parent_or_root_changing?
+      changing = false
+      changing ||= will_save_change_to_parent_recording_id? if respond_to?(:will_save_change_to_parent_recording_id?)
+      if self.class.column_names.include?("root_recording_id") && respond_to?(:will_save_change_to_root_recording_id?)
+        changing ||= will_save_change_to_root_recording_id?
+      end
+      changing
+    end
+
+    def recording_studio_stripe_billable_root?
+      root = recording_studio_stripe_limit_root
+      return false unless root
+
+      recordable = root.try(:recordable)
+      return false unless recordable
+      return false unless defined?(RecordingStudio)
+
+      RecordingStudio.capability_enabled?(:stripe, for: recordable.class)
     end
 
     def recording_studio_stripe_limit_root

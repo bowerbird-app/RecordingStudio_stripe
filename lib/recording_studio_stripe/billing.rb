@@ -32,7 +32,7 @@ module RecordingStudioStripe
 
     def meter(name)
       type = subscription_type_for_meter(name)
-      MeterHandle.new(root_recording: root_recording, meter: Meter.named(name), subscription_type: type)
+      MeterHandle.new(root_recording: root_recording, meter: Meter.fetch(name), subscription_type: type)
     end
 
     def limit(name)
@@ -105,7 +105,7 @@ module RecordingStudioStripe
       def meter(name)
         MeterHandle.new(
           root_recording: root_recording,
-          meter: Meter.named(name),
+          meter: Meter.fetch(name),
           subscription_type: subscription_type
         )
       end

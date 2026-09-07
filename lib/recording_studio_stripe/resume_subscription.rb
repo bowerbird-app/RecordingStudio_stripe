@@ -12,10 +12,7 @@ module RecordingStudioStripe
     end
 
     def call
-      subscription = Subscription.current_for(
-        root_recording_id: @root_recording.id,
-        subscription_type: @subscription_type.presence
-      )
+      subscription = live_subscription
       raise NoSubscription, "Nothing to resume" unless subscription
 
       unless RecordingStudioStripe.configuration.local_mode?
@@ -27,6 +24,16 @@ module RecordingStudioStripe
 
       subscription.update!(cancel_at_period_end: false)
       subscription
+    end
+
+    private
+
+    def live_subscription
+      LiveSubscription.find(
+        root_recording: @root_recording,
+        subscription_type: @subscription_type,
+        missing_type_message: "Pick which plan to resume."
+      )
     end
   end
 end

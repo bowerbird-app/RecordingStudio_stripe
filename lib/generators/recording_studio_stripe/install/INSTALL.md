@@ -13,6 +13,10 @@ Copy migrations:
 
 Staff admin: include RecordingStudioStripe::AdminSupport on the admin root and mount Recording Studio Admin.
 
+Grant Accessible :admin on the workspace for anyone who should pay.
+
+draw_recording_studio_stripe at: is the mount path.
+
 If you use Tailwind, rebuild:
 
   bin/rails tailwindcss:build

@@ -20,7 +20,7 @@ module RecordingStudioStripe
       RecordingStudioAccessible.authorized?(
         actor: current_actor,
         recording: current_billing_root,
-        role: :edit
+        role: :admin
       )
     end
 

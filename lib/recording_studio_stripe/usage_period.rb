@@ -16,15 +16,16 @@ module RecordingStudioStripe
                              [now.beginning_of_month, now.end_of_month]
                            end
       new(root_recording: root_recording, meter: meter, starts_at: starts_at, ends_at: ends_at,
-          subscription: subscription)
+          subscription: subscription, subscription_type: subscription_type)
     end
 
-    def initialize(root_recording:, meter:, starts_at:, ends_at:, subscription:)
+    def initialize(root_recording:, meter:, starts_at:, ends_at:, subscription:, subscription_type: nil)
       @root_recording = root_recording
       @meter = meter
       @starts_at = starts_at
       @ends_at = ends_at
       @subscription = subscription
+      @subscription_type = subscription_type.presence || subscription&.subscription_type
     end
 
     def included
@@ -34,17 +35,30 @@ module RecordingStudioStripe
     end
 
     def purchased
-      AllowancePurchase
-        .where(root_recording_id: root_recording.id, meter_id: meter.id)
-        .where(purchased_at: starts_at...ends_at)
-        .sum(:quantity)
+      purchases = AllowancePurchase
+                  .where(root_recording_id: root_recording.id, meter_id: meter.id)
+                  .where(purchased_at: purchase_window_start...ends_at)
+      typed_scope(purchases, AllowancePurchase).sum(:quantity)
     end
 
     def usage
-      UsageEntry
-        .where(root_recording_id: root_recording.id, meter_id: meter.id)
-        .where(recorded_at: starts_at...ends_at)
-        .sum(:quantity)
+      entries = UsageEntry
+                .where(root_recording_id: root_recording.id, meter_id: meter.id)
+                .where(recorded_at: starts_at...ends_at)
+      typed_scope(entries, UsageEntry).sum(:quantity)
+    end
+
+    private
+
+    def purchase_window_start
+      [starts_at, starts_at.beginning_of_month].min
+    end
+
+    def typed_scope(scope, model)
+      return scope if @subscription_type.blank?
+      return scope unless model.column_names.include?("subscription_type")
+
+      scope.where(subscription_type: [@subscription_type, nil, ""])
     end
   end
 end
