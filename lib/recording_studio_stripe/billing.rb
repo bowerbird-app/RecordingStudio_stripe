@@ -31,7 +31,7 @@ module RecordingStudioStripe
     end
 
     def meter(name)
-      type = subscription&.subscription_type
+      type = subscription_type_for_meter(name)
       MeterHandle.new(root_recording: root_recording, meter: Meter.named(name), subscription_type: type)
     end
 
@@ -58,6 +58,16 @@ module RecordingStudioStripe
 
     def unlocked?(paywall_name)
       active_lines.any? { |entry| entry.unlocked?(paywall_name) }
+    end
+
+    private
+
+    def subscription_type_for_meter(name)
+      scored = active_lines.map { |entry| [entry, entry.meter(name).included] }
+      best = scored.max_by { |_entry, included| included }
+      return best.first.subscription_type if best&.last&.positive?
+
+      subscription&.subscription_type
     end
 
     class Line

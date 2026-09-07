@@ -3,7 +3,7 @@
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
     title: current_root_recording&.recordable&.try(:name) || "This workspace",
-    subtitle: "Plans, usage, and billing for this workspace.",
+    subtitle: dummy_home_subtitle,
     variant: :h1
   ) %>
 
@@ -18,36 +18,16 @@
   </div>
 
   <% recordable = current_root_recording&.recordable %>
-  <% handle = recordable.respond_to?(:billing) ? recordable.billing : nil %>
-  <% lines = handle&.active_lines || [] %>
-  <% if lines.any? %>
-    <% lines.each do |line| %>
-      <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
-        <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: line.subscription) %>
-      <% end %>
-      <% limits = billing_line_limits(line) %>
-      <% meters = billing_line_meters(line) %>
-      <% if limits.any? || meters.any? %>
-        <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
-          <% limits.each do |limit_handle| %>
-            <%= render RecordingStudioStripe::LimitCardComponent.new(handle: limit_handle) %>
-          <% end %>
-          <% meters.each do |meter_handle| %>
-            <%= render RecordingStudioStripe::MeterCardComponent.new(handle: meter_handle) %>
-          <% end %>
-        <% end %>
-      <% end %>
-    <% end %>
-  <% elsif recordable.is_a?(AdminRoot) %>
+  <% if recordable.is_a?(AdminRoot) %>
     <%= render FlatPack::EmptyState::Component.new(
       title: "Staff desk",
       description: "Products and Prices live in Admin. Switch back to a workspace for customer billing.",
       icon: :inbox
     ) %>
-  <% else %>
+  <% elsif dummy_home_plan_names.empty? %>
     <%= render FlatPack::EmptyState::Component.new(
       title: "No plan on this workspace",
-      description: "Pick Pro when you want included AI tokens and API calls. Extra packs sit on the billing page.",
+      description: "Pick a plan when you want included usage. Billing keeps the meters.",
       icon: :inbox
     ) do |empty| %>
       <% empty.slot do %>

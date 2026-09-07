@@ -87,6 +87,12 @@ class ConfigurationTest < Minitest::Test
     assert_includes @configuration.to_h.keys, :subscription_types
   end
 
+  def test_default_limit_reached_path_is_nil
+    assert_nil @configuration.limit_reached_path
+    assert @configuration.allow_promotion_codes
+    refute @configuration.automatic_tax
+  end
+
   def test_local_mode_when_no_secret
     ENV["STRIPE_SECRET_KEY"] = nil
     configuration = RecordingStudioStripe::Configuration.new

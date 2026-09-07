@@ -169,6 +169,48 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_equal starter.id, subscription.scheduled_price_id
   end
 
+  test "checkout for a live type changes the plan instead of opening a second subscription" do
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)
+
+    assert_no_difference -> { RecordingStudioStripe::Subscription.where(root_recording_id: @root.id).count } do
+      post recording_studio_stripe.checkout_path, params: { price_id: pro.id }
+    end
+
+    follow_redirect!
+    assert_equal pro.id, @workspace.billing.line(:studio).subscription.price_id
+  end
+
+  test "billing explains the wait when checkout returns before Stripe writes" do
+    get recording_studio_stripe.root_path, params: { checkout: "ok" }
+
+    assert_response :success
+    assert_includes response.body, "Stripe is confirming this plan"
+    refute_includes response.body, "You're on"
+  end
+
+  test "change plan reads the Stripe item id when metadata is missing" do
+    previous_client = RecordingStudioStripe.configuration.client
+    client = RecordingStudioStripe::Testing::Client.new
+    RecordingStudioStripe.configuration.client = client
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    subscription = RecordingStudioStripe::ApplySubscription.call(
+      root_recording: @root,
+      price: starter,
+      stripe_subscription_id: "sub_item_lookup"
+    )
+    subscription.update!(metadata: {})
+
+    RecordingStudioStripe::ChangePlan.call(root_recording: @root, price: pro)
+
+    assert_equal pro.id, @workspace.billing.subscription.reload.price_id
+    assert_equal "si_item_lookup", @workspace.billing.subscription.metadata["stripe_item_id"]
+  ensure
+    RecordingStudioStripe.configuration.client = previous_client
+  end
+
   test "cancel stays active until period end" do
     pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
@@ -195,6 +237,13 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_equal 14_000_000, meter.remaining
     assert meter.available?(14_000_000)
     refute meter.available?(14_000_001)
+
+    meter.spend(1)
+    assert_equal 1_000_001, meter.usage
+    error = assert_raises(RecordingStudioStripe::MeterLimitReached) { meter.spend(14_000_000) }
+    assert_includes error.user_message, "ai tokens"
+    meter.record(14_000_000)
+    assert_equal 15_000_001, @workspace.billing.meter(:ai_tokens).usage
   end
 
   test "billing page shows usage percent" do
@@ -258,6 +307,35 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_redirected_to %r{/billing}
     follow_redirect!
     assert_includes response.body, "Invoices and cards live in Stripe. Add keys to open them."
+  end
+
+  test "ensure customer updates email" do
+    customer = RecordingStudioStripe::EnsureCustomer.call(root_recording: @root, email: "first@example.com")
+    RecordingStudioStripe::EnsureCustomer.call(root_recording: @root, email: "next@example.com")
+
+    assert_equal "next@example.com", customer.reload.email
+  end
+
+  test "product update merges Stripe metadata" do
+    previous_client = RecordingStudioStripe.configuration.client
+    client = RecordingStudioStripe::Testing::Client.new
+    RecordingStudioStripe.configuration.client = client
+    product = RecordingStudioStripe::Product.find_by!(name: "Starter")
+    client.v1.products.update(product.stripe_id, metadata: { "tax_code" => "txcd_1", "kind" => "plan" })
+
+    RecordingStudioStripe::UpdateProduct.call(
+      product: product,
+      name: product.name,
+      description: product.description,
+      paywall_names: product.paywalls.map(&:name),
+      limits: { "press_kits" => 3 }
+    )
+
+    stored = client.v1.products.retrieve(product.stripe_id)
+    assert_equal "txcd_1", stored.metadata["tax_code"]
+    assert_equal "3", stored.metadata["limit_press_kits"]
+  ensure
+    RecordingStudioStripe.configuration.client = previous_client
   end
 
   test "portal redirects to Stripe when a client is set" do

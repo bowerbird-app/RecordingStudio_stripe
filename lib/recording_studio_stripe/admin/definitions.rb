@@ -78,6 +78,7 @@ module RecordingStudioStripe
       end
       # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
+      # rubocop:disable Metrics/AbcSize
       def prices_screen
         klass = Class.new(RecordingStudioAdmin::Screen)
         klass.key "prices"
@@ -99,9 +100,15 @@ module RecordingStudioStripe
           column :currency
           column :active
           column :stripe_id
+          action :edit,
+                 text: "Edit",
+                 url: lambda { |row, _context|
+                   "#{RecordingStudioStripe.configuration.mount_path}/admin/prices/#{row.id}/edit"
+                 }
         end
         RecordingStudioStripe::Admin::Definitions.const_set(:PricesScreen, klass)
       end
+      # rubocop:enable Metrics/AbcSize
 
       def prices_relation
         RecordingStudioStripe::Price.includes(:product).joins(:product).merge(
@@ -123,7 +130,6 @@ module RecordingStudioStripe
         klass.table do
           column :name
           column :label
-          column :stripe_meter_id
         end
         RecordingStudioStripe::Admin::Definitions.const_set(:MetersScreen, klass)
       end

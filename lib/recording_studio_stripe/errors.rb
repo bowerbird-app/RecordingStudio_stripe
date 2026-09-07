@@ -28,4 +28,20 @@ module RecordingStudioStripe
       end
     end
   end
+
+  class MeterLimitReached < Error
+    attr_reader :handle
+
+    def initialize(handle:)
+      @handle = handle
+      super(user_message)
+    end
+
+    def user_message
+      label = handle.meter.label.downcase
+      "This period's #{label} are spent. Buy a pack, or wait for renewal."
+    end
+  end
+
+  class DeferredWebhook < Error; end
 end

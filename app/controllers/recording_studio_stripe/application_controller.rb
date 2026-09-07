@@ -27,6 +27,10 @@ module RecordingStudioStripe
     end
 
     def require_root_recording!
+      unless current_actor
+        redirect_to recording_studio_stripe_sign_in_url, alert: "Sign in to pick a plan."
+        return
+      end
       return if current_billing_root
 
       render plain: "Pick a workspace first.", status: :not_found
@@ -62,6 +66,14 @@ module RecordingStudioStripe
 
     def checkout_cancel_url
       "#{request.base_url}#{RecordingStudioStripe.configuration.cancel_path}"
+    end
+
+    def recording_studio_stripe_sign_in_url
+      if respond_to?(:main_app, true) && main_app.respond_to?(:new_user_session_path)
+        main_app.new_user_session_path
+      else
+        "/"
+      end
     end
   end
 end

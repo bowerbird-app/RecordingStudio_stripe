@@ -13,7 +13,7 @@ module RecordingStudioStripe
 
     def call
       existing = Customer.find_by(root_recording_id: @root_recording.id)
-      return existing if existing
+      return update_email(existing) if existing
 
       stripe_id = create_stripe_customer_id
       Customer.create!(
@@ -25,6 +25,16 @@ module RecordingStudioStripe
 
     private
 
+    def update_email(customer)
+      return customer if @email.blank? || customer.email == @email
+
+      unless RecordingStudioStripe.configuration.local_mode?
+        Client.current.v1.customers.update(customer.stripe_id, { email: @email })
+      end
+      customer.update!(email: @email)
+      customer
+    end
+
     def create_stripe_customer_id
       return "cus_local_#{@root_recording.id.to_s.delete('-')}" if RecordingStudioStripe.configuration.local_mode?
 
@@ -32,7 +42,8 @@ module RecordingStudioStripe
         {
           email: @email,
           metadata: { root_recording_id: @root_recording.id.to_s }
-        }
+        },
+        { idempotency_key: "customer-#{@root_recording.id}" }
       )
       result.id
     end

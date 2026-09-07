@@ -40,6 +40,12 @@ module RecordingStudioStripe
       )
     end
 
+    def spend(quantity, idempotency_key: nil, recorded_at: Time.current)
+      raise MeterLimitReached.new(handle: self) unless available?(quantity)
+
+      record(quantity, idempotency_key: idempotency_key, recorded_at: recorded_at)
+    end
+
     private
 
     def period

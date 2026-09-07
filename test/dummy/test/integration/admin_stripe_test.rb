@@ -164,4 +164,21 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Starter"
     refute_includes response.body, ">Pro<"
   end
+
+  test "staff can edit included usage on a Price" do
+    price = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    get RecordingStudioStripe.configuration.mount_path + "/admin/prices/#{price.id}/edit"
+
+    assert_response :success
+    assert_includes response.body, "Included ai tokens"
+
+    patch RecordingStudioStripe.configuration.mount_path + "/admin/prices/#{price.id}", params: {
+      included: { ai_tokens: "2500000", api_calls: "20000" }
+    }
+
+    follow_redirect!
+    price.reload
+    assert_equal 2_500_000, price.included_quantity("ai_tokens")
+    assert_equal 20_000, price.included_quantity("api_calls")
+  end
 end

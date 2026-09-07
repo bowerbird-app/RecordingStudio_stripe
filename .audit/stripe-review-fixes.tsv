@@ -1,0 +1,3 @@
+ts	phase	decision	why	evidence	result
+2026-09-07T01:55:00Z	frame	Fix the 0.5.0 review on one 0.6.0 branch. Done when each accepted item has a test that fails on the old behaviour.	Money paths are one-way doors. Core before_record, Stripe Entitlements, past_due lock, tree-wide counts, and Stripe meter posting stay out.	review in prior turn	open
+2026-09-07T03:10:00Z	verify	Gem suite 98 runs green. Dummy 72+8+8 green. RuboCop clean.	Predicate is tests that fail on 0.5.0 behaviour.	rake test, rake test:dummy	VERIFIED

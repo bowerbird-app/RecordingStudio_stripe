@@ -8,6 +8,7 @@ module RecordingStudioStripe
       @lines = billing.active_lines
       @allowance_prices = Catalog.allowance_prices
       @show_manage_billing = show_manage_billing?
+      @confirming_checkout = confirming_checkout?
     end
 
     private
@@ -21,6 +22,10 @@ module RecordingStudioStripe
         recording: current_billing_root,
         role: :edit
       )
+    end
+
+    def confirming_checkout?
+      params[:checkout].to_s == "ok" && !billing.subscribed?
     end
   end
 end

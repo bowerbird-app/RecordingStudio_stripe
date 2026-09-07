@@ -19,11 +19,12 @@ RecordingStudioStripe.configure do |config|
   # Optional. Omit this to keep one live plan per workspace.
   # Each plan Product belongs to one type. A workspace can hold one live plan per type.
   # config.subscription_types = {
-  #   "press_kits" => { "label" => "Press kits" },
-  #   "media_monitoring" => { "label" => "Media monitoring" }
+  #   "studio" => { "label" => "Studio" },
+  #   "inbox" => { "label" => "Inbox" }
   # }
   # Standing caps for how many of a type can exist under the workspace.
-  # Set limit_<name> on each plan Product. Missing or 0 means none on that plan.
+  # The number lives on the Product. Missing or 0 means none on that plan.
+  # Do not reuse a plan group name as a limit name unless they are the same thing.
   # config.limits = {
   #   "press_kits" => {
   #     "label" => "Press kits",
@@ -31,4 +32,7 @@ RecordingStudioStripe.configure do |config|
   #     "subscription_type" => "studio"
   #   }
   # }
+  # config.limit_reached_path = "/plans"
+  # config.automatic_tax = true
+  # config.allow_promotion_codes = true
 end

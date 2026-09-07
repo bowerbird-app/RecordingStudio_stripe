@@ -6,7 +6,7 @@ Sign in with `admin@admin.com` / `Password`.
 
 ## Routes
 
-- `/` — current workspace plan and usage
+- `/` — current workspace. Plans and billing live on their own pages
 - `/press_kits` — list and add press kits for the workspace
 - `/plans` — Products and Prices, left aligned, with a monthly/yearly toggle under each plan group name
 - `/pricing` — the same plan cards, centered, no login

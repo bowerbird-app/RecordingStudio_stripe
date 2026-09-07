@@ -13,6 +13,9 @@ module RecordingStudioStripe
                   :subscription_types,
                   :success_path,
                   :cancel_path,
+                  :limit_reached_path,
+                  :allow_promotion_codes,
+                  :automatic_tax,
                   :mount_path,
                   :authenticate,
                   :current_actor,
@@ -31,6 +34,9 @@ module RecordingStudioStripe
       @subscription_types = {}
       @success_path = "/billing"
       @cancel_path = "/plans"
+      @limit_reached_path = nil
+      @allow_promotion_codes = true
+      @automatic_tax = false
       @mount_path = "/billing"
       @authenticate = nil
       @current_actor = nil
@@ -58,6 +64,9 @@ module RecordingStudioStripe
         subscription_types: subscription_types,
         success_path: success_path,
         cancel_path: cancel_path,
+        limit_reached_path: limit_reached_path,
+        allow_promotion_codes: allow_promotion_codes,
+        automatic_tax: automatic_tax,
         local_mode: local_mode?,
         mount_path: mount_path,
         hooks_registered: hooks.instance_variable_get(:@registry).transform_values(&:size)

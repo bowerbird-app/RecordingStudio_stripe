@@ -67,4 +67,18 @@ module ApplicationHelper
       "#{handle.used} of #{handle.included} on this plan."
     end
   end
+
+  def dummy_home_plan_names
+    recordable = current_root_recording&.recordable
+    return [] unless recordable.respond_to?(:billing)
+
+    recordable.billing.active_lines.filter_map { |line| line.subscription.price&.product&.name }
+  end
+
+  def dummy_home_subtitle
+    names = dummy_home_plan_names
+    return "Plans and billing live on their own pages." if names.empty?
+
+    "You're on #{names.to_sentence}."
+  end
 end

@@ -38,14 +38,31 @@ module RecordingStudioStripe
     def update_stripe(type)
       return if RecordingStudioStripe.configuration.local_mode?
 
+      stripe_product = Client.current.v1.products.retrieve(@product.stripe_id)
+      existing = stringify(stripe_get(stripe_product, :metadata))
       Client.current.v1.products.update(
         @product.stripe_id,
         {
           name: @name,
           description: @description,
-          metadata: { kind: @product.kind, subscription_type: type }.merge(@product.limit_metadata)
+          metadata: existing.merge("kind" => @product.kind, "subscription_type" => type).merge(@product.limit_metadata)
         }
       )
+    end
+
+    def stringify(metadata)
+      return {} if metadata.blank?
+
+      metadata.to_h.stringify_keys
+    end
+
+    def stripe_get(object, key)
+      return if object.nil?
+      return object[key] || object[key.to_s] || object[key.to_sym] if object.is_a?(Hash)
+
+      object.public_send(key)
+    rescue NoMethodError
+      object[key] || object[key.to_s] if object.respond_to?(:[])
     end
   end
 end

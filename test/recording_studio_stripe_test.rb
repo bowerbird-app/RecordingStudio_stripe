@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.5.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.6.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -148,6 +148,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes template, "config.subscription_types"
     assert_includes template, "config.limits"
     assert_includes template, "recordable_type"
+    assert_includes template, "limit_reached_path"
+    refute_includes template, "media_monitoring"
   end
 
   def test_billing_docs_explain_paywalls
@@ -171,6 +173,9 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "Manage billing on Stripe"
     assert_includes docs, "Customer Portal"
     assert_includes docs, "Do not copy invoices"
+    assert_includes docs, "spend"
+    assert_includes docs, "503"
+    assert_includes docs, "automatic_tax"
   end
 
   def test_billing_view_offers_manage_billing
@@ -181,6 +186,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "portal_path"
     assert_includes view_source, "LimitCardComponent"
     assert_includes view_source, "MeterCardComponent"
+    assert_includes view_source, "@confirming_checkout"
     assert_match(/Grid::Component.new\(cols: 2.*CurrentPlanComponent/m, view_source)
     plan_grid, usage_grid = view_source.split("usage_section_title", 2)
     refute_includes plan_grid, "LimitCardComponent"
@@ -206,6 +212,14 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes source, "Included"
   end
 
+  def test_limit_card_shows_used_of_included_when_over
+    source = File.read(File.expand_path("../app/components/recording_studio_stripe/limit_card_component.rb", __dir__))
+
+    assert_includes source, "caption_text"
+    assert_includes source, "over?"
+    assert_includes source, "Archive some, or upgrade."
+  end
+
   def test_dummy_home_page_points_at_plans
     view_path = File.expand_path("dummy/app/views/home/index.html.erb", __dir__)
     view_source = File.read(view_path)
@@ -218,6 +232,9 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes view_source, "Add press kit"
     refute_includes view_source, "What this plan opens"
     refute_includes view_source, "dummy_paywall_open?"
+    refute_includes view_source, "CurrentPlanComponent"
+    refute_includes view_source, "LimitCardComponent"
+    refute_includes view_source, "MeterCardComponent"
   end
 
   def test_plan_card_lists_product_limits_before_meter_inclusions

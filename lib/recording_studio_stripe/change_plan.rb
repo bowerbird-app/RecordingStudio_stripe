@@ -35,13 +35,15 @@ module RecordingStudioStripe
 
     def apply_upgrade(subscription)
       unless RecordingStudioStripe.configuration.local_mode?
+        release_schedule(subscription)
         Client.current.v1.subscriptions.update(
           subscription.stripe_id,
           {
             items: [{ id: stripe_item_id(subscription), price: @price.stripe_id }],
             proration_behavior: "always_invoice",
             cancel_at_period_end: false
-          }
+          },
+          { idempotency_key: "upgrade-#{subscription.stripe_id}-#{@price.stripe_id}" }
         )
       end
 
@@ -62,6 +64,7 @@ module RecordingStudioStripe
     end
 
     def schedule_stripe_downgrade(subscription)
+      release_schedule(subscription)
       Client.current.v1.subscription_schedules.create(
         {
           from_subscription: subscription.stripe_id,
@@ -77,21 +80,44 @@ module RecordingStudioStripe
               start_date: subscription.current_period_end.to_i
             }
           ]
-        }
-      )
-    rescue Stripe::InvalidRequestError
-      Client.current.v1.subscriptions.update(
-        subscription.stripe_id,
-        {
-          items: [{ id: stripe_item_id(subscription), price: @price.stripe_id }],
-          proration_behavior: "none",
-          billing_cycle_anchor: "unchanged"
-        }
+        },
+        { idempotency_key: "downgrade-#{subscription.stripe_id}-#{@price.stripe_id}" }
       )
     end
 
+    def release_schedule(subscription)
+      stripe_subscription = Client.current.v1.subscriptions.retrieve(subscription.stripe_id)
+      schedule_id = stripe_get(stripe_subscription, :schedule)
+      return if schedule_id.blank?
+
+      Client.current.v1.subscription_schedules.release(schedule_id)
+    end
+
     def stripe_item_id(subscription)
-      subscription.metadata.to_h["stripe_item_id"].presence || "si_current"
+      stored = subscription.metadata.to_h["stripe_item_id"].presence
+      return stored if stored.present? && stored != "si_current"
+
+      fetch_stripe_item_id(subscription)
+    end
+
+    def fetch_stripe_item_id(subscription)
+      stripe_subscription = Client.current.v1.subscriptions.retrieve(subscription.stripe_id)
+      items = stripe_get(stripe_subscription, :items)
+      item = stripe_get(items, :data)&.first || (items.respond_to?(:first) ? items.first : nil)
+      item_id = stripe_get(item, :id)
+      raise NoSubscription, "Stripe has no item on this subscription" if item_id.blank?
+
+      subscription.update!(metadata: subscription.metadata.merge("stripe_item_id" => item_id))
+      item_id
+    end
+
+    def stripe_get(object, key)
+      return if object.nil?
+      return object[key] || object[key.to_s] || object[key.to_sym] if object.is_a?(Hash)
+
+      object.public_send(key)
+    rescue NoMethodError
+      object[key] || object[key.to_s] if object.respond_to?(:[])
     end
   end
 end
