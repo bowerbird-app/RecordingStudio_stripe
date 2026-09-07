@@ -47,13 +47,18 @@ module RecordingStudioStripe
     def inclusion_lines
       return ["This plan is a seat. Usage limits show up once a Price is attached."] unless price
 
-      lines = Meter.order(:name).filter_map do |meter|
+      lines = @product.limit_inclusion_lines
+      lines += meter_inclusion_lines
+      lines.presence || ["Unlimited vibes. Add included usage on the Price."]
+    end
+
+    def meter_inclusion_lines
+      Meter.order(:name).filter_map do |meter|
         quantity = price.included_quantity(meter.name)
         next if quantity <= 0
 
         "#{stripe_quantity_label(quantity)} #{meter.label.downcase}"
       end
-      lines.presence || ["Unlimited vibes. Add included usage on the Price."]
     end
 
     def action

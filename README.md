@@ -3,12 +3,12 @@
 Stripe billing for Recording Studio roots. Stripe owns money. This gem owns the Rails layer that lets a workspace decide quickly:
 
 ```ruby
-account.billing.line(:press_kits).meter(:kits).record(1)
-account.billing.line(:press_kits).meter(:kits).remaining
+account.billing.line(:studio).meter(:ai_tokens).remaining
+account.billing.limit(:press_kits).available?(1)
 account.billing.unlocked?(:export_csv)
 ```
 
-`remaining` is included allowance plus purchased allowance minus usage, for that plan's Stripe period. Omit `config.subscription_types` and `account.billing.meter(:ai_tokens)` still talks to the one live plan.
+Meters spend this Stripe period (`included + purchased - usage`). Limits count how many of a type exist under the workspace (not trashed). Omit `config.subscription_types` and `account.billing.meter(:ai_tokens)` still talks to the one live plan.
 
 This is a Stripe gem. It does not wrap other processors, invent wallets, or calculate tax. Turn Stripe Tax on in the Dashboard if you charge in the US or EU.
 
@@ -21,6 +21,7 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Downgrade at the next renewal
 - Cancel at period end
 - Included usage on a Price (`included_ai_tokens`, `included_api_calls` metadata)
+- Standing inventory limits on a Product (`limit_press_kits` metadata) for how many of a type can exist
 - Extra packs as one-time Prices (`meter`, `allowance` metadata)
 - Customer plans page and billing page
 - Manage billing on Stripe on `/billing` opens the Stripe Customer Portal for invoices and cards
@@ -108,6 +109,29 @@ RecordingStudioAccessible.authorized_action?(
 
 That is true when the actor has `:view` on the workspace root **and** a live plan Product includes that paywall. Meter spend stays `available?` / `record`. Buying Pro does not grant `:admin`.
 
+Standing caps live in `config.limits`. The number sits on the Product, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. Creating another of that type raises `RecordingStudioStripe::PlanLimitReached` (HTML redirects to `/plans`; JSON is 403). Downgrades do not delete extras; `over?` is true until they archive.
+
+```ruby
+RecordingStudioStripe.configure do |config|
+  config.limits = {
+    "press_kits" => {
+      "label" => "Press kits",
+      "recordable_type" => "PressKit",
+      "subscription_type" => "studio"
+    }
+  }
+end
+
+kits = account.billing.limit(:press_kits)
+kits.included
+kits.used
+kits.remaining
+kits.available?(1)
+kits.over?
+```
+
+Omit `subscription_type` and the gem uses a matching plan group name if one exists, otherwise the first group. Dummy Starter includes 3 press kits and Pro includes 10.
+
 ### Admin
 
 Install Recording Studio Admin and Accessible. Include `RecordingStudioStripe::AdminSupport` on the admin root. Enable the `:stripe` section. Grant Accessible access on that root. Mount Accessible under the admin path:
@@ -138,6 +162,14 @@ allowance=5000000
 
 One Product per plan. Monthly and annual are Prices on that Product. Extra packs are a separate Product. `/plans` groups by Product, then by plan group when `config.subscription_types` is set. Admin Prices shows the Product name and filters by Product or interval.
 
+Plan Products also store standing limits:
+
+```text
+limit_press_kits=3
+```
+
+Set those in Admin on the Product, not on each Price.
+
 ## Webhooks
 
 Point Stripe at `POST /webhooks/stripe`. The gem verifies the signature when `STRIPE_WEBHOOK_SECRET` is set, then projects:
@@ -150,4 +182,4 @@ Checkout return URLs do not fulfil anything. Stripe events do.
 
 ## Dummy
 
-`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro) and Inbox (Inbox, Inbox Plus) so one workspace can hold two live plans. Admin is `/admin`.
+`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro) and Inbox (Inbox, Inbox Plus) so one workspace can hold two live plans. `/billing` shows the press kit cap. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.

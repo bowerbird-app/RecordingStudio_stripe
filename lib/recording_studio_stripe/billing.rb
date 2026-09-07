@@ -35,6 +35,15 @@ module RecordingStudioStripe
       MeterHandle.new(root_recording: root_recording, meter: Meter.named(name), subscription_type: type)
     end
 
+    def limit(name)
+      definition = Limits.fetch(name)
+      LimitHandle.new(
+        root_recording: root_recording,
+        name: definition.name,
+        subscription_type: definition.subscription_type
+      )
+    end
+
     def customer
       Customer.find_by(root_recording_id: root_recording.id)
     end
@@ -87,6 +96,14 @@ module RecordingStudioStripe
         MeterHandle.new(
           root_recording: root_recording,
           meter: Meter.named(name),
+          subscription_type: subscription_type
+        )
+      end
+
+      def limit(name)
+        LimitHandle.new(
+          root_recording: root_recording,
+          name: name,
           subscription_type: subscription_type
         )
       end

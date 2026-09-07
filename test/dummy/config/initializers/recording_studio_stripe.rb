@@ -20,4 +20,13 @@ RecordingStudioStripe.configure do |config|
     "studio" => { "label" => "Studio" },
     "inbox" => { "label" => "Inbox" }
   }
+  # Standing caps for how many of a type can exist under the workspace.
+  # The number lives on the Product. Missing or 0 means none on that plan.
+  config.limits = {
+    "press_kits" => {
+      "label" => "Press kits",
+      "recordable_type" => "PressKit",
+      "subscription_type" => "studio"
+    }
+  }
 end

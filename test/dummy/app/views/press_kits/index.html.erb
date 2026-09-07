@@ -1,0 +1,25 @@
+<% dummy_page_nav(title: "Press kits", back_url: root_path) %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Press kits",
+    subtitle: dummy_press_kits_subtitle,
+    variant: :h1
+  ) %>
+
+  <% kits = dummy_press_kit_recordings %>
+  <% if kits.any? %>
+    <%= render FlatPack::List::Component.new(divider: true) do %>
+      <% kits.each do |recording| %>
+        <%= render FlatPack::List::Item.new(icon: :queue_list) do %>
+          <%= recording.recordable.name %>
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <%= form_with url: press_kits_path, method: :post, local: true, class: "flex max-w-xl flex-col gap-4" do %>
+    <%= render FlatPack::TextInput::Component.new(name: "name", label: "Name", required: true, placeholder: "Launch kit") %>
+    <%= render FlatPack::Button::Component.new(text: "Add press kit", style: :primary, size: :md, type: "submit") %>
+  <% end %>
+</div>

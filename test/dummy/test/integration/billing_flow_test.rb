@@ -33,6 +33,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "$9/month"
     assert_includes response.body, "$25/month"
     assert_includes response.body, "10m ai tokens"
+    assert_includes response.body, "3 press kits"
+    assert_includes response.body, "10 press kits"
     assert_includes response.body, "Monthly"
     assert_includes response.body, "Yearly"
     assert_includes response.body, "[border-radius:var(--tabs-pill-corner-radius)]"
@@ -305,13 +307,11 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     )
   end
 
-  test "home shows paywalls off without a plan and on after Pro" do
+  test "starter does not open generate_image until Pro" do
     get "/"
 
     assert_response :success
-    assert_includes response.body, "What this plan opens"
-    assert_includes response.body, "Generate an image"
-    assert_includes response.body, "Export CSV"
+    refute_includes response.body, "What this plan opens"
     refute RecordingStudioAccessible.authorized_action?(
       actor: @user,
       action: :generate_image,
@@ -321,9 +321,6 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
 
-    get "/"
-
-    assert_response :success
     assert RecordingStudioAccessible.authorized_action?(
       actor: @user,
       action: :generate_image,

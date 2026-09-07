@@ -27,10 +27,14 @@
       <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
         <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: line.subscription) %>
       <% end %>
+      <% limits = billing_line_limits(line) %>
       <% meters = billing_line_meters(line) %>
-      <% if meters.any? %>
+      <% if limits.any? || meters.any? %>
         <%= render FlatPack::SectionTitle::Component.new(title: usage_section_title(line)) %>
         <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
+          <% limits.each do |handle| %>
+            <%= render RecordingStudioStripe::LimitCardComponent.new(handle: handle) %>
+          <% end %>
           <% meters.each do |handle| %>
             <%= render RecordingStudioStripe::MeterCardComponent.new(handle: handle) %>
           <% end %>

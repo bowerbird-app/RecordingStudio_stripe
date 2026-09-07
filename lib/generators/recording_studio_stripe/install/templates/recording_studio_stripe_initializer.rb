@@ -22,4 +22,13 @@ RecordingStudioStripe.configure do |config|
   #   "press_kits" => { "label" => "Press kits" },
   #   "media_monitoring" => { "label" => "Media monitoring" }
   # }
+  # Standing caps for how many of a type can exist under the workspace.
+  # Set limit_<name> on each plan Product. Missing or 0 means none on that plan.
+  # config.limits = {
+  #   "press_kits" => {
+  #     "label" => "Press kits",
+  #     "recordable_type" => "PressKit",
+  #     "subscription_type" => "studio"
+  #   }
+  # }
 end

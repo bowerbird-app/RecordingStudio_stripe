@@ -47,14 +47,24 @@ module ApplicationHelper
     RecordingStudio.root_recording_for(admin_root) if admin_root
   end
 
-  def dummy_paywall_open?(paywall)
-    return false unless defined?(RecordingStudioAccessible)
-    return false unless current_user && current_root_recording
+  def dummy_show_press_kits?
+    RecordingStudioStripe::Limits.known?(:press_kits) && current_root_recording&.recordable.is_a?(Workspace)
+  end
 
-    RecordingStudioAccessible.authorized_action?(
-      actor: current_user,
-      action: paywall.action_name,
-      recording: current_root_recording
-    )
+  def dummy_press_kit_recordings
+    return RecordingStudio::Recording.none unless current_root_recording
+
+    RecordingStudio::Recording.for_root(current_root_recording.id).of_type("PressKit").where(trashed_at: nil).order(:created_at)
+  end
+
+  def dummy_press_kits_subtitle
+    return "Pick a plan to add press kits." unless current_root_recording&.recordable.respond_to?(:billing)
+
+    handle = current_root_recording.recordable.billing.limit(:press_kits)
+    if handle.included <= 0
+      "Pick a plan to add press kits."
+    else
+      "#{handle.used} of #{handle.included} on this plan."
+    end
   end
 end

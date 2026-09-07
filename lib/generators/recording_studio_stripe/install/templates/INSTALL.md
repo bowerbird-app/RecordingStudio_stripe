@@ -6,3 +6,4 @@ Recording Studio Stripe is mounted.
 4. Rebuild Tailwind if you use it.
 5. Plans live at /plans. Billing lives at the mount path. Webhooks at /webhooks/stripe.
 6. Optional: set config.subscription_types so a workspace can hold one live plan per group.
+7. Optional: set config.limits so a plan can cap how many of a type exist. Put the number on the Product.
