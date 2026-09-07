@@ -1,3 +1,6 @@
 ts	phase	decision	why	evidence	result
 2026-09-07T01:55:00Z	frame	Fix the 0.5.0 review on one 0.6.0 branch. Done when each accepted item has a test that fails on the old behaviour.	Money paths are one-way doors. Core before_record, Stripe Entitlements, past_due lock, tree-wide counts, and Stripe meter posting stay out.	review in prior turn	open
 2026-09-07T03:10:00Z	verify	Gem suite 98 runs green. Dummy 72+8+8 green. RuboCop clean.	Predicate is tests that fail on 0.5.0 behaviour.	rake test, rake test:dummy	VERIFIED
+2026-09-07T02:32:00Z	review	Independent trail review held 0.6.0.	GPT-5.6 Sol against the decision trail and live Stripe contracts.	.audit/stripe-review-fixes.tsv	HOLD
+2026-09-07T02:40:00Z	fix	Accept live Stripe contract flags. Dismiss coverage number, skipped product scope, and audit formatting as not merge blockers.	Stripe docs: from_subscription cannot set phases. Basil invoices moved subscription under parent. Configured Stripe with a blank webhook secret accepted unsigned JSON.	code + docs.stripe.com	open
+2026-09-07T02:52:00Z	verify	Dummy billing and webhook tests cover the accepted trail flags.	77 dummy + 8 + 8, 98 gem, RuboCop clean	rake test, rake test:dummy	VERIFIED

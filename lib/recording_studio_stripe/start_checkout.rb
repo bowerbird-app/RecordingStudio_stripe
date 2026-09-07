@@ -76,7 +76,11 @@ module RecordingStudioStripe
     end
 
     def checkout_idempotency_key
-      "checkout-#{@root_recording.id}-#{@price.stripe_id}"
+      if @price.recurring?
+        "checkout-#{@root_recording.id}-#{@price.stripe_id}"
+      else
+        "checkout-#{@root_recording.id}-#{@price.stripe_id}-#{SecureRandom.uuid}"
+      end
     end
 
     def checkout_mode

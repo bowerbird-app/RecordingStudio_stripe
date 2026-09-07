@@ -33,12 +33,12 @@ module RecordingStudioStripe
     def call
       customer = find_or_create_customer
       now = Time.current
-      period_start = @current_period_start || now
-      period_end = @current_period_end || default_period_end(period_start)
       type = SubscriptionTypes.normalize(@price&.product&.subscription_type)
       stripe_id = @stripe_subscription_id.presence || local_stripe_id(type)
 
       subscription = find_subscription(stripe_id, type)
+      period_start = resolve_period_start(subscription, now)
+      period_end = resolve_period_end(subscription, period_start)
       subscription.assign_attributes(
         stripe_id: stripe_id,
         root_recording_id: @root_recording.id,
@@ -85,6 +85,16 @@ module RecordingStudioStripe
       return subscription.scheduled_price if @price&.id == subscription.price_id
 
       nil
+    end
+
+    def resolve_period_start(subscription, now)
+      @current_period_start || (subscription.persisted? && subscription.current_period_start) || now
+    end
+
+    def resolve_period_end(subscription, period_start)
+      @current_period_end ||
+        (subscription.persisted? && subscription.current_period_end) ||
+        default_period_end(period_start)
     end
 
     def default_period_end(period_start)

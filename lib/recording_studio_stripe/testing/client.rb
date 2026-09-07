@@ -6,7 +6,7 @@ module RecordingStudioStripe
       :id, :object, :url, :mode, :customer, :client_reference_id, :metadata, :status,
       :cancel_at_period_end, :items, :name, :description, :active, :unit_amount, :currency,
       :recurring, :product, :price, :current_period_start, :current_period_end, :data, :type, :email,
-      :schedule, :subscription, keyword_init: true
+      :schedule, :subscription, :phases, :start_date, :end_date, :quantity, keyword_init: true
     ) do
       def [](key)
         public_send(key) if respond_to?(key)
@@ -58,7 +58,8 @@ module RecordingStudioStripe
     end
 
     class CheckoutSessions < Resource
-      def create(params, _opts = {})
+      def create(params, opts = {})
+        @store[:checkout_idempotency_keys] << opts[:idempotency_key]
         id = "cs_#{SecureRandom.hex(6)}"
         object = StripeObject.new(
           id: id,
@@ -132,12 +133,51 @@ module RecordingStudioStripe
 
     class SubscriptionSchedules < Resource
       def create(params, _opts = {})
+        @store[:schedule_creates] << params
+        extra = params.keys.map(&:to_sym) - [:from_subscription]
+        if params[:from_subscription] && extra.any?
+          raise Stripe::InvalidRequestError.new(
+            "When using from_subscription, other parameters cannot be set",
+            extra.first.to_s
+          )
+        end
+
+        now = Time.now.to_i
         id = "sub_sched_#{SecureRandom.hex(6)}"
-        StripeObject.new(id: id, object: "subscription_schedule", metadata: params)
+        object = StripeObject.new(
+          id: id,
+          object: "subscription_schedule",
+          metadata: params,
+          phases: [
+            StripeObject.new(
+              start_date: now,
+              end_date: now + 2_592_000,
+              items: [StripeObject.new(price: current_price(params[:from_subscription]), quantity: 1)]
+            )
+          ]
+        )
+        @store[:schedules][id] = object
+        object
+      end
+
+      def update(id, params, _opts = {})
+        @store[:schedule_updates] << params
+        existing = @store[:schedules][id] || StripeObject.new(id: id, object: "subscription_schedule")
+        existing.phases = params[:phases] if params.key?(:phases)
+        @store[:schedules][id] = existing
+        existing
       end
 
       def release(id, _opts = {})
         StripeObject.new(id: id, object: "subscription_schedule")
+      end
+
+      private
+
+      def current_price(subscription_id)
+        items = @store[:subscriptions][subscription_id]&.items
+        item = items.respond_to?(:first) ? items.first : nil
+        item&.price
       end
     end
 
@@ -240,11 +280,34 @@ module RecordingStudioStripe
 
     class Client
       def initialize
-        @store = { customers: {}, sessions: {}, subscriptions: {}, products: {}, prices: {}, portal_sessions: {} }
+        @store = {
+          customers: {},
+          sessions: {},
+          subscriptions: {},
+          products: {},
+          prices: {},
+          portal_sessions: {},
+          schedules: {},
+          schedule_creates: [],
+          schedule_updates: [],
+          checkout_idempotency_keys: []
+        }
       end
 
       def v1
         V1.new(@store)
+      end
+
+      def schedule_creates
+        @store[:schedule_creates]
+      end
+
+      def schedule_updates
+        @store[:schedule_updates]
+      end
+
+      def checkout_idempotency_keys
+        @store[:checkout_idempotency_keys]
       end
     end
   end

@@ -4,6 +4,7 @@ RecordingStudioStripe.configure do |config|
   config.secret_key = ENV.fetch("STRIPE_SECRET_KEY", nil)
   config.publishable_key = ENV.fetch("STRIPE_PUBLISHABLE_KEY", nil)
   config.webhook_secret = ENV.fetch("STRIPE_WEBHOOK_SECRET", nil)
+  # Required when secret_key is set. Unsigned webhooks only work in local mode.
   # Named usage counters. Defaults are ai_tokens and api_calls.
   # Add your own, then set included_<name> on each plan Price.
   # config.meters = {

@@ -56,8 +56,13 @@ module RecordingStudioStripe
       secret = RecordingStudioStripe.configuration.webhook_secret
       if secret.present?
         Stripe::Webhook.construct_event(@payload, @signature, secret)
-      else
+      elsif RecordingStudioStripe.configuration.local_mode?
         Stripe::Event.construct_from(JSON.parse(@payload))
+      else
+        raise Stripe::SignatureVerificationError.new(
+          "Set STRIPE_WEBHOOK_SECRET when Stripe is configured",
+          @signature.to_s
+        )
       end
     end
 
@@ -225,7 +230,9 @@ module RecordingStudioStripe
     end
 
     def invoice_subscription_id(invoice)
-      value = stripe_get(invoice, :subscription)
+      parent = stripe_get(invoice, :parent)
+      details = stripe_get(parent, :subscription_details)
+      value = stripe_get(details, :subscription) || stripe_get(invoice, :subscription)
       return if value.blank?
       return value if value.is_a?(String)
 
@@ -233,6 +240,9 @@ module RecordingStudioStripe
     end
 
     def stripe_list_first(list)
+      return if list.nil?
+      return list.first if list.is_a?(Array)
+
       stripe_get(list, :data)&.first || (list.respond_to?(:first) ? list.first : nil)
     end
 
@@ -242,7 +252,7 @@ module RecordingStudioStripe
 
       object.public_send(key)
     rescue NoMethodError
-      object[key] || object[key.to_s] if object.respond_to?(:[])
+      object[key] || object[key.to_s] if object.is_a?(Hash)
     end
 
     def timestamp(value)

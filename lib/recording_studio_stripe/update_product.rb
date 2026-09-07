@@ -45,9 +45,18 @@ module RecordingStudioStripe
         {
           name: @name,
           description: @description,
-          metadata: existing.merge("kind" => @product.kind, "subscription_type" => type).merge(@product.limit_metadata)
+          metadata: stripe_metadata(type, existing)
         }
       )
+    end
+
+    def stripe_metadata(type, existing)
+      data = existing.merge("kind" => @product.kind, "subscription_type" => type)
+      Limits.all.each do |definition|
+        quantity = @product.limit_quantity(definition.name)
+        data["limit_#{definition.name}"] = quantity.positive? ? quantity.to_s : ""
+      end
+      data
     end
 
     def stringify(metadata)
@@ -62,7 +71,7 @@ module RecordingStudioStripe
 
       object.public_send(key)
     rescue NoMethodError
-      object[key] || object[key.to_s] if object.respond_to?(:[])
+      object[key] || object[key.to_s] if object.is_a?(Hash)
     end
   end
 end

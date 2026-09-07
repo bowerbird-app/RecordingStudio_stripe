@@ -211,6 +211,53 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     RecordingStudioStripe.configuration.client = previous_client
   end
 
+  test "downgrade creates a schedule then updates phases" do
+    previous_client = RecordingStudioStripe.configuration.client
+    client = RecordingStudioStripe::Testing::Client.new
+    RecordingStudioStripe.configuration.client = client
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(
+      root_recording: @root,
+      price: pro,
+      stripe_subscription_id: "sub_down"
+    )
+
+    RecordingStudioStripe::ChangePlan.call(root_recording: @root, price: starter)
+
+    assert_equal [{ from_subscription: "sub_down" }], client.schedule_creates
+    phases = client.schedule_updates.first[:phases]
+    assert_equal 2, phases.size
+    assert_equal starter.stripe_id, phases.last[:items].first[:price]
+    assert_equal starter.id, @workspace.billing.subscription.reload.scheduled_price_id
+    assert_equal pro.id, @workspace.billing.subscription.price_id
+  ensure
+    RecordingStudioStripe.configuration.client = previous_client
+  end
+
+  test "allowance checkout uses a new idempotency key each time" do
+    previous_client = RecordingStudioStripe.configuration.client
+    client = RecordingStudioStripe::Testing::Client.new
+    RecordingStudioStripe.configuration.client = client
+    pack = RecordingStudioStripe::Price.one_time.find_by!("metadata ->> 'allowance' = '5000000'")
+
+    2.times do
+      RecordingStudioStripe::StartCheckout.call(
+        root_recording: @root,
+        price: pack,
+        actor: @user,
+        success_url: "http://www.example.com/billing?checkout=ok",
+        cancel_url: "http://www.example.com/plans"
+      )
+    end
+
+    keys = client.checkout_idempotency_keys
+    assert_equal 2, keys.uniq.size
+    keys.each { |key| assert_match(/\Acheckout-.+-#{Regexp.escape(pack.stripe_id)}-/, key) }
+  ensure
+    RecordingStudioStripe.configuration.client = previous_client
+  end
+
   test "cancel stays active until period end" do
     pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
@@ -240,10 +287,13 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     meter.spend(1)
     assert_equal 1_000_001, meter.usage
+    meter.spend(100, idempotency_key: "tok-retry")
+    meter.spend(100, idempotency_key: "tok-retry")
+    assert_equal 1_000_101, @workspace.billing.meter(:ai_tokens).usage
     error = assert_raises(RecordingStudioStripe::MeterLimitReached) { meter.spend(14_000_000) }
     assert_includes error.user_message, "ai tokens"
     meter.record(14_000_000)
-    assert_equal 15_000_001, @workspace.billing.meter(:ai_tokens).usage
+    assert_equal 15_000_101, @workspace.billing.meter(:ai_tokens).usage
   end
 
   test "billing page shows usage percent" do
@@ -334,6 +384,18 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     stored = client.v1.products.retrieve(product.stripe_id)
     assert_equal "txcd_1", stored.metadata["tax_code"]
     assert_equal "3", stored.metadata["limit_press_kits"]
+
+    RecordingStudioStripe::UpdateProduct.call(
+      product: product.reload,
+      name: product.name,
+      description: product.description,
+      paywall_names: product.paywalls.map(&:name),
+      limits: { "press_kits" => "" }
+    )
+
+    stored = client.v1.products.retrieve(product.stripe_id)
+    assert_equal "txcd_1", stored.metadata["tax_code"]
+    assert_equal "", stored.metadata["limit_press_kits"]
   ensure
     RecordingStudioStripe.configuration.client = previous_client
   end

@@ -18,16 +18,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Stripe webhook rows commit only after the handler applies. Missing catalogue or workspace returns 503 so Stripe retries
 - Checkout for a live plan group calls `ChangePlan` instead of opening a second Stripe Subscription
-- Plan changes read the Stripe subscription item id. They release an existing schedule before a new one. Failed schedules no longer drop the cheaper price on immediately
-- Admin Product save merges Stripe Product metadata instead of replacing it
+- Plan changes read the Stripe subscription item id. They release an existing schedule, then create a schedule from the Subscription and update phases. Failed schedules no longer drop the cheaper price on immediately
+- Admin Product save merges Stripe Product metadata instead of replacing it. Clearing a standing cap unsets that `limit_*` key on Stripe
 - `EnsureCustomer` updates email when it changes
 - `account.billing.meter(:ai_tokens)` uses the live plan that includes that meter, not the latest updated subscription
 - Standing cap cards show used of included, including when over
 - Dummy home is a workspace landing. Dummy `/pricing` passes the signed-in plan so Choose plan becomes Upgrade
-- Checkout and Customer creates send Stripe idempotency keys
+- Recurring Checkout and Customer creates send Stripe idempotency keys. One-time pack Checkout uses a new key each attempt
+- `spend` takes a Postgres lock and returns the existing row when the same idempotency key is retried
+- Configured Stripe without `STRIPE_WEBHOOK_SECRET` rejects unsigned webhook bodies
+- `invoice.paid` and `invoice.payment_failed` read `parent.subscription_details.subscription`, with a fallback to the older `subscription` field
+- `checkout.session.completed` keeps period dates that a subscription webhook already wrote
 
 ### Upgrade notes
 - Call `spend` before work that must not run over a meter. Keep `record` for logging what already happened
+- Set `STRIPE_WEBHOOK_SECRET` whenever Stripe keys or a Stripe client are configured. Unsigned events only work in local mode
 - Set `config.automatic_tax = true` only after Stripe Tax is on in the Dashboard
 - Set `config.limit_reached_path` if your plans page is not `/plans`
 - No extra migrations

@@ -181,7 +181,7 @@ Set those in Admin on the Product, not on each Price. Admin Prices has Edit for 
 
 ## Webhooks
 
-Point Stripe at `POST /webhooks/stripe`. The gem verifies the signature when `STRIPE_WEBHOOK_SECRET` is set, then projects:
+Point Stripe at `POST /webhooks/stripe`. Set `STRIPE_WEBHOOK_SECRET` whenever Stripe keys are set. Unsigned JSON is only accepted in local mode. The gem then projects:
 
 - `checkout.session.completed` for plans and extra packs
 - `customer.subscription.*`

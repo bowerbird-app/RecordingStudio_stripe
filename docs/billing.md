@@ -84,7 +84,7 @@ A plan Price nominates how many of each meter it includes with `included_<meter_
 account.billing.line(:studio).meter(:ai_tokens).spend(1)
 ```
 
-`spend` raises `MeterLimitReached` when remaining is too small (HTML goes to `/billing`; JSON is 403). `record` writes the fact even when over, for work that already ran.
+`spend` raises `MeterLimitReached` when remaining is too small (HTML goes to `/billing`; JSON is 403). A retry with the same idempotency key returns the first row. `record` writes the fact even when over, for work that already ran.
 
 ## Paywalls
 
@@ -163,7 +163,7 @@ Included comes from Price metadata. Purchased comes from allowance packs bought 
 ## Plan changes
 
 - Higher monthly amount: update the Subscription now, `proration_behavior: always_invoice`
-- Lower monthly amount: keep the current Price, store `scheduled_price`, Stripe Subscription Schedule when keys are set. An existing schedule is released first. A failed schedule does not change the live Price
+- Lower monthly amount: keep the current Price, store `scheduled_price`. Stripe gets a schedule created from the Subscription, then an update with the cheaper phase. An existing schedule is released first. A failed schedule does not change the live Price
 - Cancel: `cancel_at_period_end` on that group's Subscription
 - Checkout for a group that already has a live plan calls `ChangePlan`. It does not open a second Stripe Subscription
 
@@ -177,9 +177,9 @@ Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy produc
 
 ## Local mode
 
-When `STRIPE_SECRET_KEY` is blank, Checkout writes a local Customer and Subscription (or allowance purchase) and returns the success URL. Dummy uses this so you can click through without Stripe keys. Webhooks still accept unsigned JSON events when `STRIPE_WEBHOOK_SECRET` is blank. A handler that cannot apply yet returns 503 and leaves the event unstored so Stripe can retry.
+When `STRIPE_SECRET_KEY` is blank, Checkout writes a local Customer and Subscription (or allowance purchase) and returns the success URL. Dummy uses this so you can click through without Stripe keys. Unsigned webhook JSON is accepted only in that local mode. When Stripe is configured, `STRIPE_WEBHOOK_SECRET` is required. A handler that cannot apply yet returns 503 and leaves the event unstored so Stripe can retry.
 
-Checkout sessions send an idempotency key. Promotion codes are on. Set `config.automatic_tax = true` after Stripe Tax is on in the Dashboard.
+Recurring Checkout sessions send a stable idempotency key for the same workspace and Price. One-time pack Checkout sends a new key each attempt. Promotion codes are on. Set `config.automatic_tax = true` after Stripe Tax is on in the Dashboard.
 
 Manage billing on Stripe still shows after a local checkout so hosts can see the control. The POST does not call Stripe. It redirects back to `/billing` with a flash.
 

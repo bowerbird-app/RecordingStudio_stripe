@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "zlib"
-
 module RecordingStudioStripe
   module PlanLimitGuard
     extend ActiveSupport::Concern
@@ -20,7 +18,7 @@ module RecordingStudioStripe
       root = recording_studio_stripe_limit_root
       return unless root
 
-      recording_studio_stripe_lock_limit!(root)
+      AdvisoryLock.hold(self.class.connection, "#{root.id}:#{recordable_type}")
       Limits.for_recordable_type(recordable_type).each do |definition|
         handle = LimitHandle.new(
           root_recording: root,
@@ -48,14 +46,6 @@ module RecordingStudioStripe
       return parent_recording.root_recording || parent_recording if parent_recording
 
       self.class.find_by(id: parent_recording_id)
-    end
-
-    def recording_studio_stripe_lock_limit!(root)
-      connection = self.class.connection
-      return unless connection.adapter_name.match?(/postg/i)
-
-      key = Zlib.crc32("#{root.id}:#{recordable_type}")
-      connection.execute("SELECT pg_advisory_xact_lock(#{key})")
     end
   end
 end
