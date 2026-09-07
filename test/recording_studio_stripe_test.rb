@@ -209,10 +209,10 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "dummy_page_nav"
     assert_includes view_source, "FlatPack::EmptyState::Component"
     assert_includes view_source, "Public pricing"
-    assert_includes view_source, "What this plan opens"
-    assert_includes view_source, "dummy_paywall_open?"
     assert_includes view_source, "press_kits_path"
     refute_includes view_source, "Add press kit"
+    refute_includes view_source, "What this plan opens"
+    refute_includes view_source, "dummy_paywall_open?"
   end
 
   def test_plan_card_lists_product_limits_before_meter_inclusions

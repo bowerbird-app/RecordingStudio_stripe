@@ -54,21 +54,4 @@
       <% end %>
     <% end %>
   <% end %>
-
-  <% paywalls = RecordingStudioStripe::Paywall.order(:name) %>
-  <% if paywalls.any? && !recordable.is_a?(AdminRoot) %>
-    <%= render FlatPack::PageTitle::Component.new(
-      title: "What this plan opens",
-      subtitle: lines.any? ? "On this workspace, with these plans." : "Pick a plan to open these.",
-      variant: :h3
-    ) %>
-    <%= render FlatPack::ChipGroup::Component.new do %>
-      <% paywalls.each do |paywall| %>
-        <%= render FlatPack::Chip::Component.new(
-          text: paywall.label,
-          style: dummy_paywall_open?(paywall) ? :success : :default
-        ) %>
-      <% end %>
-    <% end %>
-  <% end %>
 </div>
