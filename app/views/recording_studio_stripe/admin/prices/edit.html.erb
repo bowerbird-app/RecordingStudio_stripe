@@ -1,0 +1,34 @@
+<% recording_studio_page_nav(title: "Edit Price", page_nav_back_url: "/admin/screens/prices", page_nav_back_label: "Prices") %>
+
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Edit Price",
+    subtitle: "Stripe keeps the amount. You can change included usage.",
+    variant: :h1
+  ) %>
+
+  <%= form_with url: recording_studio_stripe.admin_price_path(@price), method: :patch, local: true, class: "flex max-w-xl flex-col gap-4" do %>
+    <% if @product&.plan? %>
+      <% RecordingStudioStripe::Meter.order(:name).each do |meter| %>
+        <%= render FlatPack::TextInput::Component.new(
+          name: "included[#{meter.name}]",
+          label: "Included #{meter.label.downcase}",
+          value: included_field_value(meter.name)
+        ) %>
+      <% end %>
+    <% else %>
+      <%= render FlatPack::Select::Component.new(
+        name: "meter",
+        label: "Meter",
+        value: @price.allowance_meter_name,
+        options: RecordingStudioStripe::Meter.order(:name).map { |meter| [meter.label, meter.name] }
+      ) %>
+      <%= render FlatPack::TextInput::Component.new(
+        name: "allowance",
+        label: "Allowance quantity",
+        value: @price.allowance_quantity.positive? ? @price.allowance_quantity.to_s : nil
+      ) %>
+    <% end %>
+    <%= render FlatPack::Button::Component.new(text: "Save Price", style: :primary, size: :md, type: "submit") %>
+  <% end %>
+</div>

@@ -18,6 +18,7 @@ module RecordingStudioStripe
       root = recording_studio_stripe_limit_root
       return unless root
 
+      AdvisoryLock.hold(self.class.connection, "#{root.id}:#{recordable_type}")
       Limits.for_recordable_type(recordable_type).each do |definition|
         handle = LimitHandle.new(
           root_recording: root,

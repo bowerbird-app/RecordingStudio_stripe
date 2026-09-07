@@ -4,7 +4,7 @@
 
 - This repository is the Recording Studio Stripe billing addon (`RecordingStudioStripe`).
 - Preserve engine namespace isolation under `RecordingStudioStripe`.
-- Treat `docs/gem_template/` as leftover template architecture. For current addon workflow, prefer the top-level README, `docs/billing.md`, and the dummy app.
+- Prefer the top-level README, `docs/billing.md`, and the dummy app.
 - Keep changes small and scoped. This is a Stripe-only gem. Do not add provider adapters, wallets, or a second admin.
 
 ## UI Conventions

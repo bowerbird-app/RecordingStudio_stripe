@@ -40,10 +40,23 @@ module RecordingStudioStripe
       )
     end
 
+    def spend(quantity, idempotency_key: nil, recorded_at: Time.current)
+      UsageEntry.transaction do
+        AdvisoryLock.hold(UsageEntry.connection, "#{root_recording.id}:meter:#{meter.name}")
+        if idempotency_key.present?
+          existing = UsageEntry.find_by(idempotency_key: idempotency_key)
+          return existing if existing
+        end
+        raise MeterLimitReached.new(handle: self) unless available?(quantity)
+
+        record(quantity, idempotency_key: idempotency_key, recorded_at: recorded_at)
+      end
+    end
+
     private
 
     def period
-      @period ||= UsagePeriod.for(
+      UsagePeriod.for(
         root_recording: root_recording,
         meter: meter,
         subscription_type: @subscription_type

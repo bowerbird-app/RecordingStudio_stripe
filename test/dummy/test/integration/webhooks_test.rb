@@ -96,6 +96,186 @@ class WebhooksTest < ActionDispatch::IntegrationTest
     assert_equal 1, RecordingStudioStripe::WebhookEvent.where(stripe_id: "evt_dup_1").count
   end
 
+  test "checkout.session.completed fulfils a subscription" do
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+
+    post "/webhooks/stripe",
+         params: stripe_event(
+           "evt_checkout_sub_1",
+           "checkout.session.completed",
+           {
+             "id" => "cs_test_sub",
+             "mode" => "subscription",
+             "subscription" => "sub_from_checkout",
+             "customer" => "cus_from_checkout",
+             "client_reference_id" => @root.id.to_s,
+             "metadata" => {
+               "root_recording_id" => @root.id.to_s,
+               "price_id" => price.stripe_id
+             }
+           }
+         ),
+         as: :json
+
+    assert_response :success
+    subscription = @workspace.billing.subscription
+    assert_predicate subscription, :active?
+    assert_equal price.id, subscription.price_id
+    assert_equal "sub_from_checkout", subscription.stripe_id
+  end
+
+  test "checkout fulfilment keeps existing period dates" do
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    period_start = Time.zone.at(1_700_000_000)
+    period_end = Time.zone.at(1_702_592_000)
+
+    post "/webhooks/stripe",
+         params: stripe_event(
+           "evt_sub_periods",
+           "customer.subscription.created",
+           {
+             "id" => "sub_keep_periods",
+             "customer" => "cus_keep_periods",
+             "status" => "active",
+             "cancel_at_period_end" => false,
+             "metadata" => { "root_recording_id" => @root.id.to_s },
+             "items" => {
+               "data" => [
+                 {
+                   "id" => "si_keep_periods",
+                   "price" => { "id" => price.stripe_id },
+                   "current_period_start" => period_start.to_i,
+                   "current_period_end" => period_end.to_i
+                 }
+               ]
+             }
+           }
+         ),
+         as: :json
+
+    post "/webhooks/stripe",
+         params: stripe_event(
+           "evt_checkout_keep_periods",
+           "checkout.session.completed",
+           {
+             "id" => "cs_keep_periods",
+             "mode" => "subscription",
+             "subscription" => "sub_keep_periods",
+             "customer" => "cus_keep_periods",
+             "client_reference_id" => @root.id.to_s,
+             "metadata" => {
+               "root_recording_id" => @root.id.to_s,
+               "price_id" => price.stripe_id
+             }
+           }
+         ),
+         as: :json
+
+    assert_response :success
+    subscription = @workspace.billing.subscription
+    assert_equal period_start, subscription.current_period_start
+    assert_equal period_end, subscription.current_period_end
+  end
+
+  test "unknown price is not stored so Stripe can retry" do
+    post "/webhooks/stripe",
+         params: stripe_event(
+           "evt_missing_price",
+           "customer.subscription.created",
+           {
+             "id" => "sub_missing_price",
+             "customer" => "cus_missing",
+             "status" => "active",
+             "metadata" => { "root_recording_id" => @root.id.to_s },
+             "items" => { "data" => [{ "id" => "si_missing", "price" => { "id" => "price_unknown" } }] }
+           }
+         ),
+         as: :json
+
+    assert_response :service_unavailable
+    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_missing_price")
+  end
+
+  test "invoice.payment_failed marks past_due and invoice.paid clears it" do
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(
+      root_recording: @root,
+      price: price,
+      stripe_subscription_id: "sub_invoice",
+      stripe_customer_id: "cus_invoice"
+    )
+
+    post "/webhooks/stripe",
+         params: stripe_event(
+           "evt_fail_1",
+           "invoice.payment_failed",
+           {
+             "id" => "in_fail",
+             "parent" => {
+               "type" => "subscription_details",
+               "subscription_details" => { "subscription" => "sub_invoice" }
+             }
+           }
+         ),
+         as: :json
+
+    assert_response :success
+    assert_equal "past_due", @workspace.billing.subscription.status
+
+    post "/webhooks/stripe",
+         params: stripe_event(
+           "evt_paid_1",
+           "invoice.paid",
+           {
+             "id" => "in_paid",
+             "paid" => true,
+             "parent" => {
+               "type" => "subscription_details",
+               "subscription_details" => { "subscription" => "sub_invoice" }
+             }
+           }
+         ),
+         as: :json
+
+    assert_response :success
+    assert_equal "active", @workspace.billing.subscription.reload.status
+  end
+
+  test "invoice events still read a legacy subscription field" do
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(
+      root_recording: @root,
+      price: price,
+      stripe_subscription_id: "sub_legacy_invoice",
+      stripe_customer_id: "cus_legacy_invoice"
+    )
+
+    post "/webhooks/stripe",
+         params: stripe_event(
+           "evt_legacy_fail",
+           "invoice.payment_failed",
+           { "id" => "in_legacy", "subscription" => "sub_legacy_invoice" }
+         ),
+         as: :json
+
+    assert_response :success
+    assert_equal "past_due", @workspace.billing.subscription.reload.status
+  end
+
+  test "configured Stripe without a webhook secret rejects unsigned events" do
+    previous_client = RecordingStudioStripe.configuration.client
+    RecordingStudioStripe.configuration.client = RecordingStudioStripe::Testing::Client.new
+
+    post "/webhooks/stripe",
+         params: stripe_event("evt_unsigned", "customer.subscription.created", { "id" => "sub_unsigned" }),
+         as: :json
+
+    assert_response :bad_request
+    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_unsigned")
+  ensure
+    RecordingStudioStripe.configuration.client = previous_client
+  end
+
   private
 
   def stripe_event(id, type, object)

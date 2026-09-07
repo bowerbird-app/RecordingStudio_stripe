@@ -1,7 +1,22 @@
 # frozen_string_literal: true
 
 module RecordingStudioStripe
-  class ProcessWebhook
+  class ProcessWebhook # rubocop:disable Metrics/ClassLength
+    EVENT_HANDLERS = {
+      "checkout.session.completed" => :handle_checkout,
+      "customer.subscription.created" => :handle_subscription,
+      "customer.subscription.updated" => :handle_subscription,
+      "customer.subscription.deleted" => :handle_subscription_deleted,
+      "invoice.paid" => :handle_invoice_paid,
+      "invoice.payment_failed" => :handle_invoice_payment_failed,
+      "product.created" => :upsert_product,
+      "product.updated" => :upsert_product,
+      "product.deleted" => :deactivate_product,
+      "price.created" => :handle_price_upsert,
+      "price.updated" => :handle_price_upsert,
+      "price.deleted" => :deactivate_price
+    }.freeze
+
     def self.call(payload:, signature:)
       new(payload: payload, signature: signature).call
     end
@@ -27,6 +42,12 @@ module RecordingStudioStripe
       :processed
     rescue ActiveRecord::RecordNotUnique
       :duplicate
+    rescue ActiveRecord::RecordInvalid => e
+      raise unless duplicate_event?(e)
+
+      :duplicate
+    rescue DeferredWebhook
+      :deferred
     end
 
     private
@@ -35,8 +56,13 @@ module RecordingStudioStripe
       secret = RecordingStudioStripe.configuration.webhook_secret
       if secret.present?
         Stripe::Webhook.construct_event(@payload, @signature, secret)
-      else
+      elsif RecordingStudioStripe.configuration.local_mode?
         Stripe::Event.construct_from(JSON.parse(@payload))
+      else
+        raise Stripe::SignatureVerificationError.new(
+          "Set STRIPE_WEBHOOK_SECRET when Stripe is configured",
+          @signature.to_s
+        )
       end
     end
 
@@ -44,33 +70,51 @@ module RecordingStudioStripe
       event.respond_to?(:to_hash) ? event.to_hash : { "id" => event.id, "type" => event.type }
     end
 
+    def duplicate_event?(error)
+      error.record.is_a?(WebhookEvent) && error.record.errors[:stripe_id].any?
+    end
+
     def handle(event)
-      case event.type
-      when "checkout.session.completed"
-        handle_checkout(event.data.object)
-      when "customer.subscription.created", "customer.subscription.updated"
-        handle_subscription(event.data.object)
-      when "customer.subscription.deleted"
-        handle_subscription_deleted(event.data.object)
-      when "product.created", "product.updated"
-        UpsertProduct.call(event.data.object)
-      when "product.deleted"
-        Product.find_by(stripe_id: event.data.object.id)&.update!(active: false)
-      when "price.created", "price.updated"
-        UpsertPrice.call(event.data.object)
-      when "price.deleted"
-        Price.find_by(stripe_id: event.data.object.id)&.update!(active: false)
-      end
+      method_name = EVENT_HANDLERS[event.type]
+      send(method_name, event.data.object) if method_name
+    end
+
+    def upsert_product(stripe_product)
+      UpsertProduct.call(stripe_product)
+    end
+
+    def deactivate_product(stripe_product)
+      Product.find_by(stripe_id: stripe_product.id)&.update!(active: false)
+    end
+
+    def deactivate_price(stripe_price)
+      Price.find_by(stripe_id: stripe_price.id)&.update!(active: false)
     end
 
     def handle_checkout(session)
-      root = root_from(session)
-      return unless root
-
       price = price_from_session(session)
-      return unless price
-      return if session.mode == "subscription" || price.recurring?
+      if session.mode == "subscription" || price&.recurring?
+        handle_checkout_subscription(session, price)
+      else
+        handle_checkout_allowance(session, price)
+      end
+    end
 
+    def handle_checkout_subscription(session, price)
+      root = require_root!(root_from(session))
+      require_price!(price)
+      ApplySubscription.call(
+        root_recording: root,
+        price: price,
+        stripe_subscription_id: stripe_get(session, :subscription),
+        stripe_customer_id: stripe_get(session, :customer),
+        status: "active"
+      )
+    end
+
+    def handle_checkout_allowance(session, price)
+      root = require_root!(root_from(session))
+      require_price!(price)
       ApplyAllowance.call(
         root_recording: root,
         price: price,
@@ -79,10 +123,8 @@ module RecordingStudioStripe
     end
 
     def handle_subscription(stripe_subscription)
-      root = root_from_subscription(stripe_subscription)
-      return unless root
-
-      price = price_from_subscription(stripe_subscription)
+      root = require_root!(root_from_subscription(stripe_subscription))
+      price = require_price!(price_from_subscription(stripe_subscription))
       item = stripe_list_first(stripe_get(stripe_subscription, :items))
       ApplySubscription.call(
         root_recording: root,
@@ -105,6 +147,38 @@ module RecordingStudioStripe
 
     def handle_subscription_deleted(stripe_subscription)
       Subscription.find_by(stripe_id: stripe_subscription.id)&.update!(status: "canceled", cancel_at_period_end: false)
+    end
+
+    def handle_invoice_paid(invoice)
+      subscription = subscription_from_invoice(invoice)
+      return if subscription == :none
+      return unless subscription.status == "past_due"
+
+      subscription.update!(status: "active")
+    end
+
+    def handle_invoice_payment_failed(invoice)
+      subscription = subscription_from_invoice(invoice)
+      return if subscription == :none
+
+      subscription.update!(status: "past_due")
+    end
+
+    def handle_price_upsert(stripe_price)
+      product_id = stripe_price_product_id(stripe_price)
+      if product_id.present? && Product.find_by(stripe_id: product_id).blank?
+        raise DeferredWebhook, "Price product is not in the catalogue yet"
+      end
+
+      UpsertPrice.call(stripe_price)
+    end
+
+    def stripe_price_product_id(stripe_price)
+      product = stripe_get(stripe_price, :product)
+      return if product.blank?
+      return product if product.is_a?(String)
+
+      stripe_get(product, :id) || product.to_s
     end
 
     def root_from(session)
@@ -133,7 +207,42 @@ module RecordingStudioStripe
       Price.find_by(stripe_id: stripe_price_id.to_s)
     end
 
+    def require_root!(root)
+      raise DeferredWebhook, "Workspace is not in this app yet" unless root
+
+      root
+    end
+
+    def require_price!(price)
+      raise DeferredWebhook, "Price is not in the catalogue yet" if price.blank?
+
+      price
+    end
+
+    def subscription_from_invoice(invoice)
+      stripe_id = invoice_subscription_id(invoice)
+      return :none if stripe_id.blank?
+
+      subscription = Subscription.find_by(stripe_id: stripe_id)
+      raise DeferredWebhook, "Subscription is not in this app yet" unless subscription
+
+      subscription
+    end
+
+    def invoice_subscription_id(invoice)
+      parent = stripe_get(invoice, :parent)
+      details = stripe_get(parent, :subscription_details)
+      value = stripe_get(details, :subscription) || stripe_get(invoice, :subscription)
+      return if value.blank?
+      return value if value.is_a?(String)
+
+      stripe_get(value, :id) || value.to_s
+    end
+
     def stripe_list_first(list)
+      return if list.nil?
+      return list.first if list.is_a?(Array)
+
       stripe_get(list, :data)&.first || (list.respond_to?(:first) ? list.first : nil)
     end
 
@@ -143,7 +252,7 @@ module RecordingStudioStripe
 
       object.public_send(key)
     rescue NoMethodError
-      object[key] || object[key.to_s] if object.respond_to?(:[])
+      object[key] || object[key.to_s] if object.is_a?(Hash)
     end
 
     def timestamp(value)

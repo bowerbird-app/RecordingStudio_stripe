@@ -64,5 +64,14 @@ module RecordingStudioStripe
       quantity = @product.limit_quantity(name)
       quantity.positive? ? quantity.to_s : nil
     end
+
+    def included_field_value(name)
+      submitted = params.dig(:included, name)
+      return submitted unless submitted.nil?
+      return unless defined?(@price) && @price
+
+      quantity = @price.included_quantity(name)
+      quantity.positive? ? quantity.to_s : nil
+    end
   end
 end

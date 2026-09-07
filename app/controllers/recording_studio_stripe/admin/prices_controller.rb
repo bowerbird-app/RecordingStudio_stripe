@@ -23,6 +23,21 @@ module RecordingStudioStripe
         render :new, status: :unprocessable_entity
       end
 
+      def edit
+        @price = Price.find(params[:id])
+        @product = @price.product
+      end
+
+      def update
+        @price = Price.find(params[:id])
+        @product = @price.product
+        UpdatePrice.call(price: @price, metadata: price_metadata)
+        redirect_to admin_screen_url("prices"), notice: "Included amounts are saved."
+      rescue InvalidPrice, ActiveRecord::RecordInvalid => e
+        flash.now[:alert] = e.message
+        render :edit, status: :unprocessable_entity
+      end
+
       private
 
       def price_metadata

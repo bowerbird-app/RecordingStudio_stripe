@@ -125,6 +125,7 @@ class MultipleSubscriptionsTest < ActionDispatch::IntegrationTest
     assert_equal 10_000_000, studio_tokens.included
     assert_equal 0, inbox_tokens.included
     assert_equal 50_000, inbox_calls.included
+    assert_equal 10_000_000, @workspace.billing.meter(:ai_tokens).included
   end
 
   test "assign remaps implied plan rows when the host has one type" do
@@ -140,5 +141,17 @@ class MultipleSubscriptionsTest < ActionDispatch::IntegrationTest
     RecordingStudioStripe.configuration.subscription_types = previous
     RecordingStudioStripe::AssignSubscriptionTypes.call
     RecordingStudioStripe::SeedDemoCatalog.call
+  end
+
+  test "public pricing uses the signed-in plan so a live type is not a second checkout" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+
+    get "/pricing"
+
+    assert_response :success
+    assert_includes response.body, "Current plan"
+    assert_includes response.body, "Choose plan"
+    assert_select "[data-plan-group='studio']", text: /Current plan/
   end
 end

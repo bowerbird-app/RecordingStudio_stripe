@@ -7,6 +7,14 @@
     variant: :h1
   ) %>
 
+  <% if @confirming_checkout %>
+    <%= render FlatPack::Alert::Component.new(
+      description: "Stripe is confirming this plan. Refresh in a moment.",
+      style: :info,
+      class: "mb-4"
+    ) %>
+  <% end %>
+
   <% if @show_manage_billing %>
     <%= button_to recording_studio_stripe.portal_path, class: "inline-flex", form: { data: { turbo: false } } do %>
       <%= render FlatPack::Button::Component.new(

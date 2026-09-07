@@ -89,13 +89,19 @@ To sell two plans at once, name the groups:
 ```ruby
 RecordingStudioStripe.configure do |config|
   config.subscription_types = {
-    "press_kits" => { "label" => "Press kits" },
-    "media_monitoring" => { "label" => "Media monitoring" }
+    "studio" => { "label" => "Studio" },
+    "inbox" => { "label" => "Inbox" }
   }
 end
 ```
 
-Each plan Product belongs to one group. A workspace holds one live Stripe Subscription per group, still one Customer. `account.billing.line(:press_kits).subscription` is that group's plan. `account.billing.unlocked?(:export_csv)` is true if any live plan opens it.
+Each plan Product belongs to one group. A workspace holds one live Stripe Subscription per group, still one Customer. `account.billing.line(:studio).subscription` is that group's plan. `account.billing.unlocked?(:export_csv)` is true if any live plan opens it. Use `billing.line(:inbox).unlocked?(:export_csv)` when the feature belongs to one group.
+
+A `past_due` plan still counts as subscribed. Paywalls stay open and standing caps stay on that plan until Stripe marks it canceled. That is the grace period.
+
+`account.billing.meter(:ai_tokens)` uses the live plan that includes that meter. Prefer `account.billing.line(:studio).meter(:ai_tokens)` when two plans both include it. Usage rows are still one pool per meter per workspace.
+
+Call `spend` when the work must not run over the included amount. `record` still writes the fact after the work happened, even if that puts usage over remaining.
 
 Named plan features live in `config.paywalls`. The gem writes those rows on boot. Staff tick which paywalls a Product opens. Monthly and yearly Prices on the same Product share them. Extra packs do not. Then:
 
@@ -107,9 +113,9 @@ RecordingStudioAccessible.authorized_action?(
 )
 ```
 
-That is true when the actor has `:view` on the workspace root **and** a live plan Product includes that paywall. Meter spend stays `available?` / `record`. Buying Pro does not grant `:admin`.
+That is true when the actor has `:view` on the workspace root **and** a live plan Product includes that paywall. Meter spend stays `available?` before the work, or `spend` to check and write in one call. `record` logs usage that already happened. Buying Pro does not grant `:admin`.
 
-Standing caps live in `config.limits`. The number sits on the Product, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. Creating another of that type raises `RecordingStudioStripe::PlanLimitReached` (HTML redirects to `/plans`; JSON is 403). Downgrades do not delete extras; `over?` is true until they archive.
+Standing caps live in `config.limits`. The number sits on the Product, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. Creating another of that type raises `RecordingStudioStripe::PlanLimitReached` (HTML redirects to `/plans`, or `config.limit_reached_path`; JSON is 403). Downgrades do not delete extras; `over?` is true until they archive. `used` counts every live recording of that type under the workspace, including nested ones.
 
 ```ruby
 RecordingStudioStripe.configure do |config|
@@ -128,9 +134,12 @@ kits.used
 kits.remaining
 kits.available?(1)
 kits.over?
+
+tokens = account.billing.line(:studio).meter(:ai_tokens)
+tokens.spend(1) if tokens.available?(1)
 ```
 
-Omit `subscription_type` and the gem uses a matching plan group name if one exists, otherwise the first group. Dummy Starter includes 3 press kits and Pro includes 10.
+Omit `subscription_type` and the gem uses a matching plan group name if one exists, otherwise the first group. Do not give a limit the same name as a plan group unless they are meant to share it. Dummy Starter includes 3 press kits and Pro includes 10.
 
 ### Admin
 
@@ -168,18 +177,23 @@ Plan Products also store standing limits:
 limit_press_kits=3
 ```
 
-Set those in Admin on the Product, not on each Price.
+Set those in Admin on the Product, not on each Price. Admin Prices has Edit for included usage. Stripe still owns the amount.
 
 ## Webhooks
 
-Point Stripe at `POST /webhooks/stripe`. The gem verifies the signature when `STRIPE_WEBHOOK_SECRET` is set, then projects:
+Point Stripe at `POST /webhooks/stripe`. Set `STRIPE_WEBHOOK_SECRET` whenever Stripe keys are set. Unsigned JSON is only accepted in local mode. The gem then projects:
 
-- `checkout.session.completed` for extra packs
+- `checkout.session.completed` for plans and extra packs
 - `customer.subscription.*`
+- `invoice.paid` and `invoice.payment_failed`
 - `product.*` and `price.*`
 
-Checkout return URLs do not fulfil anything. Stripe events do.
+A handler that cannot apply yet (Price or workspace missing) returns 503 and does not store the event, so Stripe retries. Checkout return still does not fulfil on its own. `/billing?checkout=ok` tells people to refresh if the subscription webhook has not landed. Choosing a plan in a group you already have upgrades or schedules a downgrade. It does not open a second Stripe Subscription.
+
+Set `config.automatic_tax = true` only after Stripe Tax is on in the Dashboard. Promotion codes are on by default.
+
+Recording Studio core still swallows `before_record` errors. Standing caps gate on `Recording` `before_create` until core can deny `record!` itself.
 
 ## Dummy
 
-`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro) and Inbox (Inbox, Inbox Plus) so one workspace can hold two live plans. `/billing` shows the press kit cap. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.
+`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro) and Inbox (Inbox, Inbox Plus) so one workspace can hold two live plans. Home is the workspace. `/billing` shows the press kit cap with meters. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.

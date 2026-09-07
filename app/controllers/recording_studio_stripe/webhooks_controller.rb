@@ -5,8 +5,12 @@ module RecordingStudioStripe
     skip_forgery_protection
 
     def create
-      ProcessWebhook.call(payload: request.body.read, signature: request.env["HTTP_STRIPE_SIGNATURE"])
-      head :ok
+      result = ProcessWebhook.call(payload: request.body.read, signature: request.env["HTTP_STRIPE_SIGNATURE"])
+      if result == :deferred
+        head :service_unavailable
+      else
+        head :ok
+      end
     rescue JSON::ParserError, Stripe::SignatureVerificationError
       head :bad_request
     end

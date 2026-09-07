@@ -154,6 +154,23 @@ class PlanLimitsTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Launch kit"
     assert_includes response.body, "Add press kit"
     assert_includes response.body, "1 of 3 on this plan."
+    refute_includes response.body, "Studio usage"
+  end
+
+  test "over-cap billing copy shows used of included" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+    4.times { |index| record_press_kit!("Kit #{index + 1}") }
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)
+
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    assert_includes response.body, "4 of 3 on this plan. Archive some, or upgrade."
+    kits = @workspace.billing.limit(:press_kits)
+    assert kits.over?
+    refute kits.available?(1)
   end
 
   test "pro includes ten press kits on the billing handle" do
