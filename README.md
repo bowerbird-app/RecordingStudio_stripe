@@ -99,9 +99,9 @@ Each plan Product belongs to one group. A workspace holds one live Stripe Subscr
 
 A `past_due` plan still counts as subscribed. Paywalls stay open and standing caps stay on that plan until Stripe marks it canceled. That is the grace period.
 
-`account.billing.meter(:ai_tokens)` uses the live plan that includes that meter. Prefer `account.billing.line(:studio).meter(:ai_tokens)` when two plans both include it. Usage rows are still one pool per meter per workspace.
+`account.billing.meter(:ai_tokens)` uses the live plan that includes that meter. Prefer `account.billing.line(:studio).meter(:ai_tokens)` when two plans both include it. New usage rows store that plan group. Call `spend` when the work must not run over the included amount. `record` still writes the fact after the work happened, even if that puts usage over remaining.
 
-Call `spend` when the work must not run over the included amount. `record` still writes the fact after the work happened, even if that puts usage over remaining.
+Pay, change plan, cancel, resume, extra packs, and Manage billing on Stripe need Accessible `:admin` on the workspace. `:view` can still read `/plans` and `/billing`. `:edit` cannot charge the workspace.
 
 Named plan features live in `config.paywalls`. The gem writes those rows on boot. Staff tick which paywalls a Product opens. Monthly and yearly Prices on the same Product share them. Extra packs do not. Then:
 
@@ -115,7 +115,7 @@ RecordingStudioAccessible.authorized_action?(
 
 That is true when the actor has `:view` on the workspace root **and** a live plan Product includes that paywall. Meter spend stays `available?` before the work, or `spend` to check and write in one call. `record` logs usage that already happened. Buying Pro does not grant `:admin`.
 
-Standing caps live in `config.limits`. The number sits on the Product, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. Creating another of that type raises `RecordingStudioStripe::PlanLimitReached` (HTML redirects to `/plans`, or `config.limit_reached_path`; JSON is 403). Downgrades do not delete extras; `over?` is true until they archive. `used` counts every live recording of that type under the workspace, including nested ones.
+Standing caps live in `config.limits`. The number sits on the Product, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. Creating another of that type, restoring it from trash, or moving it into a full workspace raises `RecordingStudioStripe::PlanLimitReached` (HTML redirects to `/plans`, or `config.limit_reached_path`; JSON is 403). The gate only runs under a root that enabled `:stripe`. Downgrades do not delete extras; `over?` is true until they archive. `used` counts every live recording of that type under the workspace, including nested ones.
 
 ```ruby
 RecordingStudioStripe.configure do |config|
@@ -181,18 +181,20 @@ Set those in Admin on the Product, not on each Price. Admin Prices has Edit for 
 
 ## Webhooks
 
-Point Stripe at `POST /webhooks/stripe`. Set `STRIPE_WEBHOOK_SECRET` whenever Stripe keys are set. Unsigned JSON is only accepted in local mode. The gem then projects:
+Point Stripe at `POST /webhooks/stripe`. Set `STRIPE_WEBHOOK_SECRET` whenever Stripe keys are set. Unsigned JSON is only accepted in local mode. Do not deploy local mode on a public host. The gem then projects:
 
-- `checkout.session.completed` for plans and extra packs
+- `checkout.session.completed` and `checkout.session.async_payment_succeeded` for paid plans and extra packs
 - `customer.subscription.*`
 - `invoice.paid` and `invoice.payment_failed`
 - `product.*` and `price.*`
 
-A handler that cannot apply yet (Price or workspace missing) returns 503 and does not store the event, so Stripe retries. Checkout return still does not fulfil on its own. `/billing?checkout=ok` tells people to refresh if the subscription webhook has not landed. Choosing a plan in a group you already have upgrades or schedules a downgrade. It does not open a second Stripe Subscription.
+`checkout.session.completed` does nothing until `payment_status` is `paid` or `no_payment_required`. A handler that cannot apply yet (Price or workspace missing) returns 503 and does not store the event, so Stripe retries. Checkout return still does not fulfil on its own. `/billing?checkout=ok` tells people to refresh if the subscription webhook has not landed. Choosing a plan in a group you already have upgrades or schedules a downgrade. It does not open a second Stripe Subscription. Stripe upgrades wait for the webhook before the local Price changes.
 
-Set `config.automatic_tax = true` only after Stripe Tax is on in the Dashboard. Promotion codes are on by default.
+Set `config.automatic_tax = true` only after Stripe Tax is on in the Dashboard. Checkout then also sends `customer_update: { address: "auto" }`. Promotion codes are on by default.
 
-Recording Studio core still swallows `before_record` errors. Standing caps gate on `Recording` `before_create` until core can deny `record!` itself.
+Hosts that do not use `current_user` should set `config.current_actor`. Hosts that do not use `current_root_recording` should set `config.current_root_recording`. `draw_recording_studio_stripe at:` overwrites `config.mount_path`.
+
+Recording Studio core still swallows `before_record` errors. Standing caps gate on `Recording` `before_create`, restore, and move until core can deny `record!` itself.
 
 ## Dummy
 

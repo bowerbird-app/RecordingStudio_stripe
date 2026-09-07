@@ -49,13 +49,29 @@ module RecordingStudioStripe
       authorize_role!(:edit)
     end
 
+    def authorize_admin!
+      authorize_role!(:admin)
+    end
+
     def authorize_role!(role)
-      return unless defined?(RecordingStudioAccessible)
-      return if RecordingStudioAccessible.authorized?(
-        actor: current_actor,
-        recording: current_billing_root,
-        role: role
-      )
+      if defined?(RecordingStudioAccessible)
+        return if RecordingStudioAccessible.authorized?(
+          actor: current_actor,
+          recording: current_billing_root,
+          role: role
+        )
+
+        render plain: "You don’t have access to billing for this workspace.", status: :forbidden
+        return
+      end
+
+      authenticator = RecordingStudioStripe.configuration.authenticate
+      if authenticator
+        return if instance_exec(&authenticator)
+
+        render plain: "You don’t have access to billing for this workspace.", status: :forbidden
+        return
+      end
 
       render plain: "You don’t have access to billing for this workspace.", status: :forbidden
     end

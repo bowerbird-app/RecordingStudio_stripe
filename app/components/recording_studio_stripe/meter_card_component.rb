@@ -38,6 +38,7 @@ module RecordingStudioStripe
     end
 
     def progress_style
+      return :default if @handle.included.zero? && @handle.purchased.zero?
       return :danger if @handle.remaining <= 0
       return :warning if @handle.included.positive? && @handle.remaining < (@handle.included * 0.15)
 

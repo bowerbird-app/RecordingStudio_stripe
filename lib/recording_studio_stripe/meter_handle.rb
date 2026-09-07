@@ -36,7 +36,8 @@ module RecordingStudioStripe
         meter: meter,
         quantity: quantity,
         idempotency_key: idempotency_key,
-        recorded_at: recorded_at
+        recorded_at: recorded_at,
+        subscription_type: @subscription_type
       )
     end
 
@@ -44,7 +45,10 @@ module RecordingStudioStripe
       UsageEntry.transaction do
         AdvisoryLock.hold(UsageEntry.connection, "#{root_recording.id}:meter:#{meter.name}")
         if idempotency_key.present?
-          existing = UsageEntry.find_by(idempotency_key: idempotency_key)
+          existing = UsageEntry.find_by(
+            root_recording_id: root_recording.id,
+            idempotency_key: idempotency_key
+          )
           return existing if existing
         end
         raise MeterLimitReached.new(handle: self) unless available?(quantity)

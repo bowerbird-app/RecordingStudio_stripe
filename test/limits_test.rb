@@ -80,4 +80,17 @@ class LimitsTest < Minitest::Test
 
     assert_empty RecordingStudioStripe::Limits.keys
   end
+
+  def test_advisory_lock_is_a_noop_on_non_postgres
+    connection = Object.new
+    def connection.adapter_name
+      "SQLite"
+    end
+
+    def connection.execute(*)
+      raise "advisory lock should not run"
+    end
+
+    RecordingStudioStripe::AdvisoryLock.hold(connection, "demo")
+  end
 end

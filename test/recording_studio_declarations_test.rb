@@ -12,7 +12,7 @@ class RecordingStudioDeclarationsTest < ActiveSupport::TestCase
     assert_equal %w[AdminRoot Workspace].sort, RecordingStudio.root_recordable_types.sort
     assert_equal %w[Workspace Folder], RecordingStudio.allowed_parent_types_for("Folder")
     assert_equal %w[Workspace Folder], RecordingStudio.allowed_parent_types_for(Page)
-    assert_equal %w[Workspace], RecordingStudio.allowed_parent_types_for("PressKit")
+    assert_equal %w[Workspace Folder], RecordingStudio.allowed_parent_types_for("PressKit")
   end
 
   test "root recordable creates a root recording" do

@@ -2,10 +2,15 @@
 
 module RecordingStudioStripe
   class SubscriptionsController < ApplicationController
-    before_action :authorize_edit!
+    before_action :authorize_admin!
 
     def update
-      price = Price.active.find(params[:price_id])
+      price = Price.active.includes(:product).find_by(id: params[:price_id])
+      unless price&.product&.plan? && price.recurring?
+        redirect_to recording_studio_stripe.engine_plans_path, alert: "Pick a plan from the list."
+        return
+      end
+
       ChangePlan.call(root_recording: current_billing_root, price: price, actor: current_actor)
       redirect_to recording_studio_stripe.root_path, notice: plan_change_notice(price)
     rescue NoSubscription, InvalidPrice => e
@@ -39,8 +44,10 @@ module RecordingStudioStripe
       subscription = billing.line(type).subscription
       if subscription&.scheduled_price_id == price.id
         "We’ll switch you at the next renewal."
-      else
+      elsif subscription&.price_id == price.id
         "You’re on the new plan."
+      else
+        "Stripe is confirming this plan. Refresh in a moment."
       end
     end
   end

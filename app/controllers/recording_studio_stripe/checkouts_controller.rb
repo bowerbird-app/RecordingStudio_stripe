@@ -2,10 +2,15 @@
 
 module RecordingStudioStripe
   class CheckoutsController < ApplicationController
-    before_action :authorize_edit!
+    before_action :authorize_admin!
 
     def create
-      price = Price.active.find(params[:price_id])
+      price = saleable_price
+      unless price&.product&.plan? && price.recurring?
+        redirect_to recording_studio_stripe.engine_plans_path, alert: "Pick a plan from the list."
+        return
+      end
+
       result = StartCheckout.call(
         root_recording: current_billing_root,
         price: price,
@@ -16,6 +21,12 @@ module RecordingStudioStripe
       redirect_to result[:url], allow_other_host: true
     rescue InvalidPrice => e
       redirect_to recording_studio_stripe.engine_plans_path, alert: e.message
+    end
+
+    private
+
+    def saleable_price
+      Price.active.includes(:product).find_by(id: params[:price_id])
     end
   end
 end

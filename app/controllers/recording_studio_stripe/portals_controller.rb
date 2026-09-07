@@ -2,7 +2,7 @@
 
 module RecordingStudioStripe
   class PortalsController < ApplicationController
-    before_action :authorize_edit!
+    before_action :authorize_admin!
 
     def create
       result = StartPortalSession.call(

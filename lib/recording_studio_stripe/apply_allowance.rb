@@ -33,12 +33,13 @@ module RecordingStudioStripe
       customer = EnsureCustomer.call(root_recording: @root_recording, email: @email)
       AllowancePurchase.create!(
         root_recording_id: @root_recording.id,
-        meter: Meter.named(meter_name),
+        meter: Meter.fetch(meter_name),
         customer: customer,
         price: @price,
         quantity: quantity,
         stripe_checkout_session_id: @stripe_checkout_session_id,
-        purchased_at: @purchased_at
+        purchased_at: @purchased_at,
+        subscription_type: SubscriptionTypes.normalize(@price.product&.subscription_type)
       )
     end
   end

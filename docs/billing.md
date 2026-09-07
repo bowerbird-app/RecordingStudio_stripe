@@ -72,7 +72,7 @@ RecordingStudioStripe.configure do |config|
 end
 ```
 
-The gem writes those rows on boot. Staff can also add a meter in Admin. Then:
+The gem writes those rows on boot. Staff can also add a meter in Admin. `Meter.named` finds a row. It does not create one. Then:
 
 ```ruby
 account.billing.meter(:seats).record(1)
@@ -144,7 +144,7 @@ kits.over?
 
 `line(:studio).limit(:press_kits)` is the same handle scoped to that group's live plan. `used` is `Recording.for_root(workspace).of_type("PressKit")` where `trashed_at` is nil. Nested recordings of that type share the cap.
 
-Creating another of that type is blocked at the Recording. `revise` does not consume a slot. Restore from trash does, because used ignores trashed rows. The gem raises `RecordingStudioStripe::PlanLimitReached`. HTML redirects to `/plans`, or `config.limit_reached_path`. JSON is 403 `{ "code": "plan_limit_reached" }`. Dummy copy: “Pick a plan to add press kits.” or “Starter includes 3 press kits. Upgrade, or archive one.” Recording Studio core still swallows `before_record` errors, so the gate is `Recording` `before_create` until core can deny `record!`.
+Creating another of that type is blocked at the Recording. `revise` does not consume a slot. Restore from trash does, because used ignores trashed rows. Moving a live row into a full workspace does too. The gate only runs when the destination root enabled `:stripe`. The gem raises `RecordingStudioStripe::PlanLimitReached`. HTML redirects to `/plans`, or `config.limit_reached_path`. JSON is 403 `{ "code": "plan_limit_reached" }`. Dummy copy: “Pick a plan to add press kits.” or “Starter includes 3 press kits. Upgrade, or archive one.” Recording Studio core still swallows `before_record` errors, so the gate is `Recording` `before_create` (and restore, and move) until core can deny `record!`.
 
 Downgrades do not delete extras. `over?` is true and `available?` is false until they archive. Accessible stays access. Do not `record` usage for these caps.
 
@@ -158,28 +158,30 @@ For that plan's subscription period:
 remaining = included + purchased - usage
 ```
 
-Included comes from Price metadata. Purchased comes from allowance packs bought in the same period. Usage is what the app recorded.
+Included comes from Price metadata. Purchased comes from allowance packs bought from the start of that period’s calendar month through period end. Usage is what the app recorded for that plan group. Postgres takes an advisory lock around spend and standing-cap creates. Other databases skip the lock.
 
 ## Plan changes
 
-- Higher monthly amount: update the Subscription now, `proration_behavior: always_invoice`
-- Lower monthly amount: keep the current Price, store `scheduled_price`. Stripe gets a schedule created from the Subscription, then an update with the cheaper phase. An existing schedule is released first. A failed schedule does not change the live Price
-- Cancel: `cancel_at_period_end` on that group's Subscription
-- Checkout for a group that already has a live plan calls `ChangePlan`. It does not open a second Stripe Subscription
+- Higher monthly amount: update the Stripe Subscription now, `proration_behavior: always_invoice`, `payment_behavior: error_if_incomplete`. Local Price waits for the webhook
+- Lower monthly amount: keep the current Price, store `scheduled_price`. Stripe gets a schedule created from the Subscription, then an update with every current item copied into both phases. An existing schedule is released first. A failed schedule does not change the live Price
+- Cancel: `cancel_at_period_end` on that group's Subscription. Pass `subscription_type` when more than one live plan exists
+- Checkout for a group that already has a live plan calls `ChangePlan`. It does not open a second Stripe Subscription. A first Checkout in an empty group reserves an incomplete local row so a second attempt cannot mint another Stripe Subscription
 
 ## Screens
 
 Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy product screens use Flatpack's rounded theme. `/plans` puts monthly and yearly pills under each plan group name, left aligned, above that group's cards. A host with one implied type still uses `?interval=year`. Several types use `?interval[studio]=year` so Inbox can stay monthly. `RecordingStudioStripe::PlanIntervals` builds those hrefs.
 
-`/billing` shows **Manage billing on Stripe** above the plan cards when the workspace has a Customer and the actor can `:edit`. Each live plan group gets its own card. Standing caps sit with that group's meters, not on the plan card. Cap cards show used of included, including when over. Usage cards show percent used this period. `/billing?checkout=ok` explains the wait when Stripe has not written the subscription yet. That POST creates a Stripe Billing Portal session and redirects there. The return URL is the billing page (`success_path`). `:view` can read `/billing` and cannot open the portal. Hosts turn the portal on in the Stripe Dashboard. Do not link to dashboard.stripe.com. Do not copy invoices or cards into local tables.
+`/billing` shows **Manage billing on Stripe** above the plan cards when the workspace has a Customer and the actor can `:admin`. Each live plan group gets its own card. Standing caps sit with that group's meters, not on the plan card. Cap cards show used of included, including when over. Usage cards show percent used this period. Meter bars stay quiet when nothing is included yet. `/billing?checkout=ok` explains the wait when Stripe has not written the subscription yet. That POST creates a Stripe Billing Portal session and redirects there. The return URL is the billing page (`success_path`). `:view` can read `/billing` and cannot open the portal. `:edit` cannot pay. Hosts turn the portal on in the Stripe Dashboard. Do not link to dashboard.stripe.com. Do not copy invoices or cards into local tables.
 
 `RecordingStudioStripe::PlansComponent` is the reusable plans block. Pass `groups:` from `Catalog.plan_groups` when types are configured, with each group's own interval hrefs from `PlanIntervals`. Pass `align: :left` on a signed-in billing page and `align: :center` on a public pricing page. Dummy `/plans` is left. Dummy `/pricing` is centered and does not require a login. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Paywalls, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter, Paywall, and edit Product) live on the billing engine and link from those screens. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
 
 ## Local mode
 
-When `STRIPE_SECRET_KEY` is blank, Checkout writes a local Customer and Subscription (or allowance purchase) and returns the success URL. Dummy uses this so you can click through without Stripe keys. Unsigned webhook JSON is accepted only in that local mode. When Stripe is configured, `STRIPE_WEBHOOK_SECRET` is required. A handler that cannot apply yet returns 503 and leaves the event unstored so Stripe can retry.
+When `STRIPE_SECRET_KEY` is blank, Checkout writes a local Customer and Subscription (or allowance purchase) and returns the success URL. Dummy uses this so you can click through without Stripe keys. Unsigned webhook JSON is accepted only in that local mode. Do not deploy local mode on a public host. When Stripe is configured, `STRIPE_WEBHOOK_SECRET` is required. A handler that cannot apply yet returns 503 and leaves the event unstored so Stripe can retry. Webhook rows store the event id, type, created, and object id. They do not store the full Stripe object.
 
-Recurring Checkout sessions send a stable idempotency key for the same workspace and Price. One-time pack Checkout sends a new key each attempt. Promotion codes are on. Set `config.automatic_tax = true` after Stripe Tax is on in the Dashboard.
+Hosts that do not use `current_user` set `config.current_actor`. Hosts that do not use `current_root_recording` set `config.current_root_recording`. `draw_recording_studio_stripe at:` overwrites `config.mount_path`. If Accessible is not loaded, set `config.authenticate` or every billing money action is forbidden.
+
+Recurring Checkout sessions send a new idempotency key each attempt. One-time pack Checkout does the same. Promotion codes are on. Set `config.automatic_tax = true` after Stripe Tax is on in the Dashboard. Checkout then also asks Stripe for the customer address.
 
 Manage billing on Stripe still shows after a local checkout so hosts can see the control. The POST does not call Stripe. It redirects back to `/billing` with a flash.
 

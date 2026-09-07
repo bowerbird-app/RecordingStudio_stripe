@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-09-07
+
+### Added
+- Recurring Checkout reserves an incomplete local row under an advisory lock so two first Checkouts in the same group cannot mint two Stripe Subscriptions
+- `checkout.session.async_payment_succeeded` fulfils a paid Checkout
+- Usage and allowance rows store `subscription_type` so Studio and Inbox meters no longer share one pool
+- `config.authenticate` runs only when Accessible is not loaded. Missing both fails closed
+- `Meter.fetch` raises for unknown names. `Meter.named` finds only
+
+### Changed
+- Checkout, extra packs, plan change, cancel, resume, and the Stripe portal require Accessible `:admin` on the workspace
+- `checkout.session.completed` fulfils only when `payment_status` is `paid` or `no_payment_required`
+- Stripe upgrades use `payment_behavior: error_if_incomplete` and wait for the webhook before changing the local Price
+- Subscription webhooks ignore an event whose `created` is older than the row already applied
+- `RecordNotUnique` is a duplicate only for webhook event ids. Other unique failures raise
+- Recurring Checkout idempotency keys are unique per attempt
+- `automatic_tax` also sends `customer_update: { address: "auto" }`
+- Plan change and webhook item lookup match the current Price, not always the first item
+- Downgrade schedules copy every current item and quantity, and keep phase discounts
+- Local `sub_local_*` ids are minted only in local mode
+- Standing caps also run on parent or root moves, and only under a `:stripe` root
+- Usage idempotency keys are unique per workspace. Lookups and retries are scoped to that root
+- Allowance packs bought earlier in the calendar month still count after a mid-month subscribe
+- Webhook rows store event id, type, created, and object id. They do not store the full Stripe object
+- Cancel and resume without `subscription_type` raise when more than one live plan exists
+- Edit Price can clear included usage. Create Price rejects a nonnumeric amount
+- Admin uses `current_actor_method` and Admin screen URLs from the Admin mount path
+- Plan cards no longer say unlimited. Billing empty copy says usage still counts. Meter bars stay default when nothing is included
+
+### Upgrade notes
+- Copy the new migration with `bin/rails generate recording_studio_stripe:migrations` then `bin/rails db:migrate`
+- Grant `:admin` on the workspace for anyone who should pay, change plan, cancel, or open the Stripe portal. `:edit` can still read `/plans` and `/billing`
+- Set `config.current_actor` and `config.current_root_recording` if the host does not use `current_user` / `current_root_recording`
+- `draw_recording_studio_stripe at:` is the mount path. Setting `config.mount_path` first is overwritten by that helper
+- Do not deploy local mode. Unsigned webhooks are accepted only when Stripe keys and client are both absent
+- `Meter.named("x")` no longer creates a row. Call `Meter.sync_from_config!` or Admin first
+- Hosts that recorded usage with a global idempotency key keep those rows. New writes are unique per workspace
+- Recording Studio core still swallows `before_record` errors. Standing caps still gate on `Recording` `before_create`, restore, and move
+
 ## [0.6.0] - 2026-09-07
 
 ### Added
@@ -127,6 +166,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
+[0.7.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.7.0
 [0.6.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.6.0
 [0.5.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.5.0
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.4.0

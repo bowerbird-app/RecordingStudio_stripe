@@ -6,16 +6,17 @@ module RecordingStudioStripe
       :id, :object, :url, :mode, :customer, :client_reference_id, :metadata, :status,
       :cancel_at_period_end, :items, :name, :description, :active, :unit_amount, :currency,
       :recurring, :product, :price, :current_period_start, :current_period_end, :data, :type, :email,
-      :schedule, :subscription, :phases, :start_date, :end_date, :quantity, keyword_init: true
+      :schedule, :subscription, :phases, :start_date, :end_date, :quantity, :payment_status,
+      :automatic_tax, :customer_update, :discounts, keyword_init: true
     ) do
       def [](key)
         public_send(key) if respond_to?(key)
       end
     end
 
-    Event = Struct.new(:id, :type, :data, keyword_init: true) do
+    Event = Struct.new(:id, :type, :data, :created, :livemode, keyword_init: true) do
       def to_hash
-        { "id" => id, "type" => type }
+        { "id" => id, "type" => type, "created" => created }
       end
     end
 
@@ -60,6 +61,7 @@ module RecordingStudioStripe
     class CheckoutSessions < Resource
       def create(params, opts = {})
         @store[:checkout_idempotency_keys] << opts[:idempotency_key]
+        @store[:last_checkout_params] = params
         id = "cs_#{SecureRandom.hex(6)}"
         object = StripeObject.new(
           id: id,
@@ -68,15 +70,33 @@ module RecordingStudioStripe
           mode: params[:mode],
           customer: params[:customer],
           client_reference_id: params[:client_reference_id],
-          metadata: params[:metadata] || {}
+          metadata: params[:metadata] || {},
+          status: "open",
+          payment_status: "unpaid",
+          automatic_tax: params[:automatic_tax],
+          customer_update: params[:customer_update]
         )
         @store[:sessions][id] = object
         object
+      end
+
+      def retrieve(id)
+        @store[:sessions][id] || StripeObject.new(id: id, object: "checkout.session", status: "open")
+      end
+
+      def expire(id, _params = {}, _opts = {})
+        session = retrieve(id)
+        session.status = "expired"
+        @store[:sessions][id] = session
+        @store[:expired_sessions] << id
+        session
       end
     end
 
     class BillingPortalSessions < Resource
       def create(params, _opts = {})
+        raise Stripe::StripeError, "portal is down" if @store[:fail_portal]
+
         id = "bps_#{SecureRandom.hex(6)}"
         object = StripeObject.new(
           id: id,
@@ -105,20 +125,32 @@ module RecordingStudioStripe
       end
 
       def update(id, params, _opts = {})
+        raise_incomplete!(params)
+
         existing = retrieve(id)
         existing.status = "active"
         existing.cancel_at_period_end = params[:cancel_at_period_end] if params.key?(:cancel_at_period_end)
-        if params[:items]
-          item = Array(params[:items]).first || {}
-          item_id = item[:id].presence || item["id"].presence || "si_#{SecureRandom.hex(4)}"
-          price = item[:price] || item["price"]
-          existing.items = List.new([StripeObject.new(id: item_id, price: price)])
-        end
+        apply_items(existing, params[:items])
         @store[:subscriptions][id] = existing
         existing
       end
 
       private
+
+      def raise_incomplete!(params)
+        return unless params[:payment_behavior] == "error_if_incomplete" && @store[:error_if_incomplete]
+
+        raise Stripe::CardError.new("Your card was declined", "card")
+      end
+
+      def apply_items(existing, items)
+        return if items.blank?
+
+        item = Array(items).first || {}
+        item_id = item[:id].presence || item["id"].presence || "si_#{SecureRandom.hex(4)}"
+        price = item[:price] || item["price"]
+        existing.items = List.new([StripeObject.new(id: item_id, price: price, quantity: 1)])
+      end
 
       def default_subscription(id)
         StripeObject.new(
@@ -290,7 +322,11 @@ module RecordingStudioStripe
           schedules: {},
           schedule_creates: [],
           schedule_updates: [],
-          checkout_idempotency_keys: []
+          checkout_idempotency_keys: [],
+          expired_sessions: [],
+          last_checkout_params: nil,
+          error_if_incomplete: false,
+          fail_portal: false
         }
       end
 
@@ -308,6 +344,22 @@ module RecordingStudioStripe
 
       def checkout_idempotency_keys
         @store[:checkout_idempotency_keys]
+      end
+
+      def last_checkout_params
+        @store[:last_checkout_params]
+      end
+
+      def expired_sessions
+        @store[:expired_sessions]
+      end
+
+      def fail_incomplete_upgrades!
+        @store[:error_if_incomplete] = true
+      end
+
+      def fail_portal!
+        @store[:fail_portal] = true
       end
     end
   end

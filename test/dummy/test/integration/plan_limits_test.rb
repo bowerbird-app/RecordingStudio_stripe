@@ -183,6 +183,33 @@ class PlanLimitsTest < ActionDispatch::IntegrationTest
     refute kits.available?(11)
   end
 
+  test "press kits under a folder still use the workspace cap" do
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)
+    folder_recording = @root.record(Folder) { |folder| folder.name = "Kits" }
+    folder_recording.record(PressKit) { |kit| kit.name = "Nested kit" }
+
+    assert_equal 1, @workspace.billing.limit(:press_kits).used
+  end
+
+  test "moving a press kit into a full workspace is blocked" do
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)
+    3.times { |index| record_press_kit!("Kit #{index + 1}") }
+
+    other = Workspace.create!(name: "Other Studio #{SecureRandom.hex(4)}")
+    other_root = RecordingStudio.root_recording_for(other)
+    grant_owner_access!(recording: other_root, actor: @user)
+    RecordingStudioStripe::ApplySubscription.call(root_recording: other_root, price: starter)
+    moving = other_root.record(PressKit) { |kit| kit.name = "Traveler" }
+
+    error = assert_raises(RecordingStudioStripe::PlanLimitReached) do
+      moving.update!(parent_recording_id: @root.id, root_recording_id: @root.id)
+    end
+    assert_includes error.user_message, "press kits"
+    assert_equal other_root.id, moving.reload.root_recording_id
+  end
+
   private
 
   def record_press_kit!(name)

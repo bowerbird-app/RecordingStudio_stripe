@@ -2,10 +2,15 @@
 
 module RecordingStudioStripe
   class AllowancesController < ApplicationController
-    before_action :authorize_edit!
+    before_action :authorize_admin!
 
     def create
-      price = Price.active.find(params[:price_id])
+      price = Price.active.includes(:product).find_by(id: params[:price_id])
+      unless price&.product&.allowance?
+        redirect_to recording_studio_stripe.root_path, alert: "Pick an extra pack from billing."
+        return
+      end
+
       result = StartCheckout.call(
         root_recording: current_billing_root,
         price: price,

@@ -2,6 +2,8 @@
 
 module RecordingStudioStripe
   class UpdateProduct
+    include StripeRequest
+
     def self.call(product:, name:, description: nil, paywall_names: [], subscription_type: nil, limits: nil)
       new(
         product: product,
@@ -39,7 +41,7 @@ module RecordingStudioStripe
       return if RecordingStudioStripe.configuration.local_mode?
 
       stripe_product = Client.current.v1.products.retrieve(@product.stripe_id)
-      existing = stringify(stripe_get(stripe_product, :metadata))
+      existing = stringify_metadata(stripe_get(stripe_product, :metadata))
       Client.current.v1.products.update(
         @product.stripe_id,
         {
@@ -57,21 +59,6 @@ module RecordingStudioStripe
         data["limit_#{definition.name}"] = quantity.positive? ? quantity.to_s : ""
       end
       data
-    end
-
-    def stringify(metadata)
-      return {} if metadata.blank?
-
-      metadata.to_h.stringify_keys
-    end
-
-    def stripe_get(object, key)
-      return if object.nil?
-      return object[key] || object[key.to_s] || object[key.to_sym] if object.is_a?(Hash)
-
-      object.public_send(key)
-    rescue NoMethodError
-      object[key] || object[key.to_s] if object.is_a?(Hash)
     end
   end
 end
