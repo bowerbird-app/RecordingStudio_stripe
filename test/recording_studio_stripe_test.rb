@@ -180,7 +180,12 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, 'icon: "credit-card"'
     assert_includes view_source, "portal_path"
     assert_includes view_source, "LimitCardComponent"
+    assert_includes view_source, "MeterCardComponent"
     assert_match(/Grid::Component.new\(cols: 2.*CurrentPlanComponent/m, view_source)
+    plan_grid, usage_grid = view_source.split("usage_section_title", 2)
+    refute_includes plan_grid, "LimitCardComponent"
+    assert_includes usage_grid, "LimitCardComponent"
+    assert_includes usage_grid, "MeterCardComponent"
     refute_includes view_source, "Add press kit"
     refute_includes view_source, "press_kits_path"
     refute_includes view_source, "dashboard.stripe.com"
