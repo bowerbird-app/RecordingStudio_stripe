@@ -182,4 +182,4 @@ Checkout return URLs do not fulfil anything. Stripe events do.
 
 ## Dummy
 
-`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro) and Inbox (Inbox, Inbox Plus) so one workspace can hold two live plans. Home lists press kits; Starter caps them at 3. Admin is `/admin`.
+`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro) and Inbox (Inbox, Inbox Plus) so one workspace can hold two live plans. `/billing` shows the press kit cap. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.

@@ -140,7 +140,7 @@ Creating another of that type is blocked at the Recording. `revise` does not con
 
 Downgrades do not delete extras. `over?` is true and `available?` is false until they archive. Accessible stays access. Do not `record` usage for these caps.
 
-Dummy seeds Starter at 3 and Pro at 10 on Studio. Inbox plans do not include press kits. Home lists kits and the add form.
+Dummy seeds Starter at 3 and Pro at 10 on Studio. Inbox plans do not include press kits. `/billing` shows the standing cap as a progress bar. Dummy `/press_kits` is the product screen that lists kits and adds them.
 
 ## Remaining
 

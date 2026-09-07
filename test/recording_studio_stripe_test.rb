@@ -181,6 +181,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "portal_path"
     assert_includes view_source, "LimitCardComponent"
     assert_match(/Grid::Component.new\(cols: 2.*CurrentPlanComponent/m, view_source)
+    refute_includes view_source, "Add press kit"
+    refute_includes view_source, "press_kits_path"
     refute_includes view_source, "dashboard.stripe.com"
   end
 
@@ -209,8 +211,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "Public pricing"
     assert_includes view_source, "What this plan opens"
     assert_includes view_source, "dummy_paywall_open?"
-    assert_includes view_source, "Add press kit"
     assert_includes view_source, "press_kits_path"
+    refute_includes view_source, "Add press kit"
   end
 
   def test_plan_card_lists_product_limits_before_meter_inclusions

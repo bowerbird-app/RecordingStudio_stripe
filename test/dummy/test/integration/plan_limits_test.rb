@@ -129,23 +129,31 @@ class PlanLimitsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "home lists press kits and billing shows the standing cap" do
+  test "billing shows the standing cap without listing or creating press kits" do
     starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)
     record_press_kit!("Launch kit")
-
-    get "/"
-
-    assert_response :success
-    assert_includes response.body, "Press kits"
-    assert_includes response.body, "Launch kit"
-    assert_includes response.body, "Add press kit"
-    assert_includes response.body, "1 of 3 on this plan."
 
     get recording_studio_stripe.root_path
 
     assert_response :success
     assert_includes response.body, "Press kits"
+    refute_includes response.body, "Launch kit"
+    refute_includes response.body, "Add press kit"
+
+    get "/"
+
+    assert_response :success
+    assert_includes response.body, "Press kits"
+    refute_includes response.body, "Launch kit"
+    refute_includes response.body, "Add press kit"
+
+    get press_kits_path
+
+    assert_response :success
+    assert_includes response.body, "Launch kit"
+    assert_includes response.body, "Add press kit"
+    assert_includes response.body, "1 of 3 on this plan."
   end
 
   test "pro includes ten press kits on the billing handle" do

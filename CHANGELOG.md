@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recording `before_create` / restore-from-trash gate that raises `RecordingStudioStripe::PlanLimitReached`
 - HTML rescue redirects to `/plans` with a human flash. JSON is 403 `{ code: "plan_limit_reached" }`
 - Plan cards and `/billing` show the standing cap next to meter usage
-- Dummy Press kits: Starter 3, Pro 10. A fourth create on Starter goes to `/plans`
+- Dummy Press kits: Starter 3, Pro 10. `/billing` shows the cap. `/press_kits` lists and adds them. A fourth create on Starter goes to `/plans`
 
 ### Upgrade notes
 - Omit `config.limits` and nothing changes. No extra Stripe gem migrations
