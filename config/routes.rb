@@ -5,6 +5,7 @@ RecordingStudioStripe::Engine.routes.draw do
   get "plans", to: "plans#index", as: :engine_plans
   post "checkout", to: "checkouts#create"
   post "portal", to: "portals#create"
+  get "subscription/change", to: "subscriptions#edit", as: :subscription_change
   patch "subscription", to: "subscriptions#update"
   post "subscription/cancel", to: "subscriptions#destroy"
   post "subscription/resume", to: "subscriptions#resume"

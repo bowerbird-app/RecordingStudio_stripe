@@ -269,6 +269,25 @@ class StripeHardeningTest < ActionDispatch::IntegrationTest
     refute @workspace.billing.subscribed?
   end
 
+  test "edit access cannot open plan change confirmation" do
+    editor = User.find_or_create_by!(email: "editor@example.com") do |user|
+      user.password = "Password"
+      user.password_confirmation = "Password"
+    end
+    grant_owner_access!(recording: @root, actor: editor, role: :edit)
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)
+    sign_out @user
+    sign_in editor
+    switch_to_root!(@root)
+
+    get recording_studio_stripe.subscription_change_path, params: { price_id: pro.id }
+
+    assert_response :forbidden
+    assert_equal starter.id, @workspace.billing.subscription.price_id
+  end
+
   test "allowance prices cannot go through plan checkout" do
     pack = RecordingStudioStripe::Price.one_time.find_by!("metadata ->> 'allowance' = '5000000'")
 

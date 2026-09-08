@@ -14,6 +14,19 @@ module RecordingStudioStripe
       interval == "year" ? "year" : "month"
     end
 
+    def stripe_plan_inclusion_lines(product, price)
+      return ["This plan is a seat. Usage limits show up once a Price is attached."] unless price
+
+      lines = product.limit_inclusion_lines
+      lines += Meter.order(:name).filter_map do |meter|
+        quantity = price.included_quantity(meter.name)
+        next if quantity <= 0
+
+        "#{stripe_quantity_label(quantity)} #{meter.label.downcase}"
+      end
+      lines.presence || ["A seat. Standing caps show on billing."]
+    end
+
     def stripe_card_stack(*parts)
       tag.div(safe_join(parts.compact), class: "flex h-full flex-col gap-4")
     end

@@ -158,6 +158,78 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute @workspace.billing.subscription.scheduled_downgrade?
   end
 
+  test "upgrade and switch open a confirmation page first" do
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)
+
+    get "/plans"
+
+    assert_response :success
+    assert_select "a[href*='subscription/change'][href*='#{pro.id}']", text: "Upgrade"
+    refute_select "form[action*='subscription'][method='post']"
+
+    get recording_studio_stripe.subscription_change_path, params: { price_id: pro.id }
+
+    assert_response :success
+    assert_includes response.body, "Upgrade to Pro?"
+    assert_includes response.body, "$29/month, up from $9/month. You pay the difference today."
+    refute_includes response.body, "Now"
+    refute_includes response.body, "Next"
+    refute_includes response.body, "Starter"
+    assert_includes response.body, "Cancel"
+    refute_includes response.body, "Keep this plan"
+    assert_select "form[action*='subscription']"
+  end
+
+  test "downgrade confirmation names the renewal" do
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(
+      root_recording: @root,
+      price: pro,
+      current_period_end: Time.utc(2026, 10, 12)
+    )
+
+    get recording_studio_stripe.subscription_change_path, params: { price_id: starter.id }
+
+    assert_response :success
+    assert_includes response.body, "Switch to Starter?"
+    assert_includes response.body, "$9/month, down from $29/month. Starts on October 12, 2026."
+    refute_includes response.body, "From renewal"
+    refute_includes response.body, "You keep Pro"
+    assert_includes response.body, "Switch at renewal"
+  end
+
+  test "confirmation without a live plan sends you back to plans" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+
+    get recording_studio_stripe.subscription_change_path, params: { price_id: pro.id }
+
+    assert_redirected_to %r{/plans}
+  end
+
+  test "checkout for a live type opens confirmation instead of changing immediately" do
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)
+
+    assert_no_difference -> { RecordingStudioStripe::Subscription.where(root_recording_id: @root.id).count } do
+      post recording_studio_stripe.checkout_path, params: { price_id: pro.id }
+    end
+
+    assert_redirected_to recording_studio_stripe.subscription_change_path(price_id: pro.id)
+    assert_equal starter.id, @workspace.billing.line(:studio).subscription.price_id
+
+    follow_redirect!
+    assert_includes response.body, "Upgrade to Pro?"
+
+    patch recording_studio_stripe.subscription_path, params: { price_id: pro.id }
+
+    follow_redirect!
+    assert_equal pro.id, @workspace.billing.line(:studio).subscription.price_id
+  end
+
   test "downgrade schedules for renewal" do
     starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
     pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
@@ -169,19 +241,6 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     subscription = @workspace.billing.subscription
     assert_equal pro.id, subscription.price_id
     assert_equal starter.id, subscription.scheduled_price_id
-  end
-
-  test "checkout for a live type changes the plan instead of opening a second subscription" do
-    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
-    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
-    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)
-
-    assert_no_difference -> { RecordingStudioStripe::Subscription.where(root_recording_id: @root.id).count } do
-      post recording_studio_stripe.checkout_path, params: { price_id: pro.id }
-    end
-
-    follow_redirect!
-    assert_equal pro.id, @workspace.billing.line(:studio).subscription.price_id
   end
 
   test "billing explains the wait when checkout returns before Stripe writes" do

@@ -1,0 +1,3 @@
+<% recording_studio_page_nav(title: "Change plan", page_nav_back_url: main_app.plans_path, page_nav_back_label: "Plans") %>
+
+<%= render RecordingStudioStripe::PlanChangeComponent.new(change: @change) %>
