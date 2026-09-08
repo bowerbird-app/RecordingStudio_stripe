@@ -5,7 +5,7 @@ module RecordingStudioStripe
     before_action :authorize_admin!
 
     def edit
-      @change = PlanChange.build(root_recording: current_billing_root, price_id: params[:price_id])
+      @change = RecordingStudioStripe::PlanChange.build(root_recording: current_billing_root, price_id: params[:price_id])
       return if @change
 
       redirect_to recording_studio_stripe.engine_plans_path, alert: "Pick a plan from the list."
