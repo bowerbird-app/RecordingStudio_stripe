@@ -40,24 +40,7 @@ module RecordingStudioStripe
 
     def inclusions
       helpers.tag.ul(class: "space-y-2 text-sm leading-6") do
-        safe_join(inclusion_lines.map { |line| helpers.tag.li(line) })
-      end
-    end
-
-    def inclusion_lines
-      return ["This plan is a seat. Usage limits show up once a Price is attached."] unless price
-
-      lines = @product.limit_inclusion_lines
-      lines += meter_inclusion_lines
-      lines.presence || ["A seat. Standing caps show on billing."]
-    end
-
-    def meter_inclusion_lines
-      Meter.order(:name).filter_map do |meter|
-        quantity = price.included_quantity(meter.name)
-        next if quantity <= 0
-
-        "#{stripe_quantity_label(quantity)} #{meter.label.downcase}"
+        safe_join(helpers.stripe_plan_inclusion_lines(@product, price).map { |line| helpers.tag.li(line) })
       end
     end
 
@@ -87,10 +70,12 @@ module RecordingStudioStripe
     end
 
     def change_button
-      helpers.button_to recording_studio_stripe.subscription_path, method: :patch, params: { price_id: price.id },
-                                                                   class: "inline-flex" do
-        render FlatPack::Button::Component.new(text: change_label, style: :primary, size: :md, type: "submit")
-      end
+      render FlatPack::Button::Component.new(
+        text: change_label,
+        style: :primary,
+        size: :md,
+        href: recording_studio_stripe.subscription_change_path(price_id: price.id)
+      )
     end
 
     def change_label

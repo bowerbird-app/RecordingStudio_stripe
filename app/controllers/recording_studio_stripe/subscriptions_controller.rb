@@ -4,6 +4,13 @@ module RecordingStudioStripe
   class SubscriptionsController < ApplicationController
     before_action :authorize_admin!
 
+    def edit
+      @change = PlanChange.build(root_recording: current_billing_root, price_id: params[:price_id])
+      return if @change
+
+      redirect_to recording_studio_stripe.engine_plans_path, alert: "Pick a plan from the list."
+    end
+
     def update
       price = Price.active.includes(:product).find_by(id: params[:price_id])
       unless price&.product&.plan? && price.recurring?

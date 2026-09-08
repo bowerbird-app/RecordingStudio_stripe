@@ -11,6 +11,11 @@ module RecordingStudioStripe
         return
       end
 
+      if live_plan?(price)
+        redirect_to recording_studio_stripe.subscription_change_path(price_id: price.id)
+        return
+      end
+
       result = StartCheckout.call(
         root_recording: current_billing_root,
         price: price,
@@ -27,6 +32,13 @@ module RecordingStudioStripe
 
     def saleable_price
       Price.active.includes(:product).find_by(id: params[:price_id])
+    end
+
+    def live_plan?(price)
+      Subscription.current_for(
+        root_recording_id: current_billing_root.id,
+        subscription_type: SubscriptionTypes.normalize(price.product&.subscription_type)
+      )&.active?
     end
   end
 end

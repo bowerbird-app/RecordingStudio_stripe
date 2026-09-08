@@ -17,8 +17,8 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Stripe Products and Prices, including monthly and annual
 - Optional plan groups (`config.subscription_types`) so one workspace can hold more than one live plan on the same Customer
 - Checkout for a Customer
-- Upgrade now with Stripe proration
-- Downgrade at the next renewal
+- Upgrade now with Stripe proration, after a confirmation page that shows what changes
+- Downgrade at the next renewal, after the same confirmation page
 - Cancel at period end
 - Included usage on a Price (`included_ai_tokens`, `included_api_calls` metadata)
 - Standing inventory limits on a Product (`limit_press_kits` metadata) for how many of a type can exist
@@ -188,7 +188,7 @@ Point Stripe at `POST /webhooks/stripe`. Set `STRIPE_WEBHOOK_SECRET` whenever St
 - `invoice.paid` and `invoice.payment_failed`
 - `product.*` and `price.*`
 
-`checkout.session.completed` does nothing until `payment_status` is `paid` or `no_payment_required`. A handler that cannot apply yet (Price or workspace missing) returns 503 and does not store the event, so Stripe retries. Checkout return still does not fulfil on its own. `/billing?checkout=ok` tells people to refresh if the subscription webhook has not landed. Choosing a plan in a group you already have upgrades or schedules a downgrade. It does not open a second Stripe Subscription. Stripe upgrades wait for the webhook before the local Price changes.
+`checkout.session.completed` does nothing until `payment_status` is `paid` or `no_payment_required`. A handler that cannot apply yet (Price or workspace missing) returns 503 and does not store the event, so Stripe retries. Checkout return still does not fulfil on its own. `/billing?checkout=ok` tells people to refresh if the subscription webhook has not landed. Choosing a plan in a group you already have opens a confirmation page, then upgrades or schedules a downgrade. It does not open a second Stripe Subscription. Stripe upgrades wait for the webhook before the local Price changes.
 
 Set `config.automatic_tax = true` only after Stripe Tax is on in the Dashboard. Checkout then also sends `customer_update: { address: "auto" }`. Promotion codes are on by default.
 

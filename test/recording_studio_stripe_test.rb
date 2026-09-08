@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.7.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.8.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -176,6 +176,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "spend"
     assert_includes docs, "503"
     assert_includes docs, "automatic_tax"
+    assert_includes docs, "confirmation"
   end
 
   def test_billing_view_offers_manage_billing
@@ -238,10 +239,13 @@ class RecordingStudioStripeTest < Minitest::Test
   end
 
   def test_plan_card_lists_product_limits_before_meter_inclusions
-    source = File.read(File.expand_path("../app/components/recording_studio_stripe/plan_card_component.rb", __dir__))
+    source = File.read(File.expand_path("../app/helpers/recording_studio_stripe/application_helper.rb", __dir__))
+    card = File.read(File.expand_path("../app/components/recording_studio_stripe/plan_card_component.rb", __dir__))
 
     assert_includes source, "limit_inclusion_lines"
-    assert_includes source, "meter_inclusion_lines"
+    assert_includes source, "included_quantity"
+    assert_includes card, "stripe_plan_inclusion_lines"
+    assert_includes card, "subscription_change_path"
   end
 
   def test_plans_component_aligns_left_or_center

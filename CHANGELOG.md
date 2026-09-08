@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-08
+
+### Added
+- Upgrade and plan switch open a confirmation page that shows the current plan, the next plan, and when the change takes effect
+
+### Changed
+- Plan cards link to that confirmation page. Checkout for a group that already has a live plan redirects there instead of applying immediately
+
+### Upgrade notes
+- No extra migrations
+- Hosts that replaced `PlanCardComponent` should send Upgrade and Switch at renewal to `subscription_change_path` instead of PATCHing `subscription_path` from the card
+- PATCH `subscription_path` still applies the change. That is the confirm button
+
 ## [0.7.0] - 2026-09-07
 
 ### Added
@@ -166,6 +179,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
+[0.8.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.8.0
 [0.7.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.7.0
 [0.6.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.6.0
 [0.5.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.5.0
