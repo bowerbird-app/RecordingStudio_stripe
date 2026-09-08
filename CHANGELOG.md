@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Plan cards link to that confirmation page. Checkout for a group that already has a live plan redirects there instead of applying immediately
+- The confirmation back-out button is Cancel
 
 ### Upgrade notes
 - No extra migrations

@@ -40,7 +40,7 @@ module RecordingStudioStripe
 
     def keep_button
       render FlatPack::Button::Component.new(
-        text: "Keep this plan",
+        text: "Cancel",
         style: :ghost,
         size: :md,
         href: helpers.main_app.plans_path

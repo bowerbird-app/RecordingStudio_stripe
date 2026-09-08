@@ -177,7 +177,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "Now"
     refute_includes response.body, "Next"
     refute_includes response.body, "Starter"
-    assert_includes response.body, "Keep this plan"
+    assert_includes response.body, "Cancel"
+    refute_includes response.body, "Keep this plan"
     assert_select "form[action*='subscription']"
   end
 
