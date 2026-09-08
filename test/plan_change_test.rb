@@ -28,9 +28,8 @@ class PlanChangeTest < Minitest::Test
 
     assert change.upgrade?
     assert_equal "Upgrade to Pro?", change.title
-    assert_equal "You pay the difference today.", change.subtitle
+    assert_equal "$29/month, up from $9/month. You pay the difference today.", change.subtitle
     assert_equal "Upgrade", change.confirm_label
-    assert_equal "Next", change.next_badge
   end
 
   def test_downgrade_copy_names_when_the_cheaper_plan_starts
@@ -44,9 +43,8 @@ class PlanChangeTest < Minitest::Test
 
     assert change.downgrade?
     assert_equal "Switch to Starter?", change.title
-    assert_equal "Starter starts on October 12, 2026. You keep Pro until then.", change.subtitle
+    assert_equal "$9/month, down from $29/month. Starts on October 12, 2026.", change.subtitle
     assert_equal "Switch at renewal", change.confirm_label
-    assert_equal "From renewal", change.next_badge
   end
 
   def test_same_product_interval_switch_names_the_cadence
@@ -60,6 +58,7 @@ class PlanChangeTest < Minitest::Test
 
     assert change.upgrade?
     assert_equal "Switch Pro to yearly?", change.title
+    assert_equal "$290/year, up from $29/month. You pay the difference today.", change.subtitle
   end
 
   def self.change(from_amount:, to_amount:, from_name:, to_name:, period_end: nil)

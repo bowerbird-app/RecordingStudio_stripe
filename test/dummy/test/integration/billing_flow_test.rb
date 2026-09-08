@@ -173,13 +173,10 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Upgrade to Pro?"
-    assert_includes response.body, "You pay the difference today."
-    assert_includes response.body, "Now"
-    assert_includes response.body, "Next"
-    assert_includes response.body, "Starter"
-    assert_includes response.body, "Pro"
-    assert_includes response.body, "$9/month"
-    assert_includes response.body, "$29/month"
+    assert_includes response.body, "$29/month, up from $9/month. You pay the difference today."
+    refute_includes response.body, "Now"
+    refute_includes response.body, "Next"
+    refute_includes response.body, "Starter"
     assert_includes response.body, "Keep this plan"
     assert_select "form[action*='subscription']"
   end
@@ -197,8 +194,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Switch to Starter?"
-    assert_includes response.body, "Starter starts on October 12, 2026. You keep Pro until then."
-    assert_includes response.body, "From renewal"
+    assert_includes response.body, "$9/month, down from $29/month. Starts on October 12, 2026."
+    refute_includes response.body, "From renewal"
+    refute_includes response.body, "You keep Pro"
     assert_includes response.body, "Switch at renewal"
   end
 

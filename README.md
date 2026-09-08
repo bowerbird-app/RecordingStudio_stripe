@@ -17,7 +17,7 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Stripe Products and Prices, including monthly and annual
 - Optional plan groups (`config.subscription_types`) so one workspace can hold more than one live plan on the same Customer
 - Checkout for a Customer
-- Upgrade now with Stripe proration, after a confirmation page that shows what changes
+- Upgrade now with Stripe proration, after a confirmation of the new price
 - Downgrade at the next renewal, after the same confirmation page
 - Cancel at period end
 - Included usage on a Price (`included_ai_tokens`, `included_api_calls` metadata)

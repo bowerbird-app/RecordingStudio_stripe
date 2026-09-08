@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.8.0] - 2026-09-08
 
 ### Added
-- Upgrade and plan switch open a confirmation page that shows the current plan, the next plan, and when the change takes effect
+- Upgrade and plan switch open a confirmation page that names the new price, the current price, and when the change takes effect
 
 ### Changed
 - Plan cards link to that confirmation page. Checkout for a group that already has a live plan redirects there instead of applying immediately

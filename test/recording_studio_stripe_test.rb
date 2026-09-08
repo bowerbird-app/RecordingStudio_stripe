@@ -248,6 +248,14 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes card, "subscription_change_path"
   end
 
+  def test_plan_change_confirms_price_without_the_old_plan
+    source = File.read(File.expand_path("../app/components/recording_studio_stripe/plan_change_component.rb", __dir__))
+
+    assert_includes source, "@change.subtitle"
+    refute_includes source, "Grid::Component"
+    refute_includes source, "from_price"
+  end
+
   def test_plans_component_aligns_left_or_center
     component = File.read(File.expand_path("../app/components/recording_studio_stripe/plans_component.rb", __dir__))
     plans_view = File.read(File.expand_path("../app/views/recording_studio_stripe/plans/index.html.erb", __dir__))

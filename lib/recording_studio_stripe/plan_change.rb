@@ -33,10 +33,6 @@ module RecordingStudioStripe
       @comparison.downgrade?
     end
 
-    def from_name
-      @from_price.product.name
-    end
-
     def to_name
       @to_price.product.name
     end
@@ -49,24 +45,33 @@ module RecordingStudioStripe
     end
 
     def subtitle
-      return "You pay the difference today." if upgrade?
-      return "#{to_name} starts on #{renewal_label}. You keep #{from_name} until then." if renewal_date
-
-      "#{to_name} starts at the next renewal. You keep #{from_name} until then."
+      "#{amount(@to_price)}, #{change_word} from #{amount(@from_price)}. #{timing}"
     end
 
     def confirm_label
       upgrade? ? "Upgrade" : "Switch at renewal"
     end
 
-    def next_badge
-      upgrade? ? "Next" : "From renewal"
-    end
-
     private
 
     def same_product?
       @from_price.product_id == @to_price.product_id
+    end
+
+    def amount(price)
+      cadence = price.annual? ? "year" : "month"
+      "#{price.formatted_amount}/#{cadence}"
+    end
+
+    def change_word
+      upgrade? ? "up" : "down"
+    end
+
+    def timing
+      return "You pay the difference today." if upgrade?
+      return "Starts on #{renewal_label}." if renewal_date
+
+      "Starts at the next renewal."
     end
 
     def interval_word(price)
