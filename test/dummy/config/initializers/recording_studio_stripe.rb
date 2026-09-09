@@ -6,15 +6,16 @@ RecordingStudioStripe.configure do |config|
   config.webhook_secret = ENV["STRIPE_WEBHOOK_SECRET"]
   # Named usage counters. Defaults are ai_tokens and api_calls.
   # Add your own, then set included_<name> on each plan Price.
-  # config.meters = {
-  #   "ai_tokens" => { "label" => "AI tokens" },
-  #   "api_calls" => { "label" => "API calls" }
-  # }
+  # icon and plan_line are for the public plan card. %{quantity} is shortened (1m, 10k).
+  config.meters = {
+    "ai_tokens" => { "label" => "AI tokens", "icon" => "sparkles" },
+    "api_calls" => { "label" => "API calls", "icon" => "bolt" }
+  }
   # Named plan features. Tick them on a Product in Admin.
   # Check with RecordingStudioAccessible.authorized_action?(action: :generate_image, recording: root)
   config.paywalls = {
-    "generate_image" => { "label" => "Generate an image" },
-    "export_csv" => { "label" => "Export CSV" }
+    "generate_image" => { "label" => "Generate an image", "icon" => "photo" },
+    "export_csv" => { "label" => "Export CSV", "icon" => "table-cells" }
   }
   config.subscription_types = {
     "studio" => { "label" => "Studio" },
@@ -26,7 +27,9 @@ RecordingStudioStripe.configure do |config|
     "press_kits" => {
       "label" => "Press kits",
       "recordable_type" => "PressKit",
-      "subscription_type" => "studio"
+      "subscription_type" => "studio",
+      "icon" => "rectangle-stack",
+      "plan_line" => "%{quantity} press kits"
     }
   }
 end

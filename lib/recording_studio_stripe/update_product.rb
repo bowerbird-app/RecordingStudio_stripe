@@ -4,24 +4,27 @@ module RecordingStudioStripe
   class UpdateProduct
     include StripeRequest
 
-    def self.call(product:, name:, description: nil, paywall_names: [], subscription_type: nil, limits: nil)
+    def self.call(product:, name:, description: nil, paywall_names: [], subscription_type: nil, limits: nil,
+                  plan_card: nil)
       new(
         product: product,
         name: name,
         description: description,
         paywall_names: paywall_names,
         subscription_type: subscription_type,
-        limits: limits
+        limits: limits,
+        plan_card: plan_card
       ).call
     end
 
-    def initialize(product:, name:, description:, paywall_names:, subscription_type:, limits:)
+    def initialize(product:, name:, description:, paywall_names:, subscription_type:, limits:, plan_card:)
       @product = product
       @name = name
       @description = description
       @paywall_names = paywall_names
       @subscription_type = subscription_type
       @limits = limits
+      @plan_card = plan_card
     end
 
     def call
@@ -29,6 +32,7 @@ module RecordingStudioStripe
       @product.assign_attributes(name: @name, description: @description, subscription_type: type)
       @product.metadata = @product.metadata.merge("subscription_type" => type)
       @product.assign_limits(@limits)
+      @product.assign_plan_card(@plan_card)
       update_stripe(type)
       @product.save!
       @product.assign_paywalls(@paywall_names)

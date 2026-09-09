@@ -1,9 +1,22 @@
 module ApplicationHelper
+  def dummy_sidebar_title
+    current_root_recording&.recordable&.try(:name).presence || "This workspace"
+  end
+
+  def dummy_billing_path
+    RecordingStudioStripe.configuration.mount_path
+  end
+
+  def dummy_billing_current?
+    request.path.start_with?(dummy_billing_path)
+  end
+
   def dummy_page_nav(title:, back_url: nil, back_label: "Home")
     recording_studio_page_nav(
       title: title,
       page_nav_back_url: back_url,
-      page_nav_back_label: back_label
+      page_nav_back_label: back_label,
+      page_nav_anchor_url: root_path
     )
 
     recording_studio_page_nav_right do

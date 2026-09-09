@@ -28,13 +28,28 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Inbox"
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
+    assert_includes response.body, "Team"
     assert_includes response.body, "Inbox Plus"
+    assert_includes response.body, "Inbox Pro"
     assert_includes response.body, "$29/month"
     assert_includes response.body, "$9/month"
+    assert_includes response.body, "$79/month"
     assert_includes response.body, "$25/month"
+    assert_includes response.body, "$90/month"
+    assert_select "[data-plan-group='studio'] h3", count: 3
+    assert_select "[data-plan-group='inbox'] h3", count: 3
+    assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
+    assert_equal [ "Inbox", "Inbox Plus", "Inbox Pro" ], css_select("[data-plan-group='inbox'] h3").map(&:text)
     assert_includes response.body, "10m ai tokens"
     assert_includes response.body, "3 press kits"
     assert_includes response.body, "10 press kits"
+    assert_includes response.body, "25 press kits"
+    assert_includes response.body, "Generate an image"
+    assert_includes response.body, "Export CSV"
+    assert_includes response.body, "Someone picks up the phone"
+    assert_includes response.body, "rectangle-stack"
+    assert_includes response.body, "sparkles"
+    assert_includes response.body, "photo"
     assert_includes response.body, "Monthly"
     assert_includes response.body, "Yearly"
     assert_includes response.body, "[border-radius:var(--tabs-pill-corner-radius)]"
@@ -44,7 +59,11 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "body[data-theme='rounded']", count: 1
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='left']", count: 1
-    assert_includes response.body, "justify-start"
+    assert_select "[data-plans-heading].text-center", count: 0
+    assert_select "[data-plan-group-heading]", count: 2
+    assert_select "a[href='/'][aria-label='Close']"
+    assert_includes response.body, "items-stretch"
+    assert_includes response.body, "lg:grid-cols-3"
     assert_select "form[action*='checkout'][data-turbo=false]"
     refute_includes response.body, "Unlimited vibes"
     refute_includes response.body, "Add included usage on the Price"
@@ -60,11 +79,83 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Inbox"
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
+    assert_includes response.body, "Team"
+    assert_includes response.body, "Inbox Plus"
+    assert_includes response.body, "Inbox Pro"
     assert_includes response.body, "$29/month"
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='center']", count: 1
-    assert_includes response.body, "justify-center"
+    assert_select "[data-plans-heading].text-center", count: 1
+    assert_select "[data-plan-group-heading]", count: 2
+    assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
+    assert_equal [ "Inbox", "Inbox Plus", "Inbox Pro" ], css_select("[data-plan-group='inbox'] h3").map(&:text)
+    assert_includes response.body, "items-stretch"
+    assert_includes response.body, "lg:grid-cols-3"
     refute_includes response.body, "data-recording-studio-default-layout"
+    assert_includes response.body, "Generate an image"
+    assert_includes response.body, "Export CSV"
+    assert_includes response.body, "Someone picks up the phone"
+    assert_includes response.body, "3 press kits"
+  end
+
+  test "catalog lists plan products cheapest first" do
+    names = RecordingStudioStripe::Catalog.plan_products.map(&:name)
+    studio = RecordingStudioStripe::Catalog.plan_groups.find { |group| group[:key] == "studio" }[:products].map(&:name)
+    inbox = RecordingStudioStripe::Catalog.plan_groups.find { |group| group[:key] == "inbox" }[:products].map(&:name)
+
+    assert_equal %w[Starter Pro Team], studio
+    assert_equal [ "Inbox", "Inbox Plus", "Inbox Pro" ], inbox
+    refute_equal names.sort, names
+  end
+
+  test "plan cards sort by price even when products arrive out of order" do
+    team = RecordingStudioStripe::Product.find_by!(name: "Team")
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter")
+    html = ApplicationController.render(
+      RecordingStudioStripe::PlansComponent.new(
+        groups: [
+          {
+            products: [ team, starter ],
+            monthly_href: "/pricing",
+            yearly_href: "/pricing?interval=year"
+          }
+        ]
+      )
+    )
+
+    titles = html.scan(%r{<h3[^>]*>([^<]+)</h3>}).flatten
+    assert_equal %w[Starter Team], titles
+  end
+
+  test "plans hide the type heading when only one type has products" do
+    product = RecordingStudioStripe::Product.find_by!(name: "Pro")
+    html = ApplicationController.render(
+      RecordingStudioStripe::PlansComponent.new(
+        groups: [
+          {
+            key: "studio",
+            label: "Studio",
+            products: [ product ],
+            monthly_href: "/pricing",
+            yearly_href: "/pricing?interval=year"
+          },
+          {
+            key: "inbox",
+            label: "Inbox",
+            products: [],
+            monthly_href: "/pricing",
+            yearly_href: "/pricing?interval=year"
+          }
+        ],
+        align: :center
+      )
+    )
+
+    assert_includes html, "Pro"
+    refute_includes html, "data-plan-group-heading"
+    refute_includes html, ">Studio<"
+    refute_includes html, ">Inbox<"
+    assert_includes html, "text-center"
   end
 
   test "public pricing page shows yearly Prices" do
@@ -74,7 +165,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "$290/year"
     assert_includes response.body, "$90/year"
+    assert_includes response.body, "$790/year"
     assert_select "[data-plans-align='center']", count: 1
+    assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
   end
 
   test "plans page shows yearly Prices on the same Products" do
@@ -84,9 +177,13 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
     assert_includes response.body, "Inbox Plus"
+    assert_includes response.body, "Team"
     assert_includes response.body, "$290/year"
     assert_includes response.body, "$90/year"
+    assert_includes response.body, "$790/year"
     assert_includes response.body, "$250/year"
+    assert_includes response.body, "$900/year"
+    assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
   end
 
   test "plans page toggles monthly and yearly per group" do
@@ -180,6 +277,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Cancel"
     refute_includes response.body, "Keep this plan"
     assert_select "form[action*='subscription']"
+    assert_select "a[href='/'][aria-label='Close']"
   end
 
   test "downgrade confirmation names the renewal" do
@@ -249,6 +347,13 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Stripe is confirming this plan"
     refute_includes response.body, "You're on"
+  end
+
+  test "billing close goes home" do
+    get "/billing"
+
+    assert_response :success
+    assert_select "a[href='/'][aria-label='Close']"
   end
 
   test "change plan reads the Stripe item id when metadata is missing" do
@@ -459,6 +564,47 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     stored = client.v1.products.retrieve(product.stripe_id)
     assert_equal "txcd_1", stored.metadata["tax_code"]
     assert_equal "", stored.metadata["limit_press_kits"]
+    refute stored.metadata.key?("plan_card")
+  ensure
+    RecordingStudioStripe.configuration.client = previous_client
+  end
+
+  test "plan card extras stay local when Stripe metadata is merged" do
+    previous_client = RecordingStudioStripe.configuration.client
+    client = RecordingStudioStripe::Testing::Client.new
+    RecordingStudioStripe.configuration.client = client
+    product = RecordingStudioStripe::Product.find_by!(name: "Starter")
+    client.v1.products.update(product.stripe_id, metadata: { "kind" => "plan" })
+
+    RecordingStudioStripe::UpdateProduct.call(
+      product: product,
+      name: product.name,
+      description: product.description,
+      paywall_names: product.paywalls.map(&:name),
+      limits: { "press_kits" => 3 },
+      plan_card: {
+        "hide" => [ "meter:api_calls" ],
+        "extras" => [ { "key" => "priority", "text" => "Someone picks up the phone", "icon" => "phone" } ]
+      }
+    )
+
+    stored = client.v1.products.retrieve(product.stripe_id)
+    refute stored.metadata.key?("plan_card")
+    card = product.reload.plan_card_settings
+    assert_equal [ "meter:api_calls" ], card["hide"]
+    assert_equal "Someone picks up the phone", card["extras"].first["text"]
+
+    stripe_product = Struct.new(:id, :name, :description, :active, :metadata, keyword_init: true).new(
+      id: product.stripe_id,
+      name: product.name,
+      description: product.description,
+      active: true,
+      metadata: { "kind" => "plan", "subscription_type" => "studio", "limit_press_kits" => "3" }
+    )
+    RecordingStudioStripe::UpsertProduct.call(stripe_product)
+    card = product.reload.plan_card_settings
+    assert_equal [ "meter:api_calls" ], card["hide"]
+    assert_equal "Someone picks up the phone", card["extras"].first["text"]
   ensure
     RecordingStudioStripe.configuration.client = previous_client
   end

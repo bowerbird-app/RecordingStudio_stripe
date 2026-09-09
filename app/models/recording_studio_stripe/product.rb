@@ -56,6 +56,20 @@ module RecordingStudioStripe
       self.metadata = merge_limit_metadata(quantities)
     end
 
+    def plan_card_settings
+      raw = (metadata || {})["plan_card"]
+      return {} unless raw.is_a?(Hash)
+
+      raw.stringify_keys
+    end
+
+    def assign_plan_card(settings)
+      return if allowance?
+      return if settings.nil?
+
+      self.metadata = (metadata || {}).stringify_keys.merge("plan_card" => PlanCardSettings.normalize(settings))
+    end
+
     def limit_inclusion_lines
       Limits.for_subscription_type(subscription_type).filter_map do |definition|
         quantity = limit_quantity(definition.name)

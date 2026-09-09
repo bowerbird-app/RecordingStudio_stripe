@@ -1,0 +1,60 @@
+<%= render FlatPack::Sidebar::Component.new do |sidebar| %>
+  <% sidebar.header do %>
+    <%= render FlatPack::Sidebar::Header::Component.new(
+      brand_abbr: "S",
+      title: dummy_sidebar_title
+    ) %>
+  <% end %>
+
+  <% sidebar.items do %>
+    <nav aria-label="Workspace" class="py-4 space-y-1">
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        text: "Home",
+        href: root_path,
+        icon: :home,
+        active: current_page?(root_path)
+      ) %>
+      <% if dummy_show_press_kits? %>
+        <%= render FlatPack::Sidebar::Item::Component.new(
+          text: "Press kits",
+          href: press_kits_path,
+          icon: :queue_list,
+          active: current_page?(press_kits_path)
+        ) %>
+      <% end %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        text: "Plans",
+        href: plans_path,
+        icon: :rectangle_stack,
+        active: current_page?(plans_path)
+      ) %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        text: "Billing",
+        href: dummy_billing_path,
+        icon: :credit_card,
+        active: dummy_billing_current?
+      ) %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        text: "Public pricing",
+        href: pricing_path,
+        icon: :tag,
+        active: current_page?(pricing_path)
+      ) %>
+    </nav>
+  <% end %>
+
+  <% sidebar.footer do %>
+    <%= render FlatPack::Sidebar::Footer::Component.new do %>
+      <div class="flex flex-col gap-2">
+        <%= dummy_admin_button %>
+        <%= render FlatPack::Button::Component.new(
+          text: "Sign out",
+          style: :ghost,
+          size: :md,
+          href: destroy_user_session_path,
+          data: { turbo_method: :delete }
+        ) %>
+      </div>
+    <% end %>
+  <% end %>
+<% end %>

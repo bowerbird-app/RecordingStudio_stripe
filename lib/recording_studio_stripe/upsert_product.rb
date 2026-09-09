@@ -13,6 +13,8 @@ module RecordingStudioStripe
     def call
       product = Product.find_or_initialize_by(stripe_id: @stripe_product.id)
       metadata = stringify(@stripe_product.try(:metadata))
+      card = product.plan_card_settings
+      metadata["plan_card"] = card if card.present?
       type = SubscriptionTypes.normalize(
         metadata["subscription_type"].presence || product.subscription_type
       )

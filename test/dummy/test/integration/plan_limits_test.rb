@@ -29,6 +29,20 @@ class PlanLimitsTest < ActionDispatch::IntegrationTest
     assert_equal 0, inbox.limit_quantity("press_kits")
     assert_equal ["3 press kits"], starter.limit_inclusion_lines
     assert_equal ["10 press kits"], pro.limit_inclusion_lines
+
+    starter_lines = RecordingStudioStripe::PlanFeatures.for(starter, starter.monthly_price)
+    team = RecordingStudioStripe::Product.find_by!(name: "Team")
+    team_lines = RecordingStudioStripe::PlanFeatures.for(team, team.monthly_price)
+    inbox_plus = RecordingStudioStripe::Product.find_by!(name: "Inbox Plus")
+    plus_lines = RecordingStudioStripe::PlanFeatures.for(inbox_plus, inbox_plus.monthly_price)
+
+    assert_includes starter_lines.map(&:text), "3 press kits"
+    assert_includes starter_lines.map(&:text), "1m ai tokens"
+    refute_includes starter_lines.map(&:text), "Generate an image"
+    assert_includes RecordingStudioStripe::PlanFeatures.for(pro, pro.monthly_price).map(&:text), "Generate an image"
+    assert_includes team_lines.map(&:text), "Someone picks up the phone"
+    assert_equal "phone", team_lines.map(&:icon).last
+    assert_includes plus_lines.map(&:text), "Export CSV"
   end
 
   test "billing limit counts live press kits against the studio plan" do

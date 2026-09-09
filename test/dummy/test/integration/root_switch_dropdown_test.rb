@@ -33,9 +33,16 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, workspace.name
-    assert_select "body[data-recording-studio-default-layout='true']", count: 1
+    assert_select "body[data-dummy-sidebar-layout='true']", count: 1
+    assert_select "[data-controller='flat-pack--sidebar-layout']", count: 1
+    refute_includes response.body, "data-recording-studio-default-layout"
     assert_select "body[data-theme='rounded']", count: 1
     assert_select "html[data-theme='rounded']", count: 1
+    assert_select "nav[aria-label='Workspace'] a[href='/']"
+    assert_select "nav[aria-label='Workspace'] a[href='/plans']"
+    assert_select "nav[aria-label='Workspace'] a[href='/billing']"
+    assert_select "nav[aria-label='Workspace'] a[href='/pricing']"
+    refute_select "a[aria-label='Close']"
   end
 
   test "root switch page renders with the host default layout" do

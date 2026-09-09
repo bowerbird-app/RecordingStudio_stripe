@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.8.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.8.1", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -68,12 +68,37 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes controller_source, "flat_pack_sidebar"
   end
 
+  def test_dummy_home_uses_sidebar_layout
+    home_controller = File.read(File.expand_path("dummy/app/controllers/home_controller.rb", __dir__))
+    layout = File.read(File.expand_path("dummy/app/views/layouts/sidebar.html.erb", __dir__))
+
+    assert_includes home_controller, 'layout "sidebar"'
+    assert_includes layout, "FlatPack::SidebarLayout::Component"
+    assert_includes layout, 'data-theme="rounded"'
+    assert_includes layout, 'data-dummy-sidebar-layout="true"'
+    refute_includes layout, "data-recording-studio-default-layout"
+  end
+
   def test_dummy_default_layout_sets_rounded_theme_on_html
     layout = File.read(File.expand_path("dummy/app/views/layouts/recording_studio/default_layout.html.erb", __dir__))
 
     assert_includes layout, '<html data-theme="rounded">'
     assert_includes layout, 'data-recording-studio-default-layout="true"'
+    assert_includes layout, "page_nav_options[:anchor_href]"
+    refute_includes layout, "page_nav_options[:anchor_url]"
     refute_includes layout, "document.documentElement.setAttribute"
+  end
+
+  def test_customer_screens_set_close_to_home
+    billing = File.read(File.expand_path("../app/views/recording_studio_stripe/billing/show.html.erb", __dir__))
+    plans = File.read(File.expand_path("../app/views/recording_studio_stripe/plans/index.html.erb", __dir__))
+    change = File.read(File.expand_path("../app/views/recording_studio_stripe/subscriptions/edit.html.erb", __dir__))
+
+    assert_includes billing, "page_nav_anchor_url: main_app.root_path"
+    refute_includes billing, "page_nav_back_url"
+    assert_includes plans, "page_nav_anchor_url: main_app.root_path"
+    refute_includes plans, "page_nav_back_url"
+    assert_includes change, "page_nav_anchor_url: main_app.root_path"
   end
 
   def test_dummy_login_layout_keeps_flatpack_assets_without_tight_main_offset
@@ -136,6 +161,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes initializer, "config.limits"
     assert_includes initializer, "press_kits"
     assert_includes initializer, "PressKit"
+    assert_includes initializer, "plan_line"
+    assert_includes initializer, "rectangle-stack"
   end
 
   def test_install_initializer_template_documents_paywalls
@@ -148,6 +175,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes template, "config.subscription_types"
     assert_includes template, "config.limits"
     assert_includes template, "recordable_type"
+    assert_includes template, "plan_line"
     assert_includes template, "limit_reached_path"
     refute_includes template, "media_monitoring"
   end
@@ -165,6 +193,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "config.limits"
     assert_includes docs, "PlanLimitReached"
     assert_includes docs, "limit_press_kits"
+    assert_includes docs, "plan_card"
+    assert_includes docs, "plan_line"
   end
 
   def test_billing_docs_explain_customer_portal
@@ -224,12 +254,15 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_dummy_home_page_points_at_plans
     view_path = File.expand_path("dummy/app/views/home/index.html.erb", __dir__)
     view_source = File.read(view_path)
+    sidebar = File.read(File.expand_path("dummy/app/views/layouts/_sidebar_nav.html.erb", __dir__))
 
     assert_includes view_source, "See plans"
-    assert_includes view_source, "dummy_page_nav"
+    refute_includes view_source, "dummy_page_nav"
     assert_includes view_source, "FlatPack::EmptyState::Component"
-    assert_includes view_source, "Public pricing"
-    assert_includes view_source, "press_kits_path"
+    assert_includes sidebar, "Public pricing"
+    assert_includes sidebar, "press_kits_path"
+    assert_includes sidebar, "plans_path"
+    assert_includes sidebar, "dummy_billing_path"
     refute_includes view_source, "Add press kit"
     refute_includes view_source, "What this plan opens"
     refute_includes view_source, "dummy_paywall_open?"
@@ -241,11 +274,21 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_plan_card_lists_product_limits_before_meter_inclusions
     source = File.read(File.expand_path("../app/helpers/recording_studio_stripe/application_helper.rb", __dir__))
     card = File.read(File.expand_path("../app/components/recording_studio_stripe/plan_card_component.rb", __dir__))
+    features = File.read(File.expand_path("../lib/recording_studio_stripe/plan_features.rb", __dir__))
+    candidates = File.read(File.expand_path("../lib/recording_studio_stripe/plan_feature_candidates.rb", __dir__))
 
-    assert_includes source, "limit_inclusion_lines"
-    assert_includes source, "included_quantity"
-    assert_includes card, "stripe_plan_inclusion_lines"
+    assert_includes source, "PlanFeatures.for"
+    assert_includes source, "stripe_plan_feature_lines"
+    assert_includes card, "stripe_plan_feature_lines"
+    assert_includes card, "FlatPack::List::Component"
+    assert_includes card, "FlatPack::List::Item"
+    assert_includes card, "footer(divider: false)"
+    assert_includes card, "class: \"w-full\""
     assert_includes card, "subscription_change_path"
+    assert_includes features, "PlanFeatureCandidates"
+    assert_includes candidates, "paywall:"
+    assert_includes candidates, "limit:"
+    assert_includes candidates, "meter:"
   end
 
   def test_plan_change_confirms_price_without_the_old_plan
@@ -262,9 +305,45 @@ class RecordingStudioStripeTest < Minitest::Test
     pricing_view = File.read(File.expand_path("dummy/app/views/pricing/show.html.erb", __dir__))
 
     assert_includes component, "align: :left"
-    assert_includes component, "justify-start"
-    assert_includes component, "justify-center"
+    assert_includes component, "Grid::Component"
+    assert_includes component, "align: :stretch"
+    assert_includes component, "h-full"
+    assert_includes component, "text-center"
+    assert_includes component, "show_group_headings?"
+    assert_includes component, "Catalog.sorted_plans"
     assert_includes plans_view, "align: :left"
     assert_includes pricing_view, "align: :center"
+  end
+
+  def test_catalog_orders_plan_products_by_price
+    source = File.read(File.expand_path("../lib/recording_studio_stripe/catalog.rb", __dir__))
+
+    assert_includes source, "sorted_plans"
+    assert_includes source, "unit_amount"
+    refute_includes source, "order(:name)"
+  end
+
+  def test_admin_plan_edit_names_the_plan_and_hides_card_keys
+    edit = File.read(File.expand_path("../app/views/recording_studio_stripe/admin/products/edit.html.erb", __dir__))
+    new_view = File.read(File.expand_path("../app/views/recording_studio_stripe/admin/products/new.html.erb", __dir__))
+    card = File.read(
+      File.expand_path("../app/views/recording_studio_stripe/admin/products/_plan_card.html.erb", __dir__)
+    )
+    helper = File.read(File.expand_path("../app/helpers/recording_studio_stripe/application_helper.rb", __dir__))
+
+    assert_includes edit, "Edit \#{@product.name}"
+    assert_includes edit, "This plan"
+    assert_includes edit, "What they get"
+    assert_includes edit, "text: \"Save\""
+    assert_includes new_view, "New plan"
+    assert_includes new_view, "Plan or extra pack"
+    assert_includes card, "Collapse::Component"
+    assert_includes card, "Pricing card"
+    assert_includes card, "Extra line"
+    assert_includes card, "What it says"
+    refute_includes card, "Also show"
+    refute_includes card, "label: \"Key\""
+    assert_includes helper, "stripe_plan_card_open?"
+    assert_includes helper, "stripe_plan_card_extra_rows"
   end
 end

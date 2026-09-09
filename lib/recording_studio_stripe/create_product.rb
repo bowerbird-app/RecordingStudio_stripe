@@ -2,7 +2,8 @@
 
 module RecordingStudioStripe
   class CreateProduct
-    def self.call(name:, kind:, description: nil, active: true, paywall_names: [], subscription_type: nil, limits: {})
+    def self.call(name:, kind:, description: nil, active: true, paywall_names: [], subscription_type: nil, limits: {},
+                  plan_card: nil)
       new(
         name: name,
         kind: kind,
@@ -10,11 +11,12 @@ module RecordingStudioStripe
         active: active,
         paywall_names: paywall_names,
         subscription_type: subscription_type,
-        limits: limits
+        limits: limits,
+        plan_card: plan_card
       ).call
     end
 
-    def initialize(name:, kind:, description:, active:, paywall_names:, subscription_type:, limits:)
+    def initialize(name:, kind:, description:, active:, paywall_names:, subscription_type:, limits:, plan_card:)
       @name = name
       @kind = kind
       @description = description
@@ -22,6 +24,7 @@ module RecordingStudioStripe
       @paywall_names = paywall_names
       @subscription_type = subscription_type
       @limits = limits
+      @plan_card = plan_card
     end
 
     def call
@@ -41,6 +44,7 @@ module RecordingStudioStripe
         metadata: { "kind" => @kind, "subscription_type" => type }
       )
       product.assign_limits(@limits)
+      product.assign_plan_card(@plan_card)
       product.save!
       product.assign_paywalls(@paywall_names)
       product

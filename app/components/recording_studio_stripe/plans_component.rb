@@ -29,11 +29,7 @@ module RecordingStudioStripe
     private
 
     def stack_class
-      if @align == :center
-        "flex w-full flex-col gap-6 items-center"
-      else
-        "flex w-full flex-col gap-6 items-start"
-      end
+      aligned_class("flex w-full flex-col gap-6 items-center", "flex w-full flex-col gap-6 items-start")
     end
 
     def heading
@@ -41,7 +37,8 @@ module RecordingStudioStripe
         title: @title,
         subtitle: @subtitle,
         variant: :h1,
-        class: "mb-0 pb-0"
+        class: (@align == :center ? "mb-0 pb-0 w-full text-center" : "mb-0 pb-0"),
+        data: { plans_heading: true }
       )
     end
 
@@ -53,21 +50,17 @@ module RecordingStudioStripe
     end
 
     def groups_stack_class
-      if @align == :center
-        "flex w-full flex-col gap-10 items-center"
-      else
-        "flex w-full flex-col gap-10 items-start"
-      end
+      aligned_class("flex w-full flex-col gap-10 items-center", "flex w-full flex-col gap-10 items-start")
     end
 
     def group_block(group)
-      products = Array(group_value(group, :products))
+      interval = group_value(group, :interval).presence || @interval
+      products = Catalog.sorted_plans(group_value(group, :products), interval: interval)
       return if products.empty?
 
       subscription = group_value(group, :subscription)
       label = group_value(group, :label)
       key = group_value(group, :key)
-      interval = group_value(group, :interval).presence || @interval
       monthly_href = group_value(group, :monthly_href).presence || @monthly_href
       yearly_href = group_value(group, :yearly_href).presence || @yearly_href
       parts = []
@@ -79,20 +72,22 @@ module RecordingStudioStripe
     end
 
     def group_heading(label, interval, monthly_href, yearly_href)
-      pills = interval_pills(interval, monthly_href, yearly_href, label)
-      return pills if label.blank?
+      visible_label = show_group_headings? ? label : nil
+      pills = interval_pills(interval, monthly_href, yearly_href, visible_label)
+      title = (section_title(visible_label) if visible_label.present?)
+      return if title.blank? && pills.blank?
 
-      helpers.tag.div(class: heading_stack_class, data: { plan_group_heading: true }) do
-        helpers.safe_join([section_title(label), pills].compact)
-      end
+      attrs = { class: heading_stack_class }
+      attrs[:data] = { plan_group_heading: true } if title.present?
+      helpers.tag.div(helpers.safe_join([title, pills].compact), **attrs)
+    end
+
+    def show_group_headings?
+      @groups.many? { |group| Array(group_value(group, :products)).any? }
     end
 
     def heading_stack_class
-      if @align == :center
-        "flex w-full flex-col items-center gap-3"
-      else
-        "flex w-full flex-col items-start gap-3"
-      end
+      aligned_class("flex w-full flex-col items-center gap-3", "flex w-full flex-col items-start gap-3")
     end
 
     def interval_pills(interval, monthly_href, yearly_href, label)
@@ -121,21 +116,13 @@ module RecordingStudioStripe
     end
 
     def cards_row(products, subscription, interval)
-      helpers.tag.div(class: row_class) do
+      render FlatPack::Grid::Component.new(cols: 3, gap: :lg, align: :stretch, class: "w-full") do
         helpers.safe_join(products.map { |product| card_for(product, subscription, interval) })
       end
     end
 
-    def row_class
-      if @align == :center
-        "flex w-full flex-wrap gap-6 justify-center"
-      else
-        "flex w-full flex-wrap gap-6 justify-start"
-      end
-    end
-
     def card_for(product, subscription, interval)
-      helpers.tag.div(class: "w-full md:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-3rem)/3)]") do
+      helpers.tag.div(class: "h-full") do
         render PlanCardComponent.new(
           product: product,
           interval: interval,
@@ -154,6 +141,10 @@ module RecordingStudioStripe
           icon: :inbox
         )
       end
+    end
+
+    def aligned_class(center, left)
+      @align == :center ? center : left
     end
 
     def group_value(group, key)
