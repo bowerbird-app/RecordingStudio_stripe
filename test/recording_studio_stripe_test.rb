@@ -282,6 +282,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes card, "stripe_plan_feature_lines"
     assert_includes card, "FlatPack::List::Component"
     assert_includes card, "FlatPack::List::Item"
+    assert_includes card, "footer(divider: false)"
+    assert_includes card, "class: \"w-full\""
     assert_includes card, "subscription_change_path"
     assert_includes features, "PlanFeatureCandidates"
     assert_includes candidates, "paywall:"
@@ -303,8 +305,9 @@ class RecordingStudioStripeTest < Minitest::Test
     pricing_view = File.read(File.expand_path("dummy/app/views/pricing/show.html.erb", __dir__))
 
     assert_includes component, "align: :left"
-    assert_includes component, "justify-start"
-    assert_includes component, "justify-center"
+    assert_includes component, "Grid::Component"
+    assert_includes component, "align: :stretch"
+    assert_includes component, "h-full"
     assert_includes component, "text-center"
     assert_includes component, "show_group_headings?"
     assert_includes component, "Catalog.sorted_plans"

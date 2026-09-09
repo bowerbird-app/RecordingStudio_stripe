@@ -25,7 +25,7 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Extra packs as one-time Prices (`meter`, `allowance` metadata)
 - Customer plans page and billing page
 - Manage billing on Stripe on `/billing` opens the Stripe Customer Portal for invoices and cards
-- `PlansComponent` for those cards on a public page (`align: :center`) or a billing page (`align: :left`)
+- `PlansComponent` for those cards on a public page (`align: :center`) or a billing page (`align: :left`). Cards in a group share height, with the action in the footer
 - Recording Studio Admin section for Products, Prices, Meters, Paywalls, Customers, and Subscriptions
 - Named paywalls on a Product, checked with Accessible `authorized_action?`
 - Stripe webhooks that keep the local projection honest

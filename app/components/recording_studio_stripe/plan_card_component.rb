@@ -12,8 +12,10 @@ module RecordingStudioStripe
     end
 
     def call
+      cta = action
       render FlatPack::Card::Component.new(style: current? ? :elevated : :outlined, class: "h-full") do |card|
-        card.body { helpers.stripe_card_stack(title, inclusions, action) }
+        card.body { helpers.stripe_card_stack(title, inclusions) }
+        card.footer(divider: false) { cta } if cta
       end
     end
 
@@ -67,15 +69,27 @@ module RecordingStudioStripe
     end
 
     def current_button
-      render FlatPack::Button::Component.new(text: "Current plan", style: :secondary, size: :md, type: "button")
+      render FlatPack::Button::Component.new(
+        text: "Current plan",
+        style: :secondary,
+        size: :md,
+        type: "button",
+        class: "w-full"
+      )
     end
 
     def checkout_button
       helpers.button_to recording_studio_stripe.checkout_path,
                         params: { price_id: price.id },
-                        class: "inline-flex",
+                        class: "block w-full",
                         form: { data: { turbo: false } } do
-        render FlatPack::Button::Component.new(text: "Choose plan", style: :primary, size: :md, type: "submit")
+        render FlatPack::Button::Component.new(
+          text: "Choose plan",
+          style: :primary,
+          size: :md,
+          type: "submit",
+          class: "w-full"
+        )
       end
     end
 
@@ -84,7 +98,8 @@ module RecordingStudioStripe
         text: change_label,
         style: :primary,
         size: :md,
-        href: recording_studio_stripe.subscription_change_path(price_id: price.id)
+        href: recording_studio_stripe.subscription_change_path(price_id: price.id),
+        class: "w-full"
       )
     end
 

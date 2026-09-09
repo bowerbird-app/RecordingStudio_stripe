@@ -62,7 +62,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "[data-plans-heading].text-center", count: 0
     assert_select "[data-plan-group-heading]", count: 2
     assert_select "a[href='/'][aria-label='Close']"
-    assert_includes response.body, "justify-start"
+    assert_includes response.body, "items-stretch"
+    assert_includes response.body, "lg:grid-cols-3"
     assert_select "form[action*='checkout'][data-turbo=false]"
     refute_includes response.body, "Unlimited vibes"
     refute_includes response.body, "Add included usage on the Price"
@@ -88,7 +89,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "[data-plan-group-heading]", count: 2
     assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
     assert_equal [ "Inbox", "Inbox Plus", "Inbox Pro" ], css_select("[data-plan-group='inbox'] h3").map(&:text)
-    assert_includes response.body, "justify-center"
+    assert_includes response.body, "items-stretch"
+    assert_includes response.body, "lg:grid-cols-3"
     refute_includes response.body, "data-recording-studio-default-layout"
     assert_includes response.body, "Generate an image"
     assert_includes response.body, "Export CSV"

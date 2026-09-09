@@ -116,17 +116,13 @@ module RecordingStudioStripe
     end
 
     def cards_row(products, subscription, interval)
-      helpers.tag.div(class: row_class) do
+      render FlatPack::Grid::Component.new(cols: 3, gap: :lg, align: :stretch, class: "w-full") do
         helpers.safe_join(products.map { |product| card_for(product, subscription, interval) })
       end
     end
 
-    def row_class
-      aligned_class("flex w-full flex-wrap gap-6 justify-center", "flex w-full flex-wrap gap-6 justify-start")
-    end
-
     def card_for(product, subscription, interval)
-      helpers.tag.div(class: "w-full md:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-3rem)/3)]") do
+      helpers.tag.div(class: "h-full") do
         render PlanCardComponent.new(
           product: product,
           interval: interval,
