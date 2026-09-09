@@ -1,21 +1,11 @@
-<% dummy_page_nav(title: "Studio Workspace", back_url: root_path) %>
+<% content_for :title, dummy_sidebar_title %>
 
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
-    title: current_root_recording&.recordable&.try(:name) || "This workspace",
+    title: dummy_sidebar_title,
     subtitle: dummy_home_subtitle,
     variant: :h1
   ) %>
-
-  <div class="flex flex-wrap gap-2">
-    <%= render FlatPack::Button::Component.new(text: "Plans", style: :primary, size: :md, href: plans_path) %>
-    <%= render FlatPack::Button::Component.new(text: "Billing", style: :secondary, size: :md, href: recording_studio_stripe.root_path) %>
-    <% if dummy_show_press_kits? %>
-      <%= render FlatPack::Button::Component.new(text: "Press kits", style: :ghost, size: :md, href: press_kits_path) %>
-    <% end %>
-    <%= render FlatPack::Button::Component.new(text: "Public pricing", style: :ghost, size: :md, href: pricing_path) %>
-    <%= dummy_admin_button %>
-  </div>
 
   <% recordable = current_root_recording&.recordable %>
   <% if recordable.is_a?(AdminRoot) %>

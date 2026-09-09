@@ -1,0 +1,5 @@
+<%= render FlatPack::TopNav::Component.new do |nav| %>
+  <% nav.right(always_display: true) do %>
+    <%= recording_studio_root_switch_dropdown(style: :ghost, size: :md) %>
+  <% end %>
+<% end %>

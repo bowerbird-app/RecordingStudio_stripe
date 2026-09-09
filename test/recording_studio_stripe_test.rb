@@ -68,6 +68,17 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes controller_source, "flat_pack_sidebar"
   end
 
+  def test_dummy_home_uses_sidebar_layout
+    home_controller = File.read(File.expand_path("dummy/app/controllers/home_controller.rb", __dir__))
+    layout = File.read(File.expand_path("dummy/app/views/layouts/sidebar.html.erb", __dir__))
+
+    assert_includes home_controller, 'layout "sidebar"'
+    assert_includes layout, "FlatPack::SidebarLayout::Component"
+    assert_includes layout, 'data-theme="rounded"'
+    assert_includes layout, 'data-dummy-sidebar-layout="true"'
+    refute_includes layout, "data-recording-studio-default-layout"
+  end
+
   def test_dummy_default_layout_sets_rounded_theme_on_html
     layout = File.read(File.expand_path("dummy/app/views/layouts/recording_studio/default_layout.html.erb", __dir__))
 
@@ -238,12 +249,15 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_dummy_home_page_points_at_plans
     view_path = File.expand_path("dummy/app/views/home/index.html.erb", __dir__)
     view_source = File.read(view_path)
+    sidebar = File.read(File.expand_path("dummy/app/views/layouts/_sidebar_nav.html.erb", __dir__))
 
     assert_includes view_source, "See plans"
-    assert_includes view_source, "dummy_page_nav"
+    refute_includes view_source, "dummy_page_nav"
     assert_includes view_source, "FlatPack::EmptyState::Component"
-    assert_includes view_source, "Public pricing"
-    assert_includes view_source, "press_kits_path"
+    assert_includes sidebar, "Public pricing"
+    assert_includes sidebar, "press_kits_path"
+    assert_includes sidebar, "plans_path"
+    assert_includes sidebar, "dummy_billing_path"
     refute_includes view_source, "Add press kit"
     refute_includes view_source, "What this plan opens"
     refute_includes view_source, "dummy_paywall_open?"

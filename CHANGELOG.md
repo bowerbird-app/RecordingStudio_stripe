@@ -10,9 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Billing, plans, and plan-change set Close to the host home. The back chevron still uses browser history, which can loop or go nowhere when those pages are a mount
 
+### Changed
+- Dummy home uses Flatpack `SidebarLayout`. Plans and billing stay on default layout as mount slices; Close still returns to that home
+
 ### Upgrade notes
 - No extra migrations
 - Dummy’s default layout passes `page_nav_anchor_url` as Flatpack `anchor_href`. Hosts that copied an older layout still passing `anchor_url` should do the same or Close stays hidden
+- Dummy home is a host shell. Hosts pick their own chrome; this is not a gem layout change
 
 ## [0.8.0] - 2026-09-08
 
