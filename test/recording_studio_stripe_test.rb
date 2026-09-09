@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.8.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.8.1", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -73,7 +73,21 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes layout, '<html data-theme="rounded">'
     assert_includes layout, 'data-recording-studio-default-layout="true"'
+    assert_includes layout, "page_nav_options[:anchor_href]"
+    refute_includes layout, "page_nav_options[:anchor_url]"
     refute_includes layout, "document.documentElement.setAttribute"
+  end
+
+  def test_customer_screens_set_close_to_home
+    billing = File.read(File.expand_path("../app/views/recording_studio_stripe/billing/show.html.erb", __dir__))
+    plans = File.read(File.expand_path("../app/views/recording_studio_stripe/plans/index.html.erb", __dir__))
+    change = File.read(File.expand_path("../app/views/recording_studio_stripe/subscriptions/edit.html.erb", __dir__))
+
+    assert_includes billing, "page_nav_anchor_url: main_app.root_path"
+    refute_includes billing, "page_nav_back_url"
+    assert_includes plans, "page_nav_anchor_url: main_app.root_path"
+    refute_includes plans, "page_nav_back_url"
+    assert_includes change, "page_nav_anchor_url: main_app.root_path"
   end
 
   def test_dummy_login_layout_keeps_flatpack_assets_without_tight_main_offset

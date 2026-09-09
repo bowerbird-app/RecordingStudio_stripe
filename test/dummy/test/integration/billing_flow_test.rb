@@ -44,6 +44,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "body[data-theme='rounded']", count: 1
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='left']", count: 1
+    assert_select "a[href='/'][aria-label='Close']"
     assert_includes response.body, "justify-start"
     assert_select "form[action*='checkout'][data-turbo=false]"
     refute_includes response.body, "Unlimited vibes"
@@ -180,6 +181,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Cancel"
     refute_includes response.body, "Keep this plan"
     assert_select "form[action*='subscription']"
+    assert_select "a[href='/'][aria-label='Close']"
   end
 
   test "downgrade confirmation names the renewal" do
@@ -249,6 +251,13 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Stripe is confirming this plan"
     refute_includes response.body, "You're on"
+  end
+
+  test "billing close goes home" do
+    get "/billing"
+
+    assert_response :success
+    assert_select "a[href='/'][aria-label='Close']"
   end
 
   test "change plan reads the Stripe item id when metadata is missing" do

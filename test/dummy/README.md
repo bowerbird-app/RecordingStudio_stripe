@@ -17,7 +17,7 @@ Sign in with `admin@admin.com` / `Password`.
 
 Local mode (no `STRIPE_SECRET_KEY`) writes Customers and Subscriptions in the dummy database so you can click through. Dummy seeds Studio (Starter, Pro) and Inbox (Inbox, Inbox Plus). With keys, Checkout and webhooks talk to Stripe.
 
-Authenticated pages use a dummy copy of Recording Studio `default_layout` with `html data-theme="rounded"`. Recording Studio puts that attribute on `body`, which does not override Flatpack `:root` tokens. Dummy `config/importmap.rb` pins Turbo and Recording Studio Admin screen controllers so product tables load.
+Authenticated pages use a dummy copy of Recording Studio `default_layout` with `html data-theme="rounded"`. Recording Studio puts that attribute on `body`, which does not override Flatpack `:root` tokens. The copy passes `page_nav_anchor_url` as Flatpack `anchor_href` so Close can leave `/plans` and `/billing` for home. Dummy `config/importmap.rb` pins Turbo and Recording Studio Admin screen controllers so product tables load.
 
 Dummy registers `generate_image` and `export_csv` paywalls. Pro opens image generation. Inbox Plus opens CSV export. Staff tick those on the Product in Admin.
 

@@ -60,8 +60,7 @@
       } %>
       <% back_url = content_for(:page_nav_back_url).presence %>
       <% anchor_url = content_for(:page_nav_anchor_url).presence %>
-      <% page_nav_options[:back_url] = back_url if back_url.present? %>
-      <% page_nav_options[:anchor_url] = anchor_url if anchor_url.present? %>
+      <% page_nav_options[:anchor_href] = anchor_url if anchor_url.present? %>
 
       <div class="mt-4 mb-8">
         <% if defined?(FlatPack::PageNav::Component) %>
