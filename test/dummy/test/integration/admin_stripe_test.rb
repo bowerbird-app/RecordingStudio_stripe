@@ -85,13 +85,17 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
 
     assert_response :success
-    assert_includes response.body, "What this plan opens"
     assert_includes response.body, "Generate an image"
-    assert_includes response.body, "Plan group"
-    assert_includes response.body, "How many they can keep"
+    assert_includes response.body, "Group"
+    assert_includes response.body, "What they get"
     assert_includes response.body, "Press kits"
-    assert_includes response.body, "On the plan card"
-    assert_includes response.body, "Hide from the card"
+    assert_includes response.body, "Pricing card"
+    assert_includes response.body, "Hide on the card"
+    assert_includes response.body, "Extra line"
+    assert_includes response.body, "Create"
+    refute_includes response.body, "What this plan opens"
+    refute_includes response.body, "On the plan card"
+    refute_includes response.body, "Someone picks up the phone"
 
     assert_difference -> { RecordingStudioStripe::Product.count }, 1 do
       post RecordingStudioStripe.configuration.mount_path + "/admin/products", params: {
@@ -128,9 +132,18 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     get RecordingStudioStripe.configuration.mount_path + "/admin/products/#{starter.id}/edit"
 
     assert_response :success
-    assert_includes response.body, "What this plan opens"
-    assert_includes response.body, "On the plan card"
-    assert_includes response.body, "Hide from the card"
+    assert_includes response.body, "Edit Starter"
+    assert_includes response.body, "What this plan includes, and what the pricing card says."
+    assert_includes response.body, "This plan"
+    assert_includes response.body, "What they get"
+    assert_includes response.body, "Pricing card"
+    assert_includes response.body, "Hide on the card"
+    assert_includes response.body, "Save"
+    refute_includes response.body, "What this plan opens"
+    refute_includes response.body, "On the plan card"
+    refute_includes response.body, "Save Product"
+    refute_includes response.body, "Someone picks up the phone"
+    assert_select "[data-controller='flat-pack--collapse'] [aria-expanded='false']"
 
     patch RecordingStudioStripe.configuration.mount_path + "/admin/products/#{starter.id}", params: {
       name: "Starter",
@@ -140,7 +153,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
       plan_card: {
         hide: [ "meter:api_calls" ],
         extras: {
-          "0" => { key: "human", text: "A human answers when you ring", icon: "phone" }
+          "0" => { text: "A human answers when you ring", icon: "phone" }
         }
       }
     }
@@ -150,6 +163,21 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_equal 5, starter.limit_quantity("press_kits")
     assert_equal [ "meter:api_calls" ], starter.plan_card_settings["hide"]
     assert_equal "A human answers when you ring", starter.plan_card_settings["extras"].first["text"]
+    assert_equal "a_human_answers_when_you_ring", starter.plan_card_settings["extras"].first["key"]
+  end
+
+  test "edit Team opens the pricing card with one blank extra row" do
+    team = RecordingStudioStripe::Product.find_by!(name: "Team")
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/#{team.id}/edit"
+
+    assert_response :success
+    assert_includes response.body, "Edit Team"
+    assert_includes response.body, "Someone picks up the phone"
+    assert_select "[data-controller='flat-pack--collapse'] [aria-expanded='true']"
+    assert_select "input[name='plan_card[extras][0][text]']"
+    assert_select "input[name='plan_card[extras][1][text]']"
+    assert_select "input[name='plan_card[extras][2][text]']", count: 0
+    assert_select "input[type='hidden'][name='plan_card[extras][0][key]']"
   end
 
   test "allowance Products ignore paywall ticks" do

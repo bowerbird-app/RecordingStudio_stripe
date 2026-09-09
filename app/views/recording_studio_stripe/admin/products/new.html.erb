@@ -1,34 +1,44 @@
-<% recording_studio_page_nav(title: "New Product", page_nav_back_url: admin_screen_url("products"), page_nav_back_label: "Products") %>
+<% recording_studio_page_nav(title: "New plan", page_nav_back_url: admin_screen_url("products"), page_nav_back_label: "Products") %>
 
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
-    title: "New Product",
-    subtitle: "One Product per plan. Extra packs get their own Product.",
+    title: "New plan",
+    subtitle: "A plan, or an extra pack.",
     variant: :h1
   ) %>
 
-  <%= form_with url: recording_studio_stripe.admin_products_path, method: :post, local: true, class: "flex max-w-xl flex-col gap-4" do %>
-    <%= render FlatPack::TextInput::Component.new(name: "name", label: "Name", required: true, placeholder: "Pro") %>
+  <%= form_with url: recording_studio_stripe.admin_products_path, method: :post, local: true, class: "flex max-w-xl flex-col gap-6" do %>
     <%= render FlatPack::Select::Component.new(
       name: "kind",
-      label: "Kind",
+      label: "Plan or extra pack",
       required: true,
       value: @kind,
-      options: [["Plan", "plan"], ["Allowance pack", "allowance"]]
+      options: [["Plan", "plan"], ["Extra pack", "allowance"]]
     ) %>
-    <% if RecordingStudioStripe::SubscriptionTypes.configured? %>
-      <%= render FlatPack::Select::Component.new(
-        name: "subscription_type",
-        label: "Plan group",
-        required: true,
-        value: params[:subscription_type].presence || RecordingStudioStripe::SubscriptionTypes.keys.first,
-        options: RecordingStudioStripe::SubscriptionTypes.select_options
-      ) %>
+
+    <%= render FlatPack::SectionTitle::Component.new(title: "This plan", class: "my-0") %>
+    <div class="flex flex-col gap-4">
+      <%= render FlatPack::TextInput::Component.new(name: "name", label: "Name", required: true, placeholder: "Pro") %>
+      <% if RecordingStudioStripe::SubscriptionTypes.configured? %>
+        <%= render FlatPack::Select::Component.new(
+          name: "subscription_type",
+          label: "Group",
+          required: true,
+          value: params[:subscription_type].presence || RecordingStudioStripe::SubscriptionTypes.keys.first,
+          options: RecordingStudioStripe::SubscriptionTypes.select_options
+        ) %>
+      <% end %>
+      <%= render FlatPack::TextInput::Component.new(name: "description", label: "Description", placeholder: "For teams that ship") %>
+    </div>
+
+    <% if @kind != "allowance" %>
+      <%= render FlatPack::SectionTitle::Component.new(title: "What they get", class: "my-0") %>
+      <div class="flex flex-col gap-4">
+        <%= render "paywalls" %>
+        <%= render "limits" %>
+      </div>
+      <%= render "plan_card" %>
     <% end %>
-    <%= render FlatPack::TextInput::Component.new(name: "description", label: "Description", placeholder: "For teams that ship") %>
-    <%= render "paywalls" %>
-    <%= render "limits" %>
-    <%= render "plan_card" %>
-    <%= render FlatPack::Button::Component.new(text: "Create Product", style: :primary, size: :md, type: "submit") %>
+    <%= render FlatPack::Button::Component.new(text: "Create", style: :primary, size: :md, type: "submit") %>
   <% end %>
 </div>

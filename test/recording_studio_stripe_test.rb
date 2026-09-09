@@ -322,4 +322,28 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes source, "unit_amount"
     refute_includes source, "order(:name)"
   end
+
+  def test_admin_plan_edit_names_the_plan_and_hides_card_keys
+    edit = File.read(File.expand_path("../app/views/recording_studio_stripe/admin/products/edit.html.erb", __dir__))
+    new_view = File.read(File.expand_path("../app/views/recording_studio_stripe/admin/products/new.html.erb", __dir__))
+    card = File.read(
+      File.expand_path("../app/views/recording_studio_stripe/admin/products/_plan_card.html.erb", __dir__)
+    )
+    helper = File.read(File.expand_path("../app/helpers/recording_studio_stripe/application_helper.rb", __dir__))
+
+    assert_includes edit, "Edit \#{@product.name}"
+    assert_includes edit, "This plan"
+    assert_includes edit, "What they get"
+    assert_includes edit, "text: \"Save\""
+    assert_includes new_view, "New plan"
+    assert_includes new_view, "Plan or extra pack"
+    assert_includes card, "Collapse::Component"
+    assert_includes card, "Pricing card"
+    assert_includes card, "Extra line"
+    assert_includes card, "What it says"
+    refute_includes card, "Also show"
+    refute_includes card, "label: \"Key\""
+    assert_includes helper, "stripe_plan_card_open?"
+    assert_includes helper, "stripe_plan_card_extra_rows"
+  end
 end

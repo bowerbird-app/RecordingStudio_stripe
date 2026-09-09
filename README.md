@@ -141,7 +141,7 @@ tokens = account.billing.line(:studio).meter(:ai_tokens)
 tokens.spend(1) if tokens.available?(1)
 ```
 
-Omit `subscription_type` and the gem uses a matching plan group name if one exists, otherwise the first group. Do not give a limit the same name as a plan group unless they are meant to share it. Dummy Starter includes 3 press kits, Pro includes 10, and Team includes 25. Plan cards list those caps, included usage, and ticked paywalls. Hide, reorder, or add a display-only line on the Product with `plan_card` metadata. That hash stays local.
+Omit `subscription_type` and the gem uses a matching plan group name if one exists, otherwise the first group. Do not give a limit the same name as a plan group unless they are meant to share it. Dummy Starter includes 3 press kits, Pro includes 10, and Team includes 25. Plan cards list those caps, included usage, and ticked paywalls. Hide, reorder, or add a display-only line on the Product with `plan_card` metadata. That hash stays local. Staff edit that on the plan form under Pricing card.
 
 ### Admin
 

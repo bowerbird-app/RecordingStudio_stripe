@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dummy catalogue has three Studio plans and three Inbox plans, each with month and year
 - Plan cards use a Flatpack list with an icon on each line
 - Plan cards in a group share height. The action sits in the Flatpack card footer. The row is a Flatpack Grid that stretches
+- Admin plan edit names the plan, groups features with caps, and puts pricing-card lines in a disclosure
 
 ### Upgrade notes
 - No extra migrations
@@ -34,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional `icon` and `plan_line` on `config.limits`, `config.meters`, and `config.paywalls`. Omit them to keep today’s default copy
 - Optional `metadata["plan_card"]` (`hide`, `order`, `extras`) stays local. It is not sent to Stripe
 - Hosts that replaced `PlanCardComponent` should put Choose, Upgrade, and Current in the card footer so cards in a group share height
+- Admin Edit Product is now Edit with the plan name. Save is Save. Pricing-card hide, order, and extra lines sit in a disclosure. Extra lines no longer ask for a key on the form
 
 ## [0.8.0] - 2026-09-08
 

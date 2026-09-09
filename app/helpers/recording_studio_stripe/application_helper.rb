@@ -77,5 +77,17 @@ module RecordingStudioStripe
       quantity = @price.included_quantity(name)
       quantity.positive? ? quantity.to_s : nil
     end
+
+    def stripe_plan_card_open?(product)
+      return false unless product.respond_to?(:plan_card_settings)
+
+      settings = product.plan_card_settings
+      Array(settings["hide"]).any? || Array(settings["order"]).any? || Array(settings["extras"]).any?
+    end
+
+    def stripe_plan_card_extra_rows(settings)
+      rows = Array(settings.to_h.stringify_keys["extras"]).map { |extra| extra.to_h.stringify_keys }
+      rows + [{}]
+    end
   end
 end
