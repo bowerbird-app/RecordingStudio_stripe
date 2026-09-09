@@ -30,6 +30,53 @@ Cards sort cheapest first for the interval on the page. Groups follow the host�
 
 Included usage lives on the Price, not the Product. Two Prices on Starter can include different amounts, though dummy uses the same numbers for month and year. Paywalls and standing limits live on the Product, so monthly and yearly Pro share the same features and the same press-kit cap.
 
+## Plan cards
+
+`/plans` and `/pricing` cards are generated from those connections. They are not a handwritten bullet list.
+
+1. Standing caps on the Product (`limit_press_kits`)
+2. Included meters on the Price (`included_ai_tokens`)
+3. Paywalls ticked on the Product
+4. Optional extra lines on the Product (`metadata["plan_card"]`)
+
+The host sets copy and icons once per name:
+
+```ruby
+config.limits = {
+  "press_kits" => {
+    "label" => "Press kits",
+    "recordable_type" => "PressKit",
+    "subscription_type" => "studio",
+    "icon" => "rectangle-stack",
+    "plan_line" => "%{quantity} press kits"
+  }
+}
+config.meters = {
+  "ai_tokens" => { "label" => "AI tokens", "icon" => "sparkles", "plan_line" => "%{quantity} AI tokens each period" }
+}
+config.paywalls = {
+  "generate_image" => { "label" => "Generate an image", "icon" => "photo" }
+}
+```
+
+Omit `plan_line` and the card uses the default (`3 press kits`, `1m ai tokens`, or the paywall label). `%{quantity}` is shortened the same way as billing (`1m`, `10k`). Icons are Flatpack / Heroicon names. Missing icon is a check.
+
+Per-plan control lives on the Product as `plan_card` metadata. It stays local. Stripe metadata is strings only, so this hash is not sent to Stripe. Webhooks keep the local card when they upsert a Product.
+
+```json
+{
+  "hide": ["meter:api_calls"],
+  "order": ["limit:press_kits", "meter:ai_tokens", "paywall:generate_image", "extra:priority"],
+  "extras": [
+    { "key": "priority", "text": "Someone picks up the phone", "icon": "phone" }
+  ]
+}
+```
+
+Keys are `limit:<name>`, `meter:<name>`, `paywall:<name>`, `extra:<key>`. Blank `order` is caps, then usage, then features, then extras. Hide omits a line from the card; the cap, meter, or paywall still bills and gates. Extras are display-only. Admin New Product and Edit Product can hide, reorder, and add those extra lines.
+
+The card is a Flatpack list with an icon on each line. Dummy Team also shows “Someone picks up the phone”.
+
 ## Plan groups
 
 A workspace has one Stripe Customer. It can hold one live plan per named group.
@@ -67,8 +114,8 @@ A meter is a named counter the host records against. Defaults are `ai_tokens` an
 ```ruby
 RecordingStudioStripe.configure do |config|
   config.meters = {
-    "ai_tokens" => { "label" => "AI tokens" },
-    "api_calls" => { "label" => "API calls" },
+    "ai_tokens" => { "label" => "AI tokens", "icon" => "sparkles" },
+    "api_calls" => { "label" => "API calls", "icon" => "bolt" },
     "seats" => { "label" => "Seats" }
   }
 end
@@ -95,8 +142,8 @@ A paywall is a named feature the host checks before a job. Hosts register names 
 ```ruby
 RecordingStudioStripe.configure do |config|
   config.paywalls = {
-    "generate_image" => { "label" => "Generate an image" },
-    "export_csv" => { "label" => "Export CSV" }
+    "generate_image" => { "label" => "Generate an image", "icon" => "photo" },
+    "export_csv" => { "label" => "Export CSV", "icon" => "table-cells" }
   }
 end
 ```
@@ -115,7 +162,7 @@ RecordingStudioAccessible.authorized_action?(
 
 Meter spend stays `available?` / `record`. Buying a plan does not grant `:admin`. Paywalls are not Stripe Entitlements and not a `plan_id` on User.
 
-Dummy registers `generate_image` and `export_csv`, and ticks `generate_image` on Pro only.
+Dummy registers `generate_image` and `export_csv`, and ticks `generate_image` on Pro and Team.
 
 ## Limits
 
@@ -127,7 +174,9 @@ RecordingStudioStripe.configure do |config|
     "press_kits" => {
       "label" => "Press kits",
       "recordable_type" => "PressKit",
-      "subscription_type" => "studio"
+      "subscription_type" => "studio",
+      "icon" => "rectangle-stack",
+      "plan_line" => "%{quantity} press kits"
     }
   }
 end
@@ -150,7 +199,7 @@ Creating another of that type is blocked at the Recording. `revise` does not con
 
 Downgrades do not delete extras. `over?` is true and `available?` is false until they archive. Accessible stays access. Do not `record` usage for these caps.
 
-Dummy seeds Starter at 3, Pro at 10, and Team at 25 on Studio. Inbox plans do not include press kits. `/billing` shows the standing cap as a progress bar. Dummy `/press_kits` is the product screen that lists kits and adds them.
+Dummy seeds Starter at 3, Pro at 10, and Team at 25 on Studio. Inbox plans do not include press kits. `/billing` shows the standing cap as a progress bar. Dummy `/press_kits` is the product screen that lists kits and adds them. Plan cards on `/plans` and `/pricing` list those caps, included usage, and ticked features, with icons from the host config.
 
 ## Remaining
 
@@ -175,7 +224,7 @@ Customer UI is a mountable engine slice at `/plans` and `/billing`. Dummy home i
 
 `/billing` shows **Manage billing on Stripe** above the plan cards when the workspace has a Customer and the actor can `:admin`. Each live plan group gets its own card. Standing caps sit with that group's meters, not on the plan card. Cap cards show used of included, including when over. Usage cards show percent used this period. Meter bars stay quiet when nothing is included yet. `/billing?checkout=ok` explains the wait when Stripe has not written the subscription yet. That POST creates a Stripe Billing Portal session and redirects there. The return URL is the billing page (`success_path`). `:view` can read `/billing` and cannot open the portal. `:edit` cannot pay. Hosts turn the portal on in the Stripe Dashboard. Do not link to dashboard.stripe.com. Do not copy invoices or cards into local tables.
 
-`RecordingStudioStripe::PlansComponent` is the reusable plans block. Pass `groups:` from `Catalog.plan_groups` when types are configured, with each group's own interval hrefs from `PlanIntervals`. Pass `align: :left` on a signed-in billing page and `align: :center` on a public pricing page. Center also centers the title and subtitle. Dummy `/plans` is left. Dummy `/pricing` is centered and does not require a login. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Paywalls, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter, Paywall, and edit Product) live on the billing engine and link from those screens. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
+`RecordingStudioStripe::PlansComponent` is the reusable plans block. Pass `groups:` from `Catalog.plan_groups` when types are configured, with each group's own interval hrefs from `PlanIntervals`. Pass `align: :left` on a signed-in billing page and `align: :center` on a public pricing page. Center also centers the title and subtitle. Dummy `/plans` is left. Dummy `/pricing` is centered and does not require a login. Each card is a Flatpack list of caps, included usage, ticked features, and any extra lines on that Product. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Paywalls, Customers, and Subscriptions. Mutation forms (new Product, Price, Meter, Paywall, and edit Product) live on the billing engine and link from those screens. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
 
 ## Local mode
 

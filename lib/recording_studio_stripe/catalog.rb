@@ -3,7 +3,7 @@
 module RecordingStudioStripe
   class Catalog
     def self.plan_products
-      sorted_plans(Product.plans.includes(:prices))
+      sorted_plans(Product.plans.includes(:prices, :paywalls))
     end
 
     def self.plan_groups

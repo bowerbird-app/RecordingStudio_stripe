@@ -7,15 +7,20 @@ RecordingStudioStripe.configure do |config|
   # Required when secret_key is set. Unsigned webhooks only work in local mode.
   # Named usage counters. Defaults are ai_tokens and api_calls.
   # Add your own, then set included_<name> on each plan Price.
+  # icon and plan_line are for the public plan card. %{quantity} is shortened (1m, 10k).
   # config.meters = {
-  #   "ai_tokens" => { "label" => "AI tokens" },
-  #   "api_calls" => { "label" => "API calls" }
+  #   "ai_tokens" => {
+  #     "label" => "AI tokens",
+  #     "icon" => "sparkles",
+  #     "plan_line" => "%{quantity} AI tokens each period"
+  #   },
+  #   "api_calls" => { "label" => "API calls", "icon" => "bolt" }
   # }
   # Named plan features. Tick them on a Product in Admin.
   # Check with RecordingStudioAccessible.authorized_action?(action: :generate_image, recording: root)
   # config.paywalls = {
-  #   "generate_image" => { "label" => "Generate an image" },
-  #   "export_csv" => { "label" => "Export CSV" }
+  #   "generate_image" => { "label" => "Generate an image", "icon" => "photo" },
+  #   "export_csv" => { "label" => "Export CSV", "icon" => "table-cells" }
   # }
   # Optional. Omit this to keep one live plan per workspace.
   # Each plan Product belongs to one type. A workspace can hold one live plan per type.
@@ -30,7 +35,9 @@ RecordingStudioStripe.configure do |config|
   #   "press_kits" => {
   #     "label" => "Press kits",
   #     "recordable_type" => "PressKit",
-  #     "subscription_type" => "studio"
+  #     "subscription_type" => "studio",
+  #     "icon" => "rectangle-stack",
+  #     "plan_line" => "%{quantity} press kits"
   #   }
   # }
   # config.limit_reached_path = "/plans"

@@ -1,0 +1,51 @@
+<% if @kind != "allowance" && (@product.nil? || @product.plan?) %>
+  <% selected_type = @product&.subscription_type.presence || params[:subscription_type].presence || RecordingStudioStripe::SubscriptionTypes.keys.first %>
+  <% settings = @product&.plan_card_settings || {} %>
+  <% hidden = Array(settings["hide"]) %>
+  <% extras = Array(settings["extras"]) %>
+  <% extras += [{}] while extras.size < 3 %>
+  <div class="flex flex-col gap-2">
+    <p class="text-sm font-medium text-[var(--surface-content-color)]">On the plan card</p>
+    <p class="text-sm text-[var(--surface-muted-content-color)]">Built from caps, included usage, and ticked features. Hide a line without turning it off.</p>
+    <p class="text-sm font-medium text-[var(--surface-content-color)]">Hide from the card</p>
+    <% RecordingStudioStripe::PlanFeatures.hide_options(subscription_type: selected_type).each do |key, label| %>
+      <%= render FlatPack::Checkbox::Component.new(
+        name: "plan_card[hide][]",
+        value: key,
+        checked: hidden.include?(key),
+        label: label
+      ) %>
+    <% end %>
+    <%= render FlatPack::TextArea::Component.new(
+      name: "plan_card[order]",
+      label: "Order",
+      value: Array(settings["order"]).join("\n"),
+      rows: 4,
+      placeholder: "limit:press_kits\nmeter:ai_tokens\npaywall:generate_image",
+      help_text: "One key per line. Leave blank for caps, then usage, then features."
+    ) %>
+    <p class="text-sm font-medium text-[var(--surface-content-color)]">Also show</p>
+    <p class="text-sm text-[var(--surface-muted-content-color)]">A line that is not a cap, a meter, or a ticked feature. Skip a row to leave it off.</p>
+    <% extras.each_with_index do |extra, index| %>
+      <%= render FlatPack::TextInput::Component.new(
+        name: "plan_card[extras][#{index}][key]",
+        label: "Key",
+        value: extra["key"],
+        placeholder: "priority"
+      ) %>
+      <%= render FlatPack::TextInput::Component.new(
+        name: "plan_card[extras][#{index}][text]",
+        label: "Line",
+        value: extra["text"],
+        placeholder: "Someone picks up the phone"
+      ) %>
+      <%= render FlatPack::TextInput::Component.new(
+        name: "plan_card[extras][#{index}][icon]",
+        label: "Icon",
+        value: extra["icon"],
+        placeholder: "phone",
+        help_text: "A Flatpack icon name. Leave blank for a check."
+      ) %>
+    <% end %>
+  </div>
+<% end %>

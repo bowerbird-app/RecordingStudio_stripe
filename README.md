@@ -82,7 +82,7 @@ A single-type host can still pass `products:`, `subscription:`, and one pair of 
 
 Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave them blank in dummy to click through locally.
 
-Named usage counters default to `ai_tokens` and `api_calls`. Change `config.meters` in the initializer to add your own, then set `included_<name>` on each plan Price.
+Named usage counters default to `ai_tokens` and `api_calls`. Change `config.meters` in the initializer to add your own, then set `included_<name>` on each plan Price. Optional `icon` and `plan_line` on meters, paywalls, and limits are the words and icons on the public plan card.
 
 To sell two plans at once, name the groups:
 
@@ -123,7 +123,9 @@ RecordingStudioStripe.configure do |config|
     "press_kits" => {
       "label" => "Press kits",
       "recordable_type" => "PressKit",
-      "subscription_type" => "studio"
+      "subscription_type" => "studio",
+      "icon" => "rectangle-stack",
+      "plan_line" => "%{quantity} press kits"
     }
   }
 end
@@ -139,7 +141,7 @@ tokens = account.billing.line(:studio).meter(:ai_tokens)
 tokens.spend(1) if tokens.available?(1)
 ```
 
-Omit `subscription_type` and the gem uses a matching plan group name if one exists, otherwise the first group. Do not give a limit the same name as a plan group unless they are meant to share it. Dummy Starter includes 3 press kits, Pro includes 10, and Team includes 25.
+Omit `subscription_type` and the gem uses a matching plan group name if one exists, otherwise the first group. Do not give a limit the same name as a plan group unless they are meant to share it. Dummy Starter includes 3 press kits, Pro includes 10, and Team includes 25. Plan cards list those caps, included usage, and ticked paywalls. Hide, reorder, or add a display-only line on the Product with `plan_card` metadata. That hash stays local.
 
 ### Admin
 
@@ -198,4 +200,4 @@ Recording Studio core still swallows `before_record` errors. Standing caps gate 
 
 ## Dummy
 
-`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro, Team) and Inbox (Inbox, Inbox Plus, Inbox Pro) so one workspace can hold two live plans. Cards sort cheapest first. Home is the workspace. `/billing` shows the press kit cap with meters. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.
+`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro, Team) and Inbox (Inbox, Inbox Plus, Inbox Pro) so one workspace can hold two live plans. Cards sort cheapest first and list caps, included usage, and ticked features. Home is the workspace. `/billing` shows the press kit cap with meters. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.

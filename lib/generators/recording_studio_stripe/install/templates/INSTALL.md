@@ -8,4 +8,5 @@ Recording Studio Stripe is mounted.
 6. Grant Accessible :admin on the workspace for anyone who should pay.
 7. Optional: set config.subscription_types so a workspace can hold one live plan per group.
 8. Optional: set config.limits so a plan can cap how many of a type exist. Put the number on the Product.
+9. Optional: set icon and plan_line on limits, meters, and paywalls for the public plan card.
 9. Optional: set config.current_actor and config.current_root_recording if those helpers are not already on the host.

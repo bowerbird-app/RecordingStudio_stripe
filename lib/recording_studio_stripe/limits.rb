@@ -3,13 +3,15 @@
 module RecordingStudioStripe
   class Limits
     class Definition
-      attr_reader :name, :label, :recordable_type, :subscription_type
+      attr_reader :name, :label, :recordable_type, :subscription_type, :icon, :plan_line
 
       def initialize(name, attrs)
         @name = name.to_s
         @label = attrs["label"].presence || @name.humanize
         @recordable_type = attrs["recordable_type"].to_s
         @subscription_type = attrs["subscription_type"].presence || implied_subscription_type
+        @icon = attrs["icon"].presence
+        @plan_line = attrs["plan_line"].presence
       end
 
       def covers_type?(type)

@@ -22,6 +22,7 @@
     <% if @product.plan? %>
       <%= render "paywalls" %>
       <%= render "limits" %>
+      <%= render "plan_card" %>
     <% end %>
     <%= render FlatPack::Button::Component.new(text: "Save Product", style: :primary, size: :md, type: "submit") %>
   <% end %>

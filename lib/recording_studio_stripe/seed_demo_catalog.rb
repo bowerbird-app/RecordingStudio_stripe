@@ -16,6 +16,15 @@ module RecordingStudioStripe
       tokens = upsert_product("AI token packs", "allowance", "Extra AI tokens for this period.")
       pro.assign_paywalls(%w[generate_image])
       team.assign_paywalls(%w[generate_image])
+      seed_studio_caps(starter, pro, team)
+      seed_inbox_plans if typed?("inbox")
+      RegisterPaywallActions.call
+      seed_prices(starter, pro, team, tokens)
+    end
+
+    private
+
+    def seed_studio_caps(starter, pro, team)
       if Limits.known?("press_kits")
         starter.assign_limits("press_kits" => 3)
         starter.save!
@@ -24,9 +33,15 @@ module RecordingStudioStripe
         team.assign_limits("press_kits" => 25)
         team.save!
       end
-      seed_inbox_plans if typed?("inbox")
-      RegisterPaywallActions.call
+      team.assign_plan_card(
+        "extras" => [
+          { "key" => "priority", "text" => "Someone picks up the phone", "icon" => "phone" }
+        ]
+      )
+      team.save!
+    end
 
+    def seed_prices(starter, pro, team, tokens)
       upsert_price(starter, 900, "month", { "included_ai_tokens" => "1000000", "included_api_calls" => "10000" })
       upsert_price(starter, 9000, "year", { "included_ai_tokens" => "1000000", "included_api_calls" => "10000" })
       upsert_price(pro, 2900, "month", { "included_ai_tokens" => "10000000", "included_api_calls" => "100000" })
@@ -36,8 +51,6 @@ module RecordingStudioStripe
       upsert_price(tokens, 1000, nil, { "meter" => "ai_tokens", "allowance" => "5000000" })
       upsert_price(tokens, 3000, nil, { "meter" => "ai_tokens", "allowance" => "20000000" })
     end
-
-    private
 
     def seed_inbox_plans
       inbox = upsert_product("Inbox", "plan", "Keep an eye on what people send.", "inbox")

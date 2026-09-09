@@ -161,6 +161,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes initializer, "config.limits"
     assert_includes initializer, "press_kits"
     assert_includes initializer, "PressKit"
+    assert_includes initializer, "plan_line"
+    assert_includes initializer, "rectangle-stack"
   end
 
   def test_install_initializer_template_documents_paywalls
@@ -173,6 +175,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes template, "config.subscription_types"
     assert_includes template, "config.limits"
     assert_includes template, "recordable_type"
+    assert_includes template, "plan_line"
     assert_includes template, "limit_reached_path"
     refute_includes template, "media_monitoring"
   end
@@ -190,6 +193,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "config.limits"
     assert_includes docs, "PlanLimitReached"
     assert_includes docs, "limit_press_kits"
+    assert_includes docs, "plan_card"
+    assert_includes docs, "plan_line"
   end
 
   def test_billing_docs_explain_customer_portal
@@ -269,11 +274,19 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_plan_card_lists_product_limits_before_meter_inclusions
     source = File.read(File.expand_path("../app/helpers/recording_studio_stripe/application_helper.rb", __dir__))
     card = File.read(File.expand_path("../app/components/recording_studio_stripe/plan_card_component.rb", __dir__))
+    features = File.read(File.expand_path("../lib/recording_studio_stripe/plan_features.rb", __dir__))
+    candidates = File.read(File.expand_path("../lib/recording_studio_stripe/plan_feature_candidates.rb", __dir__))
 
-    assert_includes source, "limit_inclusion_lines"
-    assert_includes source, "included_quantity"
-    assert_includes card, "stripe_plan_inclusion_lines"
+    assert_includes source, "PlanFeatures.for"
+    assert_includes source, "stripe_plan_feature_lines"
+    assert_includes card, "stripe_plan_feature_lines"
+    assert_includes card, "FlatPack::List::Component"
+    assert_includes card, "FlatPack::List::Item"
     assert_includes card, "subscription_change_path"
+    assert_includes features, "PlanFeatureCandidates"
+    assert_includes candidates, "paywall:"
+    assert_includes candidates, "limit:"
+    assert_includes candidates, "meter:"
   end
 
   def test_plan_change_confirms_price_without_the_old_plan

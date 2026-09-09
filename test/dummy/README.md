@@ -21,4 +21,4 @@ Dummy home uses Flatpack `SidebarLayout` with `html data-theme="rounded"`. Plans
 
 Dummy registers `generate_image` and `export_csv` paywalls. Pro and Team open image generation. Inbox Plus and Inbox Pro open CSV export. Staff tick those on the Product in Admin.
 
-Dummy also registers a `press_kits` standing limit on Studio plans. Starter includes 3. Pro includes 10. Team includes 25. `/billing` shows how many you can keep. `/press_kits` lists them and adds more. Creating past the cap sends you to `/plans`.
+Dummy also registers a `press_kits` standing limit on Studio plans. Starter includes 3. Pro includes 10. Team includes 25. `/billing` shows how many you can keep. `/press_kits` lists them and adds more. Creating past the cap sends you to `/plans`. Plan cards on `/plans` and `/pricing` list those caps, included usage, and ticked features, with icons from the initializer. Team also shows a display-only line. Hide or reorder lines on the Product in Admin.

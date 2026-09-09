@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.1] - 2026-09-09
 
+### Added
+- Plan cards list ticked paywalls as well as standing caps and included usage
+- Optional `icon` and `plan_line` on limit, meter, and paywall config for that card copy
+- Optional Product `plan_card` metadata to hide, reorder, or add a display-only line
+
 ### Fixed
 - Billing, plans, and plan-change set Close to the host home. The back chevron still uses browser history, which can loop or go nowhere when those pages are a mount
 
@@ -16,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Plan group names (Studio, Inbox) only show when more than one type has Products
 - Plan cards sort cheapest first for the interval on the page
 - Dummy catalogue has three Studio plans and three Inbox plans, each with month and year
+- Plan cards use a Flatpack list with an icon on each line
 
 ### Upgrade notes
 - No extra migrations
@@ -23,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dummy home is a host shell. Hosts pick their own chrome; this is not a gem layout change
 - A host with one subscription type no longer sees that type name above the cards. Configure a second type with Products if the heading should stay
 - Plan cards now sort by Price, cheapest first, for the interval on the page. They are not alphabetical by Product name
+- Cards now list paywalls ticked on the Product. Hosts that relied on cards never showing those features will see them
+- Optional `icon` and `plan_line` on `config.limits`, `config.meters`, and `config.paywalls`. Omit them to keep today’s default copy
+- Optional `metadata["plan_card"]` (`hide`, `order`, `extras`) stays local. It is not sent to Stripe
 
 ## [0.8.0] - 2026-09-08
 

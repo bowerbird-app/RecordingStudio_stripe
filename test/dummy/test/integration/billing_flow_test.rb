@@ -44,6 +44,12 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "3 press kits"
     assert_includes response.body, "10 press kits"
     assert_includes response.body, "25 press kits"
+    assert_includes response.body, "Generate an image"
+    assert_includes response.body, "Export CSV"
+    assert_includes response.body, "Someone picks up the phone"
+    assert_includes response.body, "rectangle-stack"
+    assert_includes response.body, "sparkles"
+    assert_includes response.body, "photo"
     assert_includes response.body, "Monthly"
     assert_includes response.body, "Yearly"
     assert_includes response.body, "[border-radius:var(--tabs-pill-corner-radius)]"
@@ -84,6 +90,10 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_equal [ "Inbox", "Inbox Plus", "Inbox Pro" ], css_select("[data-plan-group='inbox'] h3").map(&:text)
     assert_includes response.body, "justify-center"
     refute_includes response.body, "data-recording-studio-default-layout"
+    assert_includes response.body, "Generate an image"
+    assert_includes response.body, "Export CSV"
+    assert_includes response.body, "Someone picks up the phone"
+    assert_includes response.body, "3 press kits"
   end
 
   test "catalog lists plan products cheapest first" do
@@ -552,6 +562,47 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     stored = client.v1.products.retrieve(product.stripe_id)
     assert_equal "txcd_1", stored.metadata["tax_code"]
     assert_equal "", stored.metadata["limit_press_kits"]
+    refute stored.metadata.key?("plan_card")
+  ensure
+    RecordingStudioStripe.configuration.client = previous_client
+  end
+
+  test "plan card extras stay local when Stripe metadata is merged" do
+    previous_client = RecordingStudioStripe.configuration.client
+    client = RecordingStudioStripe::Testing::Client.new
+    RecordingStudioStripe.configuration.client = client
+    product = RecordingStudioStripe::Product.find_by!(name: "Starter")
+    client.v1.products.update(product.stripe_id, metadata: { "kind" => "plan" })
+
+    RecordingStudioStripe::UpdateProduct.call(
+      product: product,
+      name: product.name,
+      description: product.description,
+      paywall_names: product.paywalls.map(&:name),
+      limits: { "press_kits" => 3 },
+      plan_card: {
+        "hide" => [ "meter:api_calls" ],
+        "extras" => [ { "key" => "priority", "text" => "Someone picks up the phone", "icon" => "phone" } ]
+      }
+    )
+
+    stored = client.v1.products.retrieve(product.stripe_id)
+    refute stored.metadata.key?("plan_card")
+    card = product.reload.plan_card_settings
+    assert_equal [ "meter:api_calls" ], card["hide"]
+    assert_equal "Someone picks up the phone", card["extras"].first["text"]
+
+    stripe_product = Struct.new(:id, :name, :description, :active, :metadata, keyword_init: true).new(
+      id: product.stripe_id,
+      name: product.name,
+      description: product.description,
+      active: true,
+      metadata: { "kind" => "plan", "subscription_type" => "studio", "limit_press_kits" => "3" }
+    )
+    RecordingStudioStripe::UpsertProduct.call(stripe_product)
+    card = product.reload.plan_card_settings
+    assert_equal [ "meter:api_calls" ], card["hide"]
+    assert_equal "Someone picks up the phone", card["extras"].first["text"]
   ensure
     RecordingStudioStripe.configuration.client = previous_client
   end

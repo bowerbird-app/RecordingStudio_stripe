@@ -39,8 +39,18 @@ module RecordingStudioStripe
     end
 
     def inclusions
-      helpers.tag.ul(class: "space-y-2 text-sm leading-6") do
-        safe_join(helpers.stripe_plan_inclusion_lines(@product, price).map { |line| helpers.tag.li(line) })
+      render FlatPack::List::Component.new(spacing: :dense) do
+        safe_join(feature_lines.map { |line| feature_item(line) })
+      end
+    end
+
+    def feature_lines
+      helpers.stripe_plan_feature_lines(@product, price)
+    end
+
+    def feature_item(line)
+      render FlatPack::List::Item.new(icon: line.icon.presence || "check", class: "px-0 py-1") do
+        line.text
       end
     end
 

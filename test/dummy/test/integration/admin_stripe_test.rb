@@ -90,6 +90,8 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Plan group"
     assert_includes response.body, "How many they can keep"
     assert_includes response.body, "Press kits"
+    assert_includes response.body, "On the plan card"
+    assert_includes response.body, "Hide from the card"
 
     assert_difference -> { RecordingStudioStripe::Product.count }, 1 do
       post RecordingStudioStripe.configuration.mount_path + "/admin/products", params: {
@@ -97,7 +99,14 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
         kind: "plan",
         description: "For people who ship every week.",
         paywall_names: %w[generate_image export_csv],
-        limits: { press_kits: 4 }
+        limits: { press_kits: 4 },
+        plan_card: {
+          hide: [ "meter:api_calls" ],
+          order: "limit:press_kits\nmeter:ai_tokens\npaywall:generate_image\nextra:priority",
+          extras: {
+            "0" => { key: "priority", text: "Someone picks up the phone", icon: "phone" }
+          }
+        }
       }
     end
 
@@ -107,6 +116,11 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_equal "studio", product.subscription_type
     assert_equal %w[export_csv generate_image], product.paywalls.order(:name).pluck(:name)
     assert_equal 4, product.limit_quantity("press_kits")
+    card = product.plan_card_settings
+    assert_equal [ "meter:api_calls" ], card["hide"]
+    assert_equal %w[limit:press_kits meter:ai_tokens paywall:generate_image extra:priority], card["order"]
+    assert_equal "Someone picks up the phone", card["extras"].first["text"]
+    assert_equal "phone", card["extras"].first["icon"]
   end
 
   test "staff can edit a Product and tick paywalls" do
@@ -115,17 +129,27 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "What this plan opens"
+    assert_includes response.body, "On the plan card"
+    assert_includes response.body, "Hide from the card"
 
     patch RecordingStudioStripe.configuration.mount_path + "/admin/products/#{starter.id}", params: {
       name: "Starter",
       description: starter.description,
       paywall_names: %w[export_csv],
-      limits: { press_kits: 5 }
+      limits: { press_kits: 5 },
+      plan_card: {
+        hide: [ "meter:api_calls" ],
+        extras: {
+          "0" => { key: "human", text: "A human answers when you ring", icon: "phone" }
+        }
+      }
     }
 
     follow_redirect!
     assert_equal %w[export_csv], starter.reload.paywalls.order(:name).pluck(:name)
     assert_equal 5, starter.limit_quantity("press_kits")
+    assert_equal [ "meter:api_calls" ], starter.plan_card_settings["hide"]
+    assert_equal "A human answers when you ring", starter.plan_card_settings["extras"].first["text"]
   end
 
   test "allowance Products ignore paywall ticks" do

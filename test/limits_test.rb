@@ -39,6 +39,8 @@ class LimitsTest < Minitest::Test
     assert_equal "Press kits", definition.label
     assert_equal "PressKit", definition.recordable_type
     assert_equal "studio", definition.subscription_type
+    assert_nil definition.icon
+    assert_nil definition.plan_line
     assert RecordingStudioStripe::Limits.covers_type?("PressKit")
     refute RecordingStudioStripe::Limits.covers_type?("Folder")
   end
@@ -64,6 +66,25 @@ class LimitsTest < Minitest::Test
     }
 
     assert_equal "studio", RecordingStudioStripe::Limits.fetch(:press_kits).subscription_type
+  end
+
+  def test_icon_and_plan_line_come_from_config
+    RecordingStudioStripe.configuration.subscription_types = {
+      "studio" => { "label" => "Studio" }
+    }
+    RecordingStudioStripe.configuration.limits = {
+      "press_kits" => {
+        "label" => "Press kits",
+        "recordable_type" => "PressKit",
+        "subscription_type" => "studio",
+        "icon" => "rectangle-stack",
+        "plan_line" => "%<quantity>s press kits"
+      }
+    }
+
+    definition = RecordingStudioStripe::Limits.fetch(:press_kits)
+    assert_equal "rectangle-stack", definition.icon
+    assert_equal "%<quantity>s press kits", definition.plan_line
   end
 
   def test_unknown_limit_raises
