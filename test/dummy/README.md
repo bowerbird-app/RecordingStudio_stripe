@@ -8,8 +8,8 @@ Sign in with `admin@admin.com` / `Password`.
 
 - `/` — current workspace on Flatpack’s sidebar shell. Plans and billing live on their own pages
 - `/press_kits` — list and add press kits for the workspace
-- `/plans` — Products and Prices, left aligned, with a monthly/yearly toggle under each plan group name. Upgrade and Switch at renewal open a confirmation page first
-- `/pricing` — the same plan cards, centered, no login
+- `/plans` — Products and Prices, left aligned, with a monthly/yearly toggle under each plan group name when dummy seeds more than one type. Upgrade and Switch at renewal open a confirmation page first
+- `/pricing` — the same plan cards, centered title and subtitle, no login
 - `/billing` — one card per live plan group, usage percent, extra packs, and Manage billing on Stripe (Customer Portal)
 - `/admin` — Stripe admin section. The Admin button switches to Studio Admin first, because Admin authorizes against that root.
 - `/webhooks/stripe` — Stripe webhook intake

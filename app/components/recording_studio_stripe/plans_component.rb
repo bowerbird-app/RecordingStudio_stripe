@@ -41,8 +41,17 @@ module RecordingStudioStripe
         title: @title,
         subtitle: @subtitle,
         variant: :h1,
-        class: "mb-0 pb-0"
+        class: heading_class,
+        data: { plans_heading: true }
       )
+    end
+
+    def heading_class
+      if @align == :center
+        "mb-0 pb-0 w-full text-center"
+      else
+        "mb-0 pb-0"
+      end
     end
 
     def groups
@@ -79,12 +88,22 @@ module RecordingStudioStripe
     end
 
     def group_heading(label, interval, monthly_href, yearly_href)
-      pills = interval_pills(interval, monthly_href, yearly_href, label)
-      return pills if label.blank?
+      visible_label = show_group_headings? ? label : nil
+      pills = interval_pills(interval, monthly_href, yearly_href, visible_label)
+      title = (section_title(visible_label) if visible_label.present?)
+      return if title.blank? && pills.blank?
 
-      helpers.tag.div(class: heading_stack_class, data: { plan_group_heading: true }) do
-        helpers.safe_join([section_title(label), pills].compact)
-      end
+      attrs = { class: heading_stack_class }
+      attrs[:data] = { plan_group_heading: true } if title.present?
+      helpers.tag.div(helpers.safe_join([title, pills].compact), **attrs)
+    end
+
+    def show_group_headings?
+      populated_group_count > 1
+    end
+
+    def populated_group_count
+      @groups.count { |group| Array(group_value(group, :products)).any? }
     end
 
     def heading_stack_class

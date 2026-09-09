@@ -44,6 +44,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "body[data-theme='rounded']", count: 1
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='left']", count: 1
+    assert_select "[data-plans-heading].text-center", count: 0
+    assert_select "[data-plan-group-heading]", count: 2
     assert_select "a[href='/'][aria-label='Close']"
     assert_includes response.body, "justify-start"
     assert_select "form[action*='checkout'][data-turbo=false]"
@@ -64,8 +66,50 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "$29/month"
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='center']", count: 1
+    assert_select "[data-plans-heading].text-center", count: 1
+    assert_select "[data-plan-group-heading]", count: 2
     assert_includes response.body, "justify-center"
     refute_includes response.body, "data-recording-studio-default-layout"
+  end
+
+  test "catalog lists plan products by name not price" do
+    names = RecordingStudioStripe::Catalog.plan_products.map(&:name)
+    studio = RecordingStudioStripe::Catalog.plan_groups.find { |group| group[:key] == "studio" }[:products].map(&:name)
+
+    assert_equal names.sort, names
+    assert_equal %w[Pro Starter], studio
+    refute_equal %w[Starter Pro], studio
+  end
+
+  test "plans hide the type heading when only one type has products" do
+    product = RecordingStudioStripe::Product.find_by!(name: "Pro")
+    html = ApplicationController.render(
+      RecordingStudioStripe::PlansComponent.new(
+        groups: [
+          {
+            key: "studio",
+            label: "Studio",
+            products: [product],
+            monthly_href: "/pricing",
+            yearly_href: "/pricing?interval=year"
+          },
+          {
+            key: "inbox",
+            label: "Inbox",
+            products: [],
+            monthly_href: "/pricing",
+            yearly_href: "/pricing?interval=year"
+          }
+        ],
+        align: :center
+      )
+    )
+
+    assert_includes html, "Pro"
+    refute_includes html, "data-plan-group-heading"
+    refute_includes html, ">Studio<"
+    refute_includes html, ">Inbox<"
+    assert_includes html, "text-center"
   end
 
   test "public pricing page shows yearly Prices" do
