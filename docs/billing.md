@@ -26,7 +26,7 @@ Starter is one Product. Monthly and yearly are two Prices on that Product. Extra
 
 `/plans` groups by Product. A Monthly / Yearly toggle picks which Price each card shows. When the host sets `config.subscription_types`, `/plans` also sections those Products by group. Type names (Studio, Inbox) only show when more than one type actually has Products. Admin Products is one row per Product, with Add Price. Admin Prices lists every Price with the Product name, and filters by Product or interval.
 
-Cards are not ordered by price and there is no staff rank. Groups follow the host’s `subscription_types` map order. Inside a group, `Catalog.plan_products` is alphabetical by Product name. Dummy Studio is Pro then Starter. Extra packs (one-time Prices) are cheapest first.
+Cards sort cheapest first for the interval on the page. Groups follow the host’s `subscription_types` map order. Dummy Studio is Starter, Pro, then Team. Extra packs (one-time Prices) are cheapest first too.
 
 Included usage lives on the Price, not the Product. Two Prices on Starter can include different amounts, though dummy uses the same numbers for month and year. Paywalls and standing limits live on the Product, so monthly and yearly Pro share the same features and the same press-kit cap.
 
@@ -45,7 +45,7 @@ end
 
 Omit that map and the gem keeps one implied group (`plan`) and one live plan, which is today's behaviour.
 
-Each plan Product belongs to one group. Starter and Pro share `studio`. Inbox Products share `inbox`. Checkout for an empty group adds a Stripe Subscription on the same Customer. A different Product in a group you already have opens a confirmation page, then upgrades now or downgrades at renewal. Cancel stops that group only. Manage billing on Stripe stays one button. Stripe shows every Subscription for the Customer.
+Each plan Product belongs to one group. Starter, Pro, and Team share `studio`. Inbox Products share `inbox`. Checkout for an empty group adds a Stripe Subscription on the same Customer. A different Product in a group you already have opens a confirmation page, then upgrades now or downgrades at renewal. Cancel stops that group only. Manage billing on Stripe stays one button. Stripe shows every Subscription for the Customer.
 
 ```ruby
 account.billing.line(:studio).subscription
@@ -150,7 +150,7 @@ Creating another of that type is blocked at the Recording. `revise` does not con
 
 Downgrades do not delete extras. `over?` is true and `available?` is false until they archive. Accessible stays access. Do not `record` usage for these caps.
 
-Dummy seeds Starter at 3 and Pro at 10 on Studio. Inbox plans do not include press kits. `/billing` shows the standing cap as a progress bar. Dummy `/press_kits` is the product screen that lists kits and adds them.
+Dummy seeds Starter at 3, Pro at 10, and Team at 25 on Studio. Inbox plans do not include press kits. `/billing` shows the standing cap as a progress bar. Dummy `/press_kits` is the product screen that lists kits and adds them.
 
 ## Remaining
 

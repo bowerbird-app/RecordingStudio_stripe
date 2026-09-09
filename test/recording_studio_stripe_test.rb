@@ -294,13 +294,16 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes component, "justify-center"
     assert_includes component, "text-center"
     assert_includes component, "show_group_headings?"
+    assert_includes component, "Catalog.sorted_plans"
     assert_includes plans_view, "align: :left"
     assert_includes pricing_view, "align: :center"
   end
 
-  def test_catalog_orders_plan_products_by_name
+  def test_catalog_orders_plan_products_by_price
     source = File.read(File.expand_path("../lib/recording_studio_stripe/catalog.rb", __dir__))
 
-    assert_includes source, "Product.plans.includes(:prices).order(:name)"
+    assert_includes source, "sorted_plans"
+    assert_includes source, "unit_amount"
+    refute_includes source, "order(:name)"
   end
 end

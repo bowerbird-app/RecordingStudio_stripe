@@ -42,7 +42,8 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
-    assert_includes response.body, "Inbox"
+    assert_includes response.body, "Team"
+    assert_includes response.body, "Inbox Pro"
     assert_includes response.body, "Opens"
     assert_includes response.body, "Generate an image"
     assert_includes response.body, "Edit"

@@ -14,12 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dummy home uses Flatpack `SidebarLayout`. Plans and billing stay on default layout as mount slices; Close still returns to that home
 - Public pricing centers the page title and subtitle with the cards
 - Plan group names (Studio, Inbox) only show when more than one type has Products
+- Plan cards sort cheapest first for the interval on the page
+- Dummy catalogue has three Studio plans and three Inbox plans, each with month and year
 
 ### Upgrade notes
 - No extra migrations
 - Dummy’s default layout passes `page_nav_anchor_url` as Flatpack `anchor_href`. Hosts that copied an older layout still passing `anchor_url` should do the same or Close stays hidden
 - Dummy home is a host shell. Hosts pick their own chrome; this is not a gem layout change
 - A host with one subscription type no longer sees that type name above the cards. Configure a second type with Products if the heading should stay
+- Plan cards now sort by Price, cheapest first, for the interval on the page. They are not alphabetical by Product name
 
 ## [0.8.0] - 2026-09-08
 

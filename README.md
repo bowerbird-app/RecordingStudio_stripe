@@ -139,7 +139,7 @@ tokens = account.billing.line(:studio).meter(:ai_tokens)
 tokens.spend(1) if tokens.available?(1)
 ```
 
-Omit `subscription_type` and the gem uses a matching plan group name if one exists, otherwise the first group. Do not give a limit the same name as a plan group unless they are meant to share it. Dummy Starter includes 3 press kits and Pro includes 10.
+Omit `subscription_type` and the gem uses a matching plan group name if one exists, otherwise the first group. Do not give a limit the same name as a plan group unless they are meant to share it. Dummy Starter includes 3 press kits, Pro includes 10, and Team includes 25.
 
 ### Admin
 
@@ -198,4 +198,4 @@ Recording Studio core still swallows `before_record` errors. Standing caps gate 
 
 ## Dummy
 
-`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro) and Inbox (Inbox, Inbox Plus) so one workspace can hold two live plans. Home is the workspace. `/billing` shows the press kit cap with meters. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.
+`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro, Team) and Inbox (Inbox, Inbox Plus, Inbox Pro) so one workspace can hold two live plans. Cards sort cheapest first. Home is the workspace. `/billing` shows the press kit cap with meters. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.

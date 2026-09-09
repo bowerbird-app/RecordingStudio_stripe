@@ -28,13 +28,22 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Inbox"
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
+    assert_includes response.body, "Team"
     assert_includes response.body, "Inbox Plus"
+    assert_includes response.body, "Inbox Pro"
     assert_includes response.body, "$29/month"
     assert_includes response.body, "$9/month"
+    assert_includes response.body, "$79/month"
     assert_includes response.body, "$25/month"
+    assert_includes response.body, "$90/month"
+    assert_select "[data-plan-group='studio'] h3", count: 3
+    assert_select "[data-plan-group='inbox'] h3", count: 3
+    assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
+    assert_equal [ "Inbox", "Inbox Plus", "Inbox Pro" ], css_select("[data-plan-group='inbox'] h3").map(&:text)
     assert_includes response.body, "10m ai tokens"
     assert_includes response.body, "3 press kits"
     assert_includes response.body, "10 press kits"
+    assert_includes response.body, "25 press kits"
     assert_includes response.body, "Monthly"
     assert_includes response.body, "Yearly"
     assert_includes response.body, "[border-radius:var(--tabs-pill-corner-radius)]"
@@ -63,22 +72,47 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Inbox"
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
+    assert_includes response.body, "Team"
+    assert_includes response.body, "Inbox Plus"
+    assert_includes response.body, "Inbox Pro"
     assert_includes response.body, "$29/month"
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='center']", count: 1
     assert_select "[data-plans-heading].text-center", count: 1
     assert_select "[data-plan-group-heading]", count: 2
+    assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
+    assert_equal [ "Inbox", "Inbox Plus", "Inbox Pro" ], css_select("[data-plan-group='inbox'] h3").map(&:text)
     assert_includes response.body, "justify-center"
     refute_includes response.body, "data-recording-studio-default-layout"
   end
 
-  test "catalog lists plan products by name not price" do
+  test "catalog lists plan products cheapest first" do
     names = RecordingStudioStripe::Catalog.plan_products.map(&:name)
     studio = RecordingStudioStripe::Catalog.plan_groups.find { |group| group[:key] == "studio" }[:products].map(&:name)
+    inbox = RecordingStudioStripe::Catalog.plan_groups.find { |group| group[:key] == "inbox" }[:products].map(&:name)
 
-    assert_equal names.sort, names
-    assert_equal %w[Pro Starter], studio
-    refute_equal %w[Starter Pro], studio
+    assert_equal %w[Starter Pro Team], studio
+    assert_equal [ "Inbox", "Inbox Plus", "Inbox Pro" ], inbox
+    refute_equal names.sort, names
+  end
+
+  test "plan cards sort by price even when products arrive out of order" do
+    team = RecordingStudioStripe::Product.find_by!(name: "Team")
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter")
+    html = ApplicationController.render(
+      RecordingStudioStripe::PlansComponent.new(
+        groups: [
+          {
+            products: [ team, starter ],
+            monthly_href: "/pricing",
+            yearly_href: "/pricing?interval=year"
+          }
+        ]
+      )
+    )
+
+    titles = html.scan(%r{<h3[^>]*>([^<]+)</h3>}).flatten
+    assert_equal %w[Starter Team], titles
   end
 
   test "plans hide the type heading when only one type has products" do
@@ -119,7 +153,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "$290/year"
     assert_includes response.body, "$90/year"
+    assert_includes response.body, "$790/year"
     assert_select "[data-plans-align='center']", count: 1
+    assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
   end
 
   test "plans page shows yearly Prices on the same Products" do
@@ -129,9 +165,13 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
     assert_includes response.body, "Inbox Plus"
+    assert_includes response.body, "Team"
     assert_includes response.body, "$290/year"
     assert_includes response.body, "$90/year"
+    assert_includes response.body, "$790/year"
     assert_includes response.body, "$250/year"
+    assert_includes response.body, "$900/year"
+    assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
   end
 
   test "plans page toggles monthly and yearly per group" do

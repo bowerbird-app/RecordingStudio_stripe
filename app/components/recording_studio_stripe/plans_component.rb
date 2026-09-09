@@ -54,13 +54,13 @@ module RecordingStudioStripe
     end
 
     def group_block(group)
-      products = Array(group_value(group, :products))
+      interval = group_value(group, :interval).presence || @interval
+      products = Catalog.sorted_plans(group_value(group, :products), interval: interval)
       return if products.empty?
 
       subscription = group_value(group, :subscription)
       label = group_value(group, :label)
       key = group_value(group, :key)
-      interval = group_value(group, :interval).presence || @interval
       monthly_href = group_value(group, :monthly_href).presence || @monthly_href
       yearly_href = group_value(group, :yearly_href).presence || @yearly_href
       parts = []
