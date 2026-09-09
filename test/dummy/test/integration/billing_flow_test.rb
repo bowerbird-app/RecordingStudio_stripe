@@ -89,7 +89,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
           {
             key: "studio",
             label: "Studio",
-            products: [product],
+            products: [ product ],
             monthly_href: "/pricing",
             yearly_href: "/pricing?interval=year"
           },

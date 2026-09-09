@@ -29,11 +29,7 @@ module RecordingStudioStripe
     private
 
     def stack_class
-      if @align == :center
-        "flex w-full flex-col gap-6 items-center"
-      else
-        "flex w-full flex-col gap-6 items-start"
-      end
+      aligned_class("flex w-full flex-col gap-6 items-center", "flex w-full flex-col gap-6 items-start")
     end
 
     def heading
@@ -41,17 +37,9 @@ module RecordingStudioStripe
         title: @title,
         subtitle: @subtitle,
         variant: :h1,
-        class: heading_class,
+        class: (@align == :center ? "mb-0 pb-0 w-full text-center" : "mb-0 pb-0"),
         data: { plans_heading: true }
       )
-    end
-
-    def heading_class
-      if @align == :center
-        "mb-0 pb-0 w-full text-center"
-      else
-        "mb-0 pb-0"
-      end
     end
 
     def groups
@@ -62,11 +50,7 @@ module RecordingStudioStripe
     end
 
     def groups_stack_class
-      if @align == :center
-        "flex w-full flex-col gap-10 items-center"
-      else
-        "flex w-full flex-col gap-10 items-start"
-      end
+      aligned_class("flex w-full flex-col gap-10 items-center", "flex w-full flex-col gap-10 items-start")
     end
 
     def group_block(group)
@@ -99,19 +83,11 @@ module RecordingStudioStripe
     end
 
     def show_group_headings?
-      populated_group_count > 1
-    end
-
-    def populated_group_count
-      @groups.count { |group| Array(group_value(group, :products)).any? }
+      @groups.many? { |group| Array(group_value(group, :products)).any? }
     end
 
     def heading_stack_class
-      if @align == :center
-        "flex w-full flex-col items-center gap-3"
-      else
-        "flex w-full flex-col items-start gap-3"
-      end
+      aligned_class("flex w-full flex-col items-center gap-3", "flex w-full flex-col items-start gap-3")
     end
 
     def interval_pills(interval, monthly_href, yearly_href, label)
@@ -146,11 +122,7 @@ module RecordingStudioStripe
     end
 
     def row_class
-      if @align == :center
-        "flex w-full flex-wrap gap-6 justify-center"
-      else
-        "flex w-full flex-wrap gap-6 justify-start"
-      end
+      aligned_class("flex w-full flex-wrap gap-6 justify-center", "flex w-full flex-wrap gap-6 justify-start")
     end
 
     def card_for(product, subscription, interval)
@@ -173,6 +145,10 @@ module RecordingStudioStripe
           icon: :inbox
         )
       end
+    end
+
+    def aligned_class(center, left)
+      @align == :center ? center : left
     end
 
     def group_value(group, key)
