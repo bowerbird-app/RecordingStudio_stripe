@@ -148,7 +148,7 @@ RecordingStudioStripe.configure do |config|
 end
 ```
 
-The gem writes those rows on boot. Staff can add more in Admin. Then tick which paywalls a **Product** opens on New Product or Edit Product. Do not put them on a Price. Extra packs skip this.
+The gem writes those rows on boot. Staff can add more in Admin. Then tick which paywalls a **Product** opens on New plan or Edit. Do not put them on a Price. Extra packs skip this.
 
 The gem registers each paywall as an Accessible named action. The policy is `:view` on the recording **and** a live plan Product includes that paywall:
 
@@ -182,7 +182,7 @@ RecordingStudioStripe.configure do |config|
 end
 ```
 
-Omit that map and the gem never gates creates. The number lives on the **Product** as `limit_<name>` metadata, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. Admin New Product and Edit Product show one integer field per configured limit.
+Omit that map and the gem never gates creates. The number lives on the **Product** as `limit_<name>` metadata, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. Admin New plan and Edit show one integer field per configured limit.
 
 ```ruby
 kits = account.billing.limit(:press_kits)
