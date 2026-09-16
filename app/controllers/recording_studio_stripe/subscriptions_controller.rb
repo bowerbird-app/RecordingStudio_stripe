@@ -14,6 +14,18 @@ module RecordingStudioStripe
       redirect_to recording_studio_stripe.engine_plans_path, alert: "Pick a plan from the list."
     end
 
+    def confirm_cancel
+      @cancel = RecordingStudioStripe::CancelPlan.build(
+        root_recording: current_billing_root,
+        subscription_type: params[:subscription_type]
+      )
+      return if @cancel
+
+      redirect_to recording_studio_stripe.root_path, alert: "Nothing to cancel."
+    rescue NoSubscription => e
+      redirect_to recording_studio_stripe.root_path, alert: e.message
+    end
+
     def update
       price = Price.active.includes(:product).find_by(id: params[:price_id])
       unless price&.product&.plan? && price.recurring?
@@ -43,6 +55,16 @@ module RecordingStudioStripe
         subscription_type: params[:subscription_type]
       )
       redirect_to recording_studio_stripe.root_path, notice: "Nice. Billing keeps going."
+    rescue NoSubscription => e
+      redirect_to recording_studio_stripe.root_path, alert: e.message
+    end
+
+    def keep
+      ClearScheduledChange.call(
+        root_recording: current_billing_root,
+        subscription_type: params[:subscription_type]
+      )
+      redirect_to recording_studio_stripe.root_path, notice: "You’ll stay on this plan."
     rescue NoSubscription => e
       redirect_to recording_studio_stripe.root_path, alert: e.message
     end

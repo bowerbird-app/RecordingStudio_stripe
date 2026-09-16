@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2026-09-16
+
+### Added
+- Cancel at period end opens a confirmation page that names the plan and the end date
+- Stay on the current plan clears a scheduled downgrade
+- Billing shows a wait alert for extra-pack return and for an incomplete Checkout
+
+### Changed
+- `past_due` and `trialing` use their own badges. Past due offers Update card
+- Plan-change secondary is Never mind. Billing Cancel still ends the plan
+
+### Upgrade notes
+- No extra migrations
+- A `past_due` plan still counts as subscribed. Paywalls and caps stay on until Stripe cancels
+- The plan card Cancel control is now a GET to `subscription_cancel_confirm_path`. POST `subscription/cancel` still ends the plan
+- Hosts that replaced `CurrentPlanComponent` should show Past due / Trial / Update card / Stay on {plan}, and send Cancel through the confirm page
+- Plan-change Confirm secondary is Never mind, not Cancel
+
 ## [0.8.1] - 2026-09-09
 
 ### Added
@@ -212,6 +230,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
+[0.8.2]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.8.2
 [0.8.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.8.1
 [0.8.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.8.0
 [0.7.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.7.0

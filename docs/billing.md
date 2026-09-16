@@ -101,7 +101,7 @@ account.billing.unlocked?(:export_csv)
 account.billing.line(:inbox).unlocked?(:export_csv)
 ```
 
-`unlocked?` is true if any live plan opens that paywall. `line(:inbox).unlocked?` is the scoped check. A `past_due` plan still counts as subscribed.
+`unlocked?` is true if any live plan opens that paywall. `line(:inbox).unlocked?` is the scoped check. A `past_due` plan still counts as subscribed. Billing tells people the card failed and sends them to Stripe to update it.
 
 Meters must go through a line when two plans include the same meter and their periods differ. `account.billing.meter(:ai_tokens)` picks the live plan that includes that meter. `account.billing.subscription` is still the latest live plan. Dummy seeds Studio and Inbox so you can click both.
 
@@ -215,7 +215,7 @@ Included comes from Price metadata. Purchased comes from allowance packs bought 
 
 - Higher monthly amount: confirmation page first, then update the Stripe Subscription now, `proration_behavior: always_invoice`, `payment_behavior: error_if_incomplete`. Local Price waits for the webhook
 - Lower monthly amount: confirmation page first, then keep the current Price, store `scheduled_price`. Stripe gets a schedule created from the Subscription, then an update with every current item copied into both phases. An existing schedule is released first. A failed schedule does not change the live Price
-- Cancel: `cancel_at_period_end` on that group's Subscription. Pass `subscription_type` when more than one live plan exists
+- Cancel: confirmation page first, then `cancel_at_period_end` on that group's Subscription. Pass `subscription_type` when more than one live plan exists. Stay on this plan on billing clears a scheduled downgrade.
 - Checkout for a group that already has a live plan opens the confirmation page. It does not apply the change, and it does not open a second Stripe Subscription. A first Checkout in an empty group reserves an incomplete local row so a second attempt cannot mint another Stripe Subscription
 
 ## Screens

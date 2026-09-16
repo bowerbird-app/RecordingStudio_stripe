@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 module RecordingStudioStripe
-  class PlanChangeComponent < ViewComponent::Base
-    def initialize(change:)
+  class CancelPlanComponent < ViewComponent::Base
+    def initialize(cancel:)
       super()
-      @change = change
+      @cancel = cancel
     end
 
     def call
@@ -17,8 +17,8 @@ module RecordingStudioStripe
 
     def heading
       render FlatPack::PageTitle::Component.new(
-        title: @change.title,
-        subtitle: @change.subtitle,
+        title: @cancel.title,
+        subtitle: @cancel.subtitle,
         variant: :h1
       )
     end
@@ -30,20 +30,24 @@ module RecordingStudioStripe
     end
 
     def confirm_button
-      helpers.button_to recording_studio_stripe.subscription_path,
-                        method: :patch,
-                        params: { price_id: @change.to_price.id },
+      helpers.button_to recording_studio_stripe.subscription_cancel_path,
+                        params: { subscription_type: @cancel.subscription_type },
                         class: "inline-flex" do
-        render FlatPack::Button::Component.new(text: @change.confirm_label, style: :primary, size: :md, type: "submit")
+        render FlatPack::Button::Component.new(
+          text: "Cancel at period end",
+          style: :primary,
+          size: :md,
+          type: "submit"
+        )
       end
     end
 
     def keep_button
       render FlatPack::Button::Component.new(
-        text: "Never mind",
+        text: "Keep this plan",
         style: :ghost,
         size: :md,
-        href: helpers.main_app.plans_path
+        href: recording_studio_stripe.root_path
       )
     end
 

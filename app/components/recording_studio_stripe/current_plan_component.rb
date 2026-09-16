@@ -4,9 +4,10 @@ module RecordingStudioStripe
   class CurrentPlanComponent < ViewComponent::Base
     include RecordingStudioStripe::ApplicationHelper
 
-    def initialize(subscription:)
+    def initialize(subscription:, can_manage: true)
       super()
       @subscription = subscription
+      @can_manage = can_manage
     end
 
     def call
@@ -34,47 +35,101 @@ module RecordingStudioStripe
     end
 
     def badges
+      helpers.tag.div(safe_join(badge_parts), class: "flex flex-wrap gap-2")
+    end
+
+    def badge_parts
       parts = []
       if RecordingStudioStripe::SubscriptionTypes.configured?
-        parts << render(FlatPack::Badge::Component.new(text: @subscription.subscription_type_label, style: :info,
-                                                       size: :sm))
+        parts << badge(@subscription.subscription_type_label, :info)
       end
-      parts << if @subscription.canceling?
-                 render(FlatPack::Badge::Component.new(text: "Ends this period", style: :warning, size: :sm))
-               elsif @subscription.scheduled_downgrade?
-                 render(FlatPack::Badge::Component.new(text: "Change scheduled", style: :info, size: :sm))
-               else
-                 render(FlatPack::Badge::Component.new(text: "Active", style: :primary, size: :sm))
-               end
-      helpers.tag.div(safe_join(parts), class: "flex flex-wrap gap-2")
+      parts.concat(status_badges)
+      parts
+    end
+
+    def status_badges
+      parts = []
+      parts << badge("Past due", :danger) if @subscription.past_due?
+      parts << badge("Trial", :info) if @subscription.trialing?
+      if @subscription.canceling?
+        parts << badge("Ends this period", :warning)
+      elsif @subscription.scheduled_downgrade?
+        parts << badge("Change scheduled", :info)
+      elsif !@subscription.past_due? && !@subscription.trialing?
+        parts << badge("Active", :primary)
+      end
+      parts
+    end
+
+    def badge(text, style)
+      render FlatPack::Badge::Component.new(text: text, style: style, size: :sm)
     end
 
     def actions
-      helpers.tag.div(class: "flex flex-wrap gap-2") do
-        safe_join(
-          [
-            render(FlatPack::Button::Component.new(text: "Change plan", style: :secondary, size: :md,
-                                                   href: main_app.plans_path)),
-            cancel_or_resume
-          ]
-        )
+      helpers.tag.div(class: "flex flex-wrap gap-2") { safe_join(action_buttons) }
+    end
+
+    def action_buttons
+      [
+        update_card_button,
+        stay_button,
+        change_plan_button,
+        keep_plan_button,
+        cancel_link
+      ].compact
+    end
+
+    def change_plan_button
+      render FlatPack::Button::Component.new(text: "Change plan", style: :secondary, size: :md,
+                                             href: main_app.plans_path)
+    end
+
+    def update_card_button
+      return unless @can_manage && @subscription.past_due?
+
+      helpers.button_to recording_studio_stripe.portal_path,
+                        class: "inline-flex",
+                        form: { data: { turbo: false } } do
+        render FlatPack::Button::Component.new(text: "Update card", style: :primary, size: :md, type: "submit")
       end
     end
 
-    def cancel_or_resume
-      if @subscription.canceling?
-        helpers.button_to recording_studio_stripe.subscription_resume_path,
-                          params: { subscription_type: @subscription.subscription_type },
-                          class: "inline-flex" do
-          render FlatPack::Button::Component.new(text: "Keep this plan", style: :primary, size: :md, type: "submit")
-        end
-      else
-        helpers.button_to recording_studio_stripe.subscription_cancel_path,
-                          params: { subscription_type: @subscription.subscription_type },
-                          class: "inline-flex" do
-          render FlatPack::Button::Component.new(text: "Cancel", style: :ghost, size: :md, type: "submit")
-        end
+    def stay_button
+      return unless @can_manage && @subscription.scheduled_downgrade? && !@subscription.canceling?
+
+      helpers.button_to recording_studio_stripe.subscription_keep_path,
+                        params: { subscription_type: @subscription.subscription_type },
+                        class: "inline-flex" do
+        render FlatPack::Button::Component.new(text: stay_label, style: :primary, size: :md, type: "submit")
       end
+    end
+
+    def stay_label
+      name = @subscription.price&.product&.name
+      name.present? ? "Stay on #{name}" : "Stay on this plan"
+    end
+
+    def keep_plan_button
+      return unless @can_manage && @subscription.canceling?
+
+      helpers.button_to recording_studio_stripe.subscription_resume_path,
+                        params: { subscription_type: @subscription.subscription_type },
+                        class: "inline-flex" do
+        render FlatPack::Button::Component.new(text: "Keep this plan", style: :primary, size: :md, type: "submit")
+      end
+    end
+
+    def cancel_link
+      return unless @can_manage && !@subscription.canceling?
+
+      render FlatPack::Button::Component.new(
+        text: "Cancel",
+        style: :ghost,
+        size: :md,
+        href: recording_studio_stripe.subscription_cancel_confirm_path(
+          subscription_type: @subscription.subscription_type
+        )
+      )
     end
 
     def main_app

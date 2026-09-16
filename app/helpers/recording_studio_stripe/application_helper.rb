@@ -32,12 +32,30 @@ module RecordingStudioStripe
     end
 
     def single_line_subtitle(subscription)
-      return "This plan runs until #{subscription.current_period_end.to_date.to_fs(:long)}." if subscription.canceling?
-      if subscription.scheduled_downgrade?
-        return "Next period switches to #{subscription.scheduled_price.product.name}."
-      end
+      return canceling_subtitle(subscription) if subscription.canceling?
+      return past_due_subtitle(subscription) if subscription.past_due?
+      return trial_subtitle(subscription) if subscription.trialing?
+      return scheduled_subtitle(subscription) if subscription.scheduled_downgrade?
 
       "You’re on #{subscription.price&.product&.name}."
+    end
+
+    def canceling_subtitle(subscription)
+      "This plan runs until #{subscription.current_period_end.to_date.to_fs(:long)}."
+    end
+
+    def past_due_subtitle(subscription)
+      "The card for #{subscription.price&.product&.name} did not go through."
+    end
+
+    def trial_subtitle(subscription)
+      return "You’re on #{subscription.price&.product&.name}." unless subscription.current_period_end
+
+      "Trial runs until #{subscription.current_period_end.to_date.to_fs(:long)}."
+    end
+
+    def scheduled_subtitle(subscription)
+      "Next period switches to #{subscription.scheduled_price.product.name}."
     end
 
     def usage_section_title(line)
