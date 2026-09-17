@@ -6,9 +6,10 @@ module RecordingStudioStripe
 
     def show
       @lines = billing.active_lines
-      @allowance_prices = Catalog.allowance_prices
       @show_manage_billing = show_manage_billing?
       @confirming_checkout = confirming_checkout?
+      @confirming_allowance = confirming_allowance?
+      @waiting_on_stripe = waiting_on_stripe?
     end
 
     private
@@ -26,6 +27,16 @@ module RecordingStudioStripe
 
     def confirming_checkout?
       params[:checkout].to_s == "ok" && !billing.subscribed?
+    end
+
+    def confirming_allowance?
+      params[:allowance].to_s == "ok"
+    end
+
+    def waiting_on_stripe?
+      return true if confirming_checkout?
+
+      Subscription.exists?(root_recording_id: current_billing_root.id, status: "incomplete") && !billing.subscribed?
     end
   end
 end

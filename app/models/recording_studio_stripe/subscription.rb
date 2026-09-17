@@ -37,6 +37,18 @@ module RecordingStudioStripe
       scheduled_price_id.present? && scheduled_price_id != price_id
     end
 
+    def past_due?
+      status == "past_due"
+    end
+
+    def trialing?
+      status == "trialing"
+    end
+
+    def incomplete?
+      status == "incomplete"
+    end
+
     def subscription_type_label
       SubscriptionTypes.label(subscription_type)
     end

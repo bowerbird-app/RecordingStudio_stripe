@@ -1,0 +1,8 @@
+<% recording_studio_page_nav(
+  title: "Cancel plan",
+  page_nav_back_url: recording_studio_stripe.root_path,
+  page_nav_back_label: "Billing",
+  page_nav_anchor_url: main_app.root_path
+) %>
+
+<%= render RecordingStudioStripe::CancelPlanComponent.new(cancel: @cancel) %>

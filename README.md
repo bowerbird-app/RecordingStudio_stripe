@@ -19,7 +19,7 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Checkout for a Customer
 - Upgrade now with Stripe proration, after a confirmation of the new price
 - Downgrade at the next renewal, after the same confirmation page
-- Cancel at period end
+- Cancel at period end, after a confirmation that names the plan and the end date
 - Included usage on a Price (`included_ai_tokens`, `included_api_calls` metadata)
 - Standing inventory limits on a Product (`limit_press_kits` metadata) for how many of a type can exist
 - Extra packs as one-time Prices (`meter`, `allowance` metadata)
@@ -97,7 +97,7 @@ end
 
 Each plan Product belongs to one group. A workspace holds one live Stripe Subscription per group, still one Customer. `account.billing.line(:studio).subscription` is that group's plan. `account.billing.unlocked?(:export_csv)` is true if any live plan opens it. Use `billing.line(:inbox).unlocked?(:export_csv)` when the feature belongs to one group.
 
-A `past_due` plan still counts as subscribed. Paywalls stay open and standing caps stay on that plan until Stripe marks it canceled. That is the grace period.
+A `past_due` plan still counts as subscribed. Paywalls stay open and standing caps stay on that plan until Stripe marks it canceled. That is the grace period. Billing shows **Past due** and **Update card** so people can fix the card in Stripe.
 
 `account.billing.meter(:ai_tokens)` uses the live plan that includes that meter. Prefer `account.billing.line(:studio).meter(:ai_tokens)` when two plans both include it. New usage rows store that plan group. Call `spend` when the work must not run over the included amount. `record` still writes the fact after the work happened, even if that puts usage over remaining.
 
@@ -190,7 +190,7 @@ Point Stripe at `POST /webhooks/stripe`. Set `STRIPE_WEBHOOK_SECRET` whenever St
 - `invoice.paid` and `invoice.payment_failed`
 - `product.*` and `price.*`
 
-`checkout.session.completed` does nothing until `payment_status` is `paid` or `no_payment_required`. A handler that cannot apply yet (Price or workspace missing) returns 503 and does not store the event, so Stripe retries. Checkout return still does not fulfil on its own. `/billing?checkout=ok` tells people to refresh if the subscription webhook has not landed. Choosing a plan in a group you already have opens a confirmation page, then upgrades or schedules a downgrade. It does not open a second Stripe Subscription. Stripe upgrades wait for the webhook before the local Price changes.
+`checkout.session.completed` does nothing until `payment_status` is `paid` or `no_payment_required`. A handler that cannot apply yet (Price or workspace missing) returns 503 and does not store the event, so Stripe retries. Checkout return still does not fulfil on its own. `/billing?checkout=ok` and `/billing?allowance=ok` tell people to refresh if Stripe is still writing. Choosing a plan in a group you already have opens a confirmation page, then upgrades or schedules a downgrade. It does not open a second Stripe Subscription. Stripe upgrades wait for the webhook before the local Price changes.
 
 Set `config.automatic_tax = true` only after Stripe Tax is on in the Dashboard. Checkout then also sends `customer_update: { address: "auto" }`. Promotion codes are on by default.
 

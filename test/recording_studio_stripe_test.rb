@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.8.1", ::RecordingStudioStripe::VERSION
+    assert_equal "0.8.2", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -217,7 +217,12 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "portal_path"
     assert_includes view_source, "LimitCardComponent"
     assert_includes view_source, "MeterCardComponent"
-    assert_includes view_source, "@confirming_checkout"
+    assert_includes view_source, "@waiting_on_stripe"
+    assert_includes view_source, "@confirming_allowance"
+    assert_includes view_source, "can_manage: @show_manage_billing"
+    refute_includes view_source, "Need a bit more"
+    refute_includes view_source, "AllowanceCardComponent"
+    refute_includes view_source, "@allowance_prices"
     assert_match(/Grid::Component.new\(cols: 2.*CurrentPlanComponent/m, view_source)
     plan_grid, usage_grid = view_source.split("usage_section_title", 2)
     refute_includes plan_grid, "LimitCardComponent"
@@ -228,11 +233,17 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes view_source, "dashboard.stripe.com"
   end
 
-  def test_current_plan_puts_active_badge_above_the_name
+  def test_current_plan_puts_status_badges_above_the_name
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/current_plan_component.rb", __dir__))
 
     assert_includes source, "stripe_card_stack(badges, title, actions)"
-    assert_includes source, "text: \"Active\", style: :primary"
+    assert_includes source, "badge(\"Active\", :primary)"
+    assert_includes source, "Past due"
+    assert_includes source, "Trial"
+    assert_includes source, "Update card"
+    assert_includes source, "Stay on"
+    assert_includes source, "subscription_cancel_confirm_path"
+    refute_includes source, "subscription_cancel_path"
   end
 
   def test_meter_card_shows_percent_used

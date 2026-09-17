@@ -274,8 +274,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "Now"
     refute_includes response.body, "Next"
     refute_includes response.body, "Starter"
-    assert_includes response.body, "Cancel"
+    assert_includes response.body, "Never mind"
     refute_includes response.body, "Keep this plan"
+    refute_select "a", text: "Cancel"
     assert_select "form[action*='subscription']"
     assert_select "a[href='/'][aria-label='Close']"
   end
@@ -472,7 +473,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Studio usage"
     assert_includes response.body, "AI tokens"
     assert_includes response.body, "0%"
-    assert_includes response.body, "+5m ai tokens"
+    refute_includes response.body, "Need a bit more"
+    refute_includes response.body, "+5m ai tokens"
+    refute_includes response.body, "Add this pack"
     refute_includes response.body, "10m left"
     refute_includes response.body, "Included 10m"
     assert_includes response.body, "md:grid-cols-2"
@@ -496,6 +499,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     refute_includes response.body, "Manage billing on Stripe"
     assert_includes response.body, "Usage still counts if you record it"
+    refute_includes response.body, "Need a bit more"
+    refute_includes response.body, "Add this pack"
     refute_includes response.body, "Unlimited vibes"
   end
 
@@ -675,5 +680,107 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
       action: :generate_image,
       recording: @root
     )
+  end
+
+  test "past due billing offers update card instead of active" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(
+      root_recording: @root,
+      price: pro,
+      current_period_end: Time.utc(2026, 10, 12)
+    )
+    @workspace.billing.subscription.update!(status: "past_due")
+
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    assert_includes response.body, "Past due"
+    assert_includes response.body, "Update card"
+    assert_includes response.body, "The card for Pro did not go through."
+    assert_includes response.body, "badge-danger-background-color"
+    refute_includes response.body, ">Active</"
+    assert_select "a[href*='subscription/cancel']", text: "Cancel"
+  end
+
+  test "trialing billing shows a trial badge" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(
+      root_recording: @root,
+      price: pro,
+      current_period_end: Time.utc(2026, 10, 12)
+    )
+    @workspace.billing.subscription.update!(status: "trialing")
+
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    assert_includes response.body, "Trial"
+    assert_includes response.body, "Trial runs until October 12, 2026."
+    refute_includes response.body, ">Active</"
+  end
+
+  test "cancel confirm names the plan then ends it at period end" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(
+      root_recording: @root,
+      price: pro,
+      current_period_end: Time.utc(2026, 10, 12)
+    )
+
+    get recording_studio_stripe.root_path
+
+    assert_select "a[href*='subscription/cancel']", text: "Cancel"
+    refute_select "form[action*='subscription/cancel']"
+
+    get recording_studio_stripe.subscription_cancel_confirm_path, params: { subscription_type: "studio" }
+
+    assert_response :success
+    assert_includes response.body, "Cancel Pro?"
+    assert_includes response.body, "You keep it until October 12, 2026."
+    assert_includes response.body, "Cancel at period end"
+    assert_includes response.body, "Keep this plan"
+
+    post recording_studio_stripe.subscription_cancel_path, params: { subscription_type: "studio" }
+
+    follow_redirect!
+    assert_predicate @workspace.billing.subscription, :canceling?
+    assert_includes response.body, "This plan stays on until the period ends."
+  end
+
+  test "stay on plan clears a scheduled switch" do
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+    @workspace.billing.subscription.update!(scheduled_price: starter)
+
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    assert_includes response.body, "Stay on Pro"
+    assert_includes response.body, "Change scheduled"
+
+    post recording_studio_stripe.subscription_keep_path, params: { subscription_type: "studio" }
+
+    follow_redirect!
+    refute_predicate @workspace.billing.subscription.reload, :scheduled_downgrade?
+    assert_includes response.body, "You’ll stay on this plan."
+    assert_includes response.body, "Active"
+  end
+
+  test "extra pack return asks people to refresh" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+
+    get recording_studio_stripe.root_path, params: { allowance: "ok" }
+
+    assert_response :success
+    assert_includes response.body, "Stripe is confirming that pack. Refresh in a moment."
+  end
+
+  test "incomplete checkout wait shows without a live plan" do
+    get recording_studio_stripe.root_path, params: { checkout: "ok" }
+
+    assert_response :success
+    assert_includes response.body, "Stripe is confirming this plan. Refresh in a moment."
   end
 end

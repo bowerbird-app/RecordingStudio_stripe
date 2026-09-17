@@ -7,9 +7,15 @@
     variant: :h1
   ) %>
 
-  <% if @confirming_checkout %>
+  <% if @waiting_on_stripe %>
     <%= render FlatPack::Alert::Component.new(
       description: "Stripe is confirming this plan. Refresh in a moment.",
+      style: :info,
+      class: "mb-4"
+    ) %>
+  <% elsif @confirming_allowance %>
+    <%= render FlatPack::Alert::Component.new(
+      description: "Stripe is confirming that pack. Refresh in a moment.",
       style: :info,
       class: "mb-4"
     ) %>
@@ -33,7 +39,10 @@
         <%= render FlatPack::SectionTitle::Component.new(title: line.label) %>
       <% end %>
       <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
-        <%= render RecordingStudioStripe::CurrentPlanComponent.new(subscription: line.subscription) %>
+        <%= render RecordingStudioStripe::CurrentPlanComponent.new(
+          subscription: line.subscription,
+          can_manage: @show_manage_billing
+        ) %>
       <% end %>
       <% limits = billing_line_limits(line) %>
       <% meters = billing_line_meters(line) %>
@@ -66,15 +75,6 @@
     <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
       <% RecordingStudioStripe::Meter.order(:name).each do |meter| %>
         <%= render RecordingStudioStripe::MeterCardComponent.new(handle: billing.meter(meter.name)) %>
-      <% end %>
-    <% end %>
-  <% end %>
-
-  <% if @allowance_prices.any? %>
-    <%= render FlatPack::SectionTitle::Component.new(title: "Need a bit more?") %>
-    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md) do %>
-      <% @allowance_prices.each do |price| %>
-        <%= render RecordingStudioStripe::AllowanceCardComponent.new(price: price) %>
       <% end %>
     <% end %>
   <% end %>
