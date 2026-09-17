@@ -78,13 +78,4 @@
       <% end %>
     <% end %>
   <% end %>
-
-  <% if @allowance_prices.any? %>
-    <%= render FlatPack::SectionTitle::Component.new(title: "Need a bit more?") %>
-    <%= render FlatPack::Grid::Component.new(cols: 2, gap: :md) do %>
-      <% @allowance_prices.each do |price| %>
-        <%= render RecordingStudioStripe::AllowanceCardComponent.new(price: price) %>
-      <% end %>
-    <% end %>
-  <% end %>
 </div>

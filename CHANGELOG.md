@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `past_due` and `trialing` use their own badges. Past due offers Update card
 - Plan-change secondary is Never mind. Billing Cancel still ends the plan
+- Billing no longer lists extra packs
 
 ### Upgrade notes
 - No extra migrations
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The plan card Cancel control is now a GET to `subscription_cancel_confirm_path`. POST `subscription/cancel` still ends the plan
 - Hosts that replaced `CurrentPlanComponent` should show Past due / Trial / Update card / Stay on {plan}, and send Cancel through the confirm page
 - Plan-change Confirm secondary is Never mind, not Cancel
+- Default `/billing` no longer renders extra packs. `AllowanceCardComponent` and POST `allowances` still work if a host puts them on their own screen
 
 ## [0.8.1] - 2026-09-09
 

@@ -473,7 +473,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Studio usage"
     assert_includes response.body, "AI tokens"
     assert_includes response.body, "0%"
-    assert_includes response.body, "+5m ai tokens"
+    refute_includes response.body, "Need a bit more"
+    refute_includes response.body, "+5m ai tokens"
+    refute_includes response.body, "Add this pack"
     refute_includes response.body, "10m left"
     refute_includes response.body, "Included 10m"
     assert_includes response.body, "md:grid-cols-2"
@@ -497,6 +499,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     refute_includes response.body, "Manage billing on Stripe"
     assert_includes response.body, "Usage still counts if you record it"
+    refute_includes response.body, "Need a bit more"
+    refute_includes response.body, "Add this pack"
     refute_includes response.body, "Unlimited vibes"
   end
 

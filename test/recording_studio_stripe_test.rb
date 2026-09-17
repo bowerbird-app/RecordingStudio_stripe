@@ -220,6 +220,9 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "@waiting_on_stripe"
     assert_includes view_source, "@confirming_allowance"
     assert_includes view_source, "can_manage: @show_manage_billing"
+    refute_includes view_source, "Need a bit more"
+    refute_includes view_source, "AllowanceCardComponent"
+    refute_includes view_source, "@allowance_prices"
     assert_match(/Grid::Component.new\(cols: 2.*CurrentPlanComponent/m, view_source)
     plan_grid, usage_grid = view_source.split("usage_section_title", 2)
     refute_includes plan_grid, "LimitCardComponent"

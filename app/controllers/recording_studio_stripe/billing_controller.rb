@@ -6,7 +6,6 @@ module RecordingStudioStripe
 
     def show
       @lines = billing.active_lines
-      @allowance_prices = Catalog.allowance_prices
       @show_manage_billing = show_manage_billing?
       @confirming_checkout = confirming_checkout?
       @confirming_allowance = confirming_allowance?
