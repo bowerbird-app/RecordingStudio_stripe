@@ -513,8 +513,14 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "No plan yet"
     assert_includes response.body, "Manage billing on Stripe"
-    assert_includes response.body, 'data-fp-style="stripe"'
     assert_includes response.body, "recording_studio_stripe/button"
+    assert_select '[data-fp-style="stripe"]', text: /Manage billing on Stripe/
+    assert_select '[data-fp-style="primary"]', text: /See plans/
+  end
+
+  test "boot registers the stripe Flatpack button style" do
+    assert_includes FlatPack::Button.styles, :stripe
+    assert_equal :raised, FlatPack::Button::StyleRegistry.press_for(:stripe)
   end
 
   test "stripe button stylesheet is served" do
@@ -713,8 +719,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Past due"
     assert_includes response.body, "Update card"
-    assert_includes response.body, 'data-fp-style="stripe"'
     assert_includes response.body, "recording_studio_stripe/button"
+    assert_select '[data-fp-style="stripe"]', text: /Manage billing on Stripe/
+    assert_select '[data-fp-style="primary"]', text: /Update card/
     assert_includes response.body, "The card for Pro did not go through."
     assert_includes response.body, "badge-danger-background-color"
     refute_includes response.body, ">Active</"
