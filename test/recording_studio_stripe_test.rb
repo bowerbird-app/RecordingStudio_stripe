@@ -106,6 +106,7 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes application_layout, '<html data-theme="rounded">'
     assert_includes application_layout, 'stylesheet_link_tag "flat_pack/variables"'
+    assert_includes application_layout, 'stylesheet_link_tag "flat_pack/application"'
     assert_includes application_layout, "javascript_importmap_tags"
     assert_includes application_layout, "min-h-screen"
     refute_includes application_layout, "mt-28"
