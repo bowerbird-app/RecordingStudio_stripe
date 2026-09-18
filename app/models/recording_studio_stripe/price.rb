@@ -46,6 +46,10 @@ module RecordingStudioStripe
     end
 
     def formatted_amount
+      self.class.formatted_amount(unit_amount, currency)
+    end
+
+    def self.formatted_amount(unit_amount, currency = "usd")
       amount = unit_amount.to_i / 100.0
       symbol = currency.to_s.upcase == "USD" ? "$" : "#{currency.to_s.upcase} "
       formatted = format("%.0f", amount)

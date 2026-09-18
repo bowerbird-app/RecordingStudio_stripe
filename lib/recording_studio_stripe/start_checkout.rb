@@ -109,6 +109,7 @@ module RecordingStudioStripe
         params[:subscription_data] = {
           metadata: checkout_metadata.slice(:root_recording_id, :subscription_type)
         }
+        Trial.for(@price.product).apply_to_checkout(params, plan_price: @price)
       end
       params
     end
@@ -135,7 +136,8 @@ module RecordingStudioStripe
 
     def complete_locally
       if @price.recurring?
-        ApplySubscription.call(root_recording: @root_recording, price: @price, email: actor_email)
+        ApplySubscription.call(root_recording: @root_recording, price: @price, email: actor_email,
+                               **Trial.for(@price.product).local_subscription_attrs)
       else
         ApplyAllowance.call(root_recording: @root_recording, price: @price, email: actor_email)
       end

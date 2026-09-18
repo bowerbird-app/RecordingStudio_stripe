@@ -12,11 +12,7 @@ module RecordingStudioStripe
         product = CreateProduct.call(
           name: params.require(:name),
           kind: params.require(:kind),
-          description: params[:description],
-          paywall_names: Array(params[:paywall_names]),
-          subscription_type: params[:subscription_type],
-          limits: product_limits,
-          plan_card: product_plan_card
+          **product_attrs
         )
         redirect_to admin_screen_url("products"), notice: "#{product.name} is on the catalogue."
       rescue InvalidPrice, ActiveRecord::RecordInvalid => e
@@ -36,11 +32,7 @@ module RecordingStudioStripe
         UpdateProduct.call(
           product: @product,
           name: params.require(:name),
-          description: params[:description],
-          paywall_names: Array(params[:paywall_names]),
-          subscription_type: params[:subscription_type],
-          limits: product_limits,
-          plan_card: product_plan_card
+          **product_attrs
         )
         redirect_to admin_screen_url("products"), notice: "#{@product.name} is saved."
       rescue InvalidPrice, ActiveRecord::RecordInvalid => e
@@ -50,6 +42,18 @@ module RecordingStudioStripe
       end
 
       private
+
+      def product_attrs
+        {
+          description: params[:description],
+          paywall_names: Array(params[:paywall_names]),
+          subscription_type: params[:subscription_type],
+          limits: product_limits,
+          plan_card: product_plan_card,
+          trial_days: params[:trial_days],
+          trial_unit_amount: params[:trial_unit_amount]
+        }
+      end
 
       def product_limits
         return {} unless Limits.configured?

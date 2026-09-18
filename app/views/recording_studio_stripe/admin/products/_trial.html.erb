@@ -1,0 +1,21 @@
+<% if @kind != "allowance" && (@product.nil? || @product.plan?) %>
+  <% trial = @product&.trial %>
+  <% days_value = params.key?(:trial_days) ? params[:trial_days] : (trial&.offered? ? trial.days : nil) %>
+  <% amount_value = params.key?(:trial_unit_amount) ? params[:trial_unit_amount] : (trial&.offered? ? trial.unit_amount : nil) %>
+  <%= render FlatPack::SectionTitle::Component.new(title: "Paid trial", class: "my-0") %>
+  <div class="flex flex-col gap-4">
+    <%= render FlatPack::TextInput::Component.new(
+      name: "trial_days",
+      label: "Trial days",
+      value: days_value,
+      placeholder: "14"
+    ) %>
+    <%= render FlatPack::TextInput::Component.new(
+      name: "trial_unit_amount",
+      label: "Trial amount in cents",
+      value: amount_value,
+      placeholder: "100",
+      help_text: "They pay this now. The plan price starts when the trial ends."
+    ) %>
+  </div>
+<% end %>

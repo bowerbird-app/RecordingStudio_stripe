@@ -50,6 +50,7 @@ module RecordingStudioStripe
       upsert_price(team, 79_000, "year", { "included_ai_tokens" => "50000000", "included_api_calls" => "500000" })
       upsert_price(tokens, 1000, nil, { "meter" => "ai_tokens", "allowance" => "5000000" })
       upsert_price(tokens, 3000, nil, { "meter" => "ai_tokens", "allowance" => "20000000" })
+      AssignTrial.call(product: pro, days: 14, unit_amount: 100)
     end
 
     def seed_inbox_plans

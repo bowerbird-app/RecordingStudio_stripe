@@ -84,13 +84,18 @@ module RecordingStudioStripe
                         class: "block w-full",
                         form: { data: { turbo: false } } do
         render FlatPack::Button::Component.new(
-          text: "Choose plan",
+          text: checkout_label,
           style: :primary,
           size: :md,
           type: "submit",
           class: "w-full"
         )
       end
+    end
+
+    def checkout_label
+      trial = @product.trial
+      trial.offered? ? trial.checkout_label : "Choose plan"
     end
 
     def change_button

@@ -13,8 +13,7 @@ module RecordingStudioStripe
     def call
       product = Product.find_or_initialize_by(stripe_id: @stripe_product.id)
       metadata = stringify(@stripe_product.try(:metadata))
-      card = product.plan_card_settings
-      metadata["plan_card"] = card if card.present?
+      preserve_local_metadata(product, metadata)
       type = SubscriptionTypes.normalize(
         metadata["subscription_type"].presence || product.subscription_type
       )
@@ -31,6 +30,18 @@ module RecordingStudioStripe
     end
 
     private
+
+    def preserve_local_metadata(product, metadata)
+      card = product.plan_card_settings
+      metadata["plan_card"] = card if card.present?
+
+      local = stringify(product.metadata)
+      %w[trial_days trial_unit_amount].each do |key|
+        next if metadata.key?(key)
+
+        metadata[key] = local[key] if local[key].present?
+      end
+    end
 
     def stringify(metadata)
       return {} if metadata.blank?

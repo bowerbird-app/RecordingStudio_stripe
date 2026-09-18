@@ -49,9 +49,14 @@ module RecordingStudioStripe
     end
 
     def trial_subtitle(subscription)
-      return "You’re on #{subscription.price&.product&.name}." unless subscription.current_period_end
+      date = subscription.current_period_end
+      return "You’re on #{subscription.price&.product&.name}." unless date
 
-      "Trial runs until #{subscription.current_period_end.to_date.to_fs(:long)}."
+      price = subscription.price
+      return "Trial until #{date.to_date.to_fs(:long)}." unless price
+
+      amount = "#{price.formatted_amount}/#{stripe_interval_label(price.interval)}"
+      "Trial until #{date.to_date.to_fs(:long)}. Then #{amount}."
     end
 
     def scheduled_subtitle(subscription)
