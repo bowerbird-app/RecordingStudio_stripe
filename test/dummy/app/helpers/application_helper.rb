@@ -8,7 +8,7 @@ module ApplicationHelper
   end
 
   def dummy_usage_path
-    RecordingStudioStripe.configuration.usage_path
+    recording_studio_stripe.usage_path
   end
 
   def dummy_usage_current?
