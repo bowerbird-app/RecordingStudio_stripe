@@ -101,7 +101,7 @@ module ApplicationHelper
 
   def dummy_home_subtitle
     names = dummy_home_plan_names
-    return "Plans, billing, and usage live on their own pages." if names.empty?
+    return "Pricing, billing, and usage live on their own pages." if names.empty?
 
     "You're on #{names.to_sentence}."
   end

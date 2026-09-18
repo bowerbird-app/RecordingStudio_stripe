@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Billing See usage only when a live plan has recorded cap or meter use
 - Billing no longer titles each live plan with the group name
 - Live plan badge is Current in the success colour. The type badge sits after it when more than one type is configured
+- Signed-in `/plans` is titled Pricing, centered like public `/pricing`
+- Cheaper plan changes say Downgrade, not Switch at renewal
+- Studio and Inbox section titles only appear when more than one plan type has Products
 
 ### Upgrade notes
 - No extra migrations
@@ -35,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Set `config.usage_path` if usage is not `{mount_path}/usage`
 - HTML meter-limit redirects go to usage
 - Dummy sidebar Billing is not current on `/billing/usage`
+- Hosts that replaced `plans/index` should title the page Pricing and pass `align: :center`
+- Hosts that replaced `PlanCardComponent` or `PlanChange` should label a cheaper plan Downgrade
+- Hosts that replaced billing empty or dummy home should say See pricing
 
 ## [0.8.3] - 2026-09-18
 

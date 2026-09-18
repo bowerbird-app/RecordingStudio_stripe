@@ -342,12 +342,13 @@ class RecordingStudioStripeTest < Minitest::Test
     view_source = File.read(view_path)
     sidebar = File.read(File.expand_path("dummy/app/views/layouts/_sidebar_nav.html.erb", __dir__))
 
-    assert_includes view_source, "See plans"
+    assert_includes view_source, "See pricing"
     refute_includes view_source, "dummy_page_nav"
     assert_includes view_source, "FlatPack::EmptyState::Component"
     assert_includes sidebar, "Public pricing"
     assert_includes sidebar, "press_kits_path"
     assert_includes sidebar, "plans_path"
+    assert_includes sidebar, 'text: "Pricing"'
     assert_includes sidebar, "dummy_billing_path"
     assert_includes sidebar, "dummy_usage_path"
     refute_includes view_source, "Add press kit"
@@ -374,6 +375,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes card, "footer(divider: false)"
     assert_includes card, "class: \"w-full\""
     assert_includes card, "subscription_change_path"
+    assert_includes card, "\"Downgrade\""
+    refute_includes card, "Switch at renewal"
     assert_includes features, "PlanFeatureCandidates"
     assert_includes candidates, "paywall:"
     assert_includes candidates, "limit:"
@@ -393,14 +396,21 @@ class RecordingStudioStripeTest < Minitest::Test
     plans_view = File.read(File.expand_path("../app/views/recording_studio_stripe/plans/index.html.erb", __dir__))
     pricing_view = File.read(File.expand_path("dummy/app/views/pricing/show.html.erb", __dir__))
 
-    assert_includes component, "align: :left"
+    assert_includes component, "ALIGNS = %i[left center]"
+    assert_includes component, "align: :center"
+    assert_includes component, "title: \"Pricing\""
+    assert_includes component, "No prices yet"
     assert_includes component, "Grid::Component"
     assert_includes component, "align: :stretch"
     assert_includes component, "h-full"
     assert_includes component, "text-center"
     assert_includes component, "show_group_headings?"
+    assert_includes component, "populated_groups"
+    assert_includes component, "shared_interval_pills"
     assert_includes component, "Catalog.sorted_plans"
-    assert_includes plans_view, "align: :left"
+    assert_includes plans_view, "align: :center"
+    assert_includes plans_view, "Pricing"
+    refute_includes plans_view, "title: \"Plans\""
     assert_includes pricing_view, "align: :center"
   end
 

@@ -7,7 +7,7 @@ module RecordingStudioStripe
     ALIGNS = %i[left center].freeze
 
     def initialize(interval: "month", monthly_href: nil, yearly_href: nil, products: [], subscription: nil,
-                   groups: nil, align: :left, title: "Pick a plan",
+                   groups: nil, align: :center, title: "Pricing",
                    subtitle: "Monthly or yearly. You can switch later.")
       super()
       @interval = interval
@@ -33,6 +33,14 @@ module RecordingStudioStripe
     end
 
     def heading
+      title = page_title
+      pills = shared_interval_pills
+      return title if pills.blank?
+
+      helpers.tag.div(helpers.safe_join([title, pills]), class: heading_stack_class)
+    end
+
+    def page_title
       render FlatPack::PageTitle::Component.new(
         title: @title,
         subtitle: @subtitle,
@@ -72,18 +80,39 @@ module RecordingStudioStripe
     end
 
     def group_heading(label, interval, monthly_href, yearly_href)
-      visible_label = show_group_headings? ? label : nil
-      pills = interval_pills(interval, monthly_href, yearly_href, visible_label)
-      title = (section_title(visible_label) if visible_label.present?)
+      return unless show_group_headings?
+
+      pills = interval_pills(interval, monthly_href, yearly_href, label)
+      title = (section_title(label) if label.present?)
       return if title.blank? && pills.blank?
 
-      attrs = { class: heading_stack_class }
-      attrs[:data] = { plan_group_heading: true } if title.present?
-      helpers.tag.div(helpers.safe_join([title, pills].compact), **attrs)
+      helpers.tag.div(
+        helpers.safe_join([title, pills].compact),
+        class: heading_stack_class,
+        data: { plan_group_heading: true }
+      )
+    end
+
+    def shared_interval_pills
+      return if show_group_headings?
+
+      group = populated_groups.first
+      return unless group
+
+      interval_pills(
+        group_value(group, :interval).presence || @interval,
+        group_value(group, :monthly_href).presence || @monthly_href,
+        group_value(group, :yearly_href).presence || @yearly_href,
+        nil
+      )
     end
 
     def show_group_headings?
-      @groups.many? { |group| Array(group_value(group, :products)).any? }
+      populated_groups.many?
+    end
+
+    def populated_groups
+      @groups.select { |group| Array(group_value(group, :products)).any? }
     end
 
     def heading_stack_class
@@ -112,7 +141,10 @@ module RecordingStudioStripe
     end
 
     def section_title(label)
-      render FlatPack::SectionTitle::Component.new(title: label, class: "my-0")
+      render FlatPack::SectionTitle::Component.new(
+        title: label,
+        class: (@align == :center ? "my-0 text-center" : "my-0")
+      )
     end
 
     def cards_row(products, subscription, interval)
@@ -132,11 +164,11 @@ module RecordingStudioStripe
     end
 
     def empty_state
-      return if @groups.any? { |group| Array(group_value(group, :products)).any? }
+      return if populated_groups.any?
 
       helpers.tag.div(class: "w-full") do
         render FlatPack::EmptyState::Component.new(
-          title: "No plans yet",
+          title: "No prices yet",
           description: "Staff add Products and Prices in admin. Come back when the shop is stocked.",
           icon: :inbox
         )

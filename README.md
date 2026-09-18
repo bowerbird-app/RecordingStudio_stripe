@@ -23,10 +23,10 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Included usage on a Price (`included_ai_tokens`, `included_api_calls` metadata)
 - Standing inventory limits on a Product (`limit_press_kits` metadata) for how many of a type can exist
 - Extra packs as one-time Prices (`meter`, `allowance` metadata)
-- Customer plans page, billing page, and usage page
+- Customer pricing page, billing page, and usage page
 - Manage billing on Stripe on `/billing` opens the Stripe Customer Portal for invoices and cards
 - Usage at `/billing/usage` for standing caps and period meters
-- `PlansComponent` for those cards on a public page (`align: :center`) or a billing page (`align: :left`). Cards in a group share height, with the action in the footer
+- `PlansComponent` for those cards, centered by default (`align: :center`). Cards in a group share height, with the action in the footer
 - `UsageComponent` for caps and meters on a host screen
 - Recording Studio Admin section for Products, Prices, Meters, Paywalls, Customers, and Subscriptions
 - Named paywalls on a Product, checked with Accessible `authorized_action?`
@@ -60,7 +60,7 @@ Routes from the install generator:
 draw_recording_studio_stripe
 ```
 
-That mounts billing at `/billing`, usage at `/billing/usage`, plans at `/plans`, and webhooks at `/webhooks/stripe`.
+That mounts billing at `/billing`, usage at `/billing/usage`, pricing at `/plans`, and webhooks at `/webhooks/stripe`.
 
 Turn on the Customer Portal in the Stripe Dashboard. Manage billing on Stripe mints a portal session for the workspace Customer and sends the browser to Stripe. The button uses the gem's `:stripe` Flatpack style. The gem does not copy invoices or cards. Leave keys blank in dummy and the button still shows after a local checkout, then flashes instead of calling Stripe.
 
@@ -76,11 +76,11 @@ Render the same plan cards on a host screen. Pass `groups:` from `Catalog.plan_g
       **intervals.hrefs_for(key) { |query| plans_path(**query) }
     )
   },
-  align: :left
+  align: :center
 ) %>
 ```
 
-A single-type host can still pass `products:`, `subscription:`, and one pair of monthly/yearly hrefs. Use `align: :center` on a public pricing page. Use `align: :left` on a signed-in billing page. Copy inside each card stays left either way.
+A single-type host can still pass `products:`, `subscription:`, and one pair of monthly/yearly hrefs. `align: :center` is the default and centers the title, subtitle, and monthly/yearly pills. Pass `align: :left` if the host screen needs that. Copy inside each card stays left either way. Group titles such as Studio and Inbox only render when more than one type has Products.
 
 Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave them blank in dummy to click through locally.
 

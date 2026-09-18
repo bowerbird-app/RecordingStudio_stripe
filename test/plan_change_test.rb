@@ -42,9 +42,9 @@ class PlanChangeTest < Minitest::Test
     )
 
     assert change.downgrade?
-    assert_equal "Switch to Starter?", change.title
+    assert_equal "Downgrade to Starter?", change.title
     assert_equal "$9/month, down from $29/month. Starts on October 12, 2026.", change.subtitle
-    assert_equal "Switch at renewal", change.confirm_label
+    assert_equal "Downgrade", change.confirm_label
   end
 
   def test_same_product_interval_switch_names_the_cadence
