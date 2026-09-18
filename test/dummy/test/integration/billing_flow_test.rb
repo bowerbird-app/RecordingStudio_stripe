@@ -357,6 +357,17 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "a[href='/'][aria-label='Close']"
   end
 
+  test "usage close goes home" do
+    get "/billing/usage"
+
+    assert_response :success
+    assert_select "a[href='/'][aria-label='Close']"
+    assert_select "[data-usage='true']"
+    assert_includes response.body, "Usage this period"
+    assert_includes response.body, "AI tokens"
+    assert_includes response.body, "API calls"
+  end
+
   test "change plan reads the Stripe item id when metadata is missing" do
     previous_client = RecordingStudioStripe.configuration.client
     client = RecordingStudioStripe::Testing::Client.new
@@ -463,11 +474,11 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_equal 15_000_101, @workspace.billing.meter(:ai_tokens).usage
   end
 
-  test "billing page shows usage percent" do
+  test "usage page shows usage percent" do
     pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
 
-    get recording_studio_stripe.root_path
+    get recording_studio_stripe.usage_path
 
     assert_response :success
     assert_includes response.body, "Studio usage"
@@ -479,7 +490,23 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "10m left"
     refute_includes response.body, "Included 10m"
     assert_includes response.body, "md:grid-cols-2"
+    refute_includes response.body, "Manage billing on Stripe"
+    refute_includes response.body, "Current plan"
+  end
+
+  test "billing page links to usage and omits meters" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    assert_includes response.body, "See usage"
+    assert_includes response.body, recording_studio_stripe.usage_path
+    refute_includes response.body, "Studio usage"
+    refute_includes response.body, "0%"
     assert_includes response.body, "badge-primary-background-color"
+    assert_includes response.body, "md:grid-cols-2"
   end
 
   test "buying an extra pack increases remaining" do
@@ -499,7 +526,10 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     refute_includes response.body, "Manage billing on Stripe"
     refute_includes response.body, 'data-fp-style="stripe"'
-    assert_includes response.body, "Usage still counts if you record it"
+    assert_includes response.body, "See usage"
+    assert_includes response.body, "Nothing to charge yet."
+    assert_includes response.body, "Pick a plan when you’re ready."
+    refute_includes response.body, "Usage still counts if you record it"
     refute_includes response.body, "Need a bit more"
     refute_includes response.body, "Add this pack"
     refute_includes response.body, "Unlimited vibes"
@@ -666,6 +696,13 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     refute_includes response.body, "Manage billing on Stripe"
     refute_includes response.body, 'data-fp-style="stripe"'
+    assert_includes response.body, "See usage"
+
+    get recording_studio_stripe.usage_path
+
+    assert_response :success
+    assert_includes response.body, "Studio usage"
+    refute_includes response.body, "Manage billing on Stripe"
 
     post recording_studio_stripe.portal_path
 

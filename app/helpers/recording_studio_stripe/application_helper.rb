@@ -24,7 +24,7 @@ module RecordingStudioStripe
 
     def billing_subtitle(lines)
       active = Array(lines).select(&:subscribed?)
-      return "Usage resets when a paid period starts." if active.empty?
+      return "Nothing to charge yet." if active.empty?
       return single_line_subtitle(active.first.subscription) if active.size == 1
 
       names = active.map { |line| line.subscription.price&.product&.name }.compact
@@ -56,6 +56,16 @@ module RecordingStudioStripe
 
     def scheduled_subtitle(subscription)
       "Next period switches to #{subscription.scheduled_price.product.name}."
+    end
+
+    def usage_subtitle(lines)
+      active = Array(lines).select(&:subscribed?)
+      return "Usage resets when a paid period starts." if active.empty?
+
+      ends = active.filter_map { |line| line.subscription&.current_period_end }.uniq
+      return "Included amounts reset with each paid period." unless ends.size == 1 && ends.first
+
+      "Resets on #{ends.first.to_date.to_fs(:long)}."
     end
 
     def usage_section_title(line)

@@ -41,6 +41,7 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
     assert_select "nav[aria-label='Workspace'] a[href='/']"
     assert_select "nav[aria-label='Workspace'] a[href='/plans']"
     assert_select "nav[aria-label='Workspace'] a[href='/billing']"
+    assert_select "nav[aria-label='Workspace'] a[href='/billing/usage']"
     assert_select "nav[aria-label='Workspace'] a[href='/pricing']"
     refute_select "a[aria-label='Close']"
   end

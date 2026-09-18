@@ -35,6 +35,12 @@
         active: dummy_billing_current?
       ) %>
       <%= render FlatPack::Sidebar::Item::Component.new(
+        text: "Usage",
+        href: dummy_usage_path,
+        icon: :chart_bar,
+        active: dummy_usage_current?
+      ) %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
         text: "Public pricing",
         href: pricing_path,
         icon: :tag,

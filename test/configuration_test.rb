@@ -93,6 +93,16 @@ class ConfigurationTest < Minitest::Test
     refute @configuration.automatic_tax
   end
 
+  def test_default_usage_path_follows_mount_path
+    assert_equal "/billing/usage", @configuration.usage_path
+
+    @configuration.mount_path = "/pay"
+    assert_equal "/pay/usage", @configuration.usage_path
+
+    @configuration.usage_path = "/usage"
+    assert_equal "/usage", @configuration.usage_path
+  end
+
   def test_local_mode_when_no_secret
     ENV["STRIPE_SECRET_KEY"] = nil
     configuration = RecordingStudioStripe::Configuration.new

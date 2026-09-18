@@ -41,6 +41,7 @@ RecordingStudioStripe.configure do |config|
   #   }
   # }
   # config.limit_reached_path = "/plans"
+  # config.usage_path = "/billing/usage"
   # config.automatic_tax = true
   # config.allow_promotion_codes = true
 end

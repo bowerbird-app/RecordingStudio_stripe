@@ -1,0 +1,3 @@
+<% recording_studio_page_nav(title: "Usage", page_nav_anchor_url: main_app.root_path) %>
+
+<%= render RecordingStudioStripe::UsageComponent.new(billing: billing, lines: @lines) %>

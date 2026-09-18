@@ -148,12 +148,18 @@ class PlanLimitsTest < ActionDispatch::IntegrationTest
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)
     record_press_kit!("Launch kit")
 
-    get recording_studio_stripe.root_path
+    get recording_studio_stripe.usage_path
 
     assert_response :success
     assert_includes response.body, "Press kits"
     refute_includes response.body, "Launch kit"
     refute_includes response.body, "Add press kit"
+
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    refute_includes response.body, "Studio usage"
+    refute_includes response.body, "1 of 3 on this plan."
 
     get "/"
 
@@ -178,7 +184,7 @@ class PlanLimitsTest < ActionDispatch::IntegrationTest
     4.times { |index| record_press_kit!("Kit #{index + 1}") }
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: starter)
 
-    get recording_studio_stripe.root_path
+    get recording_studio_stripe.usage_path
 
     assert_response :success
     assert_includes response.body, "4 of 3 on this plan. Archive some, or upgrade."

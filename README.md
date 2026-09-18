@@ -23,9 +23,11 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Included usage on a Price (`included_ai_tokens`, `included_api_calls` metadata)
 - Standing inventory limits on a Product (`limit_press_kits` metadata) for how many of a type can exist
 - Extra packs as one-time Prices (`meter`, `allowance` metadata)
-- Customer plans page and billing page
+- Customer plans page, billing page, and usage page
 - Manage billing on Stripe on `/billing` opens the Stripe Customer Portal for invoices and cards
+- Usage at `/billing/usage` for standing caps and period meters
 - `PlansComponent` for those cards on a public page (`align: :center`) or a billing page (`align: :left`). Cards in a group share height, with the action in the footer
+- `UsageComponent` for caps and meters on a host screen
 - Recording Studio Admin section for Products, Prices, Meters, Paywalls, Customers, and Subscriptions
 - Named paywalls on a Product, checked with Accessible `authorized_action?`
 - Stripe webhooks that keep the local projection honest
@@ -58,7 +60,7 @@ Routes from the install generator:
 draw_recording_studio_stripe
 ```
 
-That mounts billing at `/billing`, plans at `/plans`, and webhooks at `/webhooks/stripe`.
+That mounts billing at `/billing`, usage at `/billing/usage`, plans at `/plans`, and webhooks at `/webhooks/stripe`.
 
 Turn on the Customer Portal in the Stripe Dashboard. Manage billing on Stripe mints a portal session for the workspace Customer and sends the browser to Stripe. The button uses the gem's `:stripe` Flatpack style. The gem does not copy invoices or cards. Leave keys blank in dummy and the button still shows after a local checkout, then flashes instead of calling Stripe.
 
@@ -101,7 +103,7 @@ A `past_due` plan still counts as subscribed. Paywalls stay open and standing ca
 
 `account.billing.meter(:ai_tokens)` uses the live plan that includes that meter. Prefer `account.billing.line(:studio).meter(:ai_tokens)` when two plans both include it. New usage rows store that plan group. Call `spend` when the work must not run over the included amount. `record` still writes the fact after the work happened, even if that puts usage over remaining.
 
-Pay, change plan, cancel, resume, extra packs, and Manage billing on Stripe need Accessible `:admin` on the workspace. `:view` can still read `/plans` and `/billing`. `:edit` cannot charge the workspace.
+Pay, change plan, cancel, resume, extra packs, and Manage billing on Stripe need Accessible `:admin` on the workspace. `:view` can still read `/plans`, `/billing`, and `/billing/usage`. `:edit` cannot charge the workspace.
 
 Named plan features live in `config.paywalls`. The gem writes those rows on boot. Staff tick which paywalls a Product opens. Monthly and yearly Prices on the same Product share them. Extra packs do not. Then:
 
@@ -200,4 +202,4 @@ Recording Studio core still swallows `before_record` errors. Standing caps gate 
 
 ## Dummy
 
-`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro, Team) and Inbox (Inbox, Inbox Plus, Inbox Pro) so one workspace can hold two live plans. Cards sort cheapest first and list caps, included usage, and ticked features. Home is the workspace. `/billing` shows the press kit cap with meters. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.
+`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro, Team) and Inbox (Inbox, Inbox Plus, Inbox Pro) so one workspace can hold two live plans. Cards sort cheapest first and list caps, included usage, and ticked features. Home is the workspace. `/billing` is the plan and Stripe portal. `/billing/usage` shows the press kit cap with meters. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.
