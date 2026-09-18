@@ -227,7 +227,9 @@ class RecordingStudioStripeTest < Minitest::Test
 
   def test_billing_view_offers_manage_billing
     view_source = File.read(File.expand_path("../app/views/recording_studio_stripe/billing/show.html.erb", __dir__))
-    controller = File.read(File.expand_path("../app/controllers/recording_studio_stripe/billing_controller.rb", __dir__))
+    controller = File.read(
+      File.expand_path("../app/controllers/recording_studio_stripe/billing_controller.rb", __dir__)
+    )
 
     assert_includes view_source, "Manage billing on Stripe"
     assert_includes view_source, 'icon: "credit-card"'
@@ -316,7 +318,7 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes source, "amount_text"
     assert_includes source, "stripe_card_stack(title, amount, details, over_hint)"
-    assert_includes source, '#{@handle.used}/#{@handle.included}'
+    assert_includes source, "\#{@handle.used}/\#{@handle.included}"
     assert_includes source, "over?"
     assert_includes source, "Archive some, or upgrade."
     refute_includes source, " of "
