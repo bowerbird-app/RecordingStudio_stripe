@@ -70,7 +70,11 @@ module RecordingStudioStripe
     end
 
     def formatted_amount
-      Price.formatted_amount(unit_amount, currency)
+      amount = unit_amount.to_i / 100.0
+      symbol = currency.to_s.upcase == "USD" ? "$" : "#{currency.to_s.upcase} "
+      formatted = format("%.0f", amount)
+      formatted = format("%.2f", amount) unless amount == amount.to_i
+      "#{symbol}#{formatted}"
     end
 
     def metadata
