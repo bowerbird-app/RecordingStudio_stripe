@@ -23,6 +23,7 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Included usage on a Price (`included_ai_tokens`, `included_api_calls` metadata)
 - Standing inventory limits on a Product (`limit_press_kits` metadata) for how many of a type can exist
 - Extra packs as one-time Prices (`meter`, `allowance` metadata)
+- Optional paid or $0 trial on a plan Product (`trial_days`, `trial_unit_amount`, plus a one-time `kind=trial_fee` Price)
 - Customer pricing page, billing page, and usage page
 - Manage billing on Stripe on `/billing` opens the Stripe Customer Portal for invoices and cards
 - Usage at `/billing/usage` for standing caps and period meters
@@ -145,6 +146,16 @@ tokens.spend(1) if tokens.available?(1)
 
 Omit `subscription_type` and the gem uses a matching plan group name if one exists, otherwise the first group. Do not give a limit the same name as a plan group unless they are meant to share it. Dummy Starter includes 3 press kits, Pro includes 10, and Team includes 25. Plan cards list those caps, included usage, and ticked paywalls. Hide, reorder, or add a display-only line on the Product with `plan_card` metadata. That hash stays local. Staff edit that on the plan form under Pricing card.
 
+A plan can offer a trial. Set Trial days and Trial amount in cents on the Product in Admin, or call `AssignTrial`:
+
+```ruby
+RecordingStudioStripe::AssignTrial.call(product: pro, days: 14, unit_amount: 100)
+pro.trial.offered? # true
+pro.trial.checkout_label # "Try for $1"
+```
+
+Checkout starts the real plan Price with Stripe `trial_period_days`. A one-time fee Price on the same Product (`kind=trial_fee`) is the charge now. 0 cents is a free trial on that same path. `Product#monthly_price` stays the paid monthly Price. Empty days clears the trial and deactivates fee Prices. A workspace that already has a live plan in that group still upgrades or downgrades. Dummy Pro is $1 for 14 days.
+
 ### Admin
 
 Install Recording Studio Admin and Accessible. Include `RecordingStudioStripe::AdminSupport` on the admin root. Enable the `:stripe` section. Grant Accessible access on that root. Mount Accessible under the admin path:
@@ -202,4 +213,4 @@ Recording Studio core still swallows `before_record` errors. Standing caps gate 
 
 ## Dummy
 
-`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` for left-aligned billing cards and `/pricing` for the centered public layout. Dummy seeds Studio (Starter, Pro, Team) and Inbox (Inbox, Inbox Plus, Inbox Pro) so one workspace can hold two live plans. Cards sort cheapest first and list caps, included usage, and ticked features. Home is the workspace. `/billing` is the plan and Stripe portal. See usage appears after a live plan has recorded cap or meter use. `/billing/usage` shows the press kit cap with meters as full-width rows. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.
+`test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` and `/pricing` for the centered plan cards. Dummy seeds Studio (Starter, Pro, Team) and Inbox (Inbox, Inbox Plus, Inbox Pro) so one workspace can hold two live plans. Pro offers a $1, 14-day trial. Cards sort cheapest first and list caps, included usage, and ticked features. Home is the workspace. `/billing` is the plan and Stripe portal. See usage appears after a live plan has recorded cap or meter use. `/billing/usage` shows the press kit cap with meters as full-width rows. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.
