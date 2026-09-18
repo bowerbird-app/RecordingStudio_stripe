@@ -29,6 +29,7 @@
         <%= render "paywalls" %>
         <%= render "limits" %>
       </div>
+      <%= render "trial" %>
       <%= render "plan_card" %>
     <% end %>
     <%= render FlatPack::Button::Component.new(text: "Save", style: :primary, size: :md, type: "submit") %>

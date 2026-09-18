@@ -16,10 +16,10 @@ Sign in with `admin@admin.com` / `Password`.
 - `/webhooks/stripe` — Stripe webhook intake
 - `/users/sign_in` — Devise
 
-Local mode (no `STRIPE_SECRET_KEY`) writes Customers and Subscriptions in the dummy database so you can click through. Dummy seeds Studio (Starter, Pro, Team) and Inbox (Inbox, Inbox Plus, Inbox Pro). Each plan has a monthly Price and a yearly Price. With keys, Checkout and webhooks talk to Stripe.
+Local mode (no `STRIPE_SECRET_KEY`) writes Customers and Subscriptions in the dummy database so you can click through. Dummy seeds Studio (Starter, Pro, Team) and Inbox (Inbox, Inbox Plus, Inbox Pro). Each plan has a monthly Price and a yearly Price. Pro also has a $1, 14-day trial. With keys, Checkout and webhooks talk to Stripe.
 
 Dummy home uses Flatpack `SidebarLayout` with `html data-theme="rounded"`. Pricing, billing, usage, and docs stay on a dummy copy of Recording Studio `default_layout`. Recording Studio puts that theme attribute on `body`, which does not override Flatpack `:root` tokens, so the dummy copy sets it on `html`. The copy passes `page_nav_anchor_url` as Flatpack `anchor_href` so Close can leave `/plans`, `/billing`, and `/billing/usage` for home. Dummy `config/importmap.rb` pins Turbo and Recording Studio Admin screen controllers so product tables load.
 
 Dummy registers `generate_image` and `export_csv` paywalls. Pro and Team open image generation. Inbox Plus and Inbox Pro open CSV export. Staff tick those on the Product in Admin.
 
-Dummy also registers a `press_kits` standing limit on Studio plans. Starter includes 3. Pro includes 10. Team includes 25. `/billing/usage` shows how many you can keep as `used/included` above the bar. `/press_kits` lists them and adds more. Creating past the cap sends you to `/plans`. Plan cards on `/plans` and `/pricing` list those caps, included usage, and ticked features, with icons from the initializer. Team also shows a display-only line. Hide or reorder lines on the Product in Admin.
+Dummy also registers a `press_kits` standing limit on Studio plans. Starter includes 3. Pro includes 10. Team includes 25. `/billing/usage` shows how many you can keep as `used/included` above the bar. `/press_kits` lists them and adds more. Creating past the cap sends you to `/plans`. Plan cards on `/plans` and `/pricing` list those caps, included usage, and ticked features, with icons from the initializer. Team also shows a display-only line. Hide or reorder lines on the Product in Admin. Pro's card says Try for $1 until that workspace already has a Studio plan.

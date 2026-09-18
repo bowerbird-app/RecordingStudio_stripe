@@ -144,17 +144,22 @@ module RecordingStudioStripe
     def handle_checkout_subscription(session, price)
       root = require_root!(root_from(session))
       require_price!(price)
-      stripe_subscription_id = stripe_get(session, :subscription)
+      stripe_subscription = checkout_subscription(session)
+      stripe_subscription_id = checkout_subscription_id(stripe_subscription) ||
+                               checkout_subscription_id(stripe_get(session, :subscription))
       if stripe_subscription_id.blank? && !RecordingStudioStripe.configuration.local_mode?
         raise DeferredWebhook, "Checkout has no Subscription yet"
       end
 
+      period_start, period_end = checkout_subscription_period(stripe_subscription)
       ApplySubscription.call(
         root_recording: root,
         price: price,
         stripe_subscription_id: stripe_subscription_id,
         stripe_customer_id: stripe_get(session, :customer),
-        status: "active",
+        status: checkout_subscription_status(stripe_subscription),
+        current_period_start: period_start,
+        current_period_end: period_end,
         checkout_session_id: stripe_get(session, :id)
       )
     end
@@ -302,6 +307,49 @@ module RecordingStudioStripe
       return value if value.is_a?(String)
 
       stripe_get(value, :id) || value.to_s
+    end
+
+    def checkout_subscription(session)
+      raw = stripe_get(session, :subscription)
+      return if raw.blank?
+      return raw if checkout_subscription_expanded?(raw)
+
+      retrieve_stripe_subscription(checkout_subscription_id(raw)) || raw
+    end
+
+    def checkout_subscription_expanded?(raw)
+      return false if raw.is_a?(String)
+
+      stripe_get(raw, :status).present?
+    end
+
+    def checkout_subscription_id(raw)
+      return if raw.blank?
+      return raw if raw.is_a?(String)
+
+      stripe_get(raw, :id).presence
+    end
+
+    def checkout_subscription_status(stripe_subscription)
+      return "active" if stripe_subscription.blank? || stripe_subscription.is_a?(String)
+
+      stripe_get(stripe_subscription, :status).presence || "active"
+    end
+
+    def checkout_subscription_period(stripe_subscription)
+      return [nil, nil] if stripe_subscription.blank? || stripe_subscription.is_a?(String)
+
+      item = matching_subscription_item(stripe_subscription)
+      subscription_period(item, stripe_subscription)
+    end
+
+    def retrieve_stripe_subscription(id)
+      return if id.blank?
+      return unless RecordingStudioStripe.configuration.stripe_configured?
+
+      Client.current.v1.subscriptions.retrieve(id)
+    rescue MissingStripeKey, Stripe::StripeError
+      nil
     end
 
     def timestamp(value)

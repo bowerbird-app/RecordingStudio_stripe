@@ -92,6 +92,10 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Pricing card"
     assert_includes response.body, "Hide on the card"
     assert_includes response.body, "Extra line"
+    assert_includes response.body, "Paid trial"
+    assert_includes response.body, "Trial days"
+    assert_includes response.body, "Trial amount in cents"
+    assert_includes response.body, "They pay this now. The plan price starts when the trial ends."
     assert_includes response.body, "Create"
     refute_includes response.body, "What this plan opens"
     refute_includes response.body, "On the plan card"
@@ -127,6 +131,33 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_equal "phone", card["extras"].first["icon"]
   end
 
+  test "staff can save a paid trial on a new plan" do
+    assert_difference -> { RecordingStudioStripe::Product.count }, 1 do
+      post RecordingStudioStripe.configuration.mount_path + "/admin/products", params: {
+        name: "Launch",
+        kind: "plan",
+        description: "Try it first.",
+        trial_days: "7",
+        trial_unit_amount: "150"
+      }
+    end
+
+    product = RecordingStudioStripe::Product.find_by!(name: "Launch")
+    assert_equal 7, product.trial.days
+    assert_equal 150, product.trial.unit_amount
+    assert_equal 150, product.trial.fee_price.unit_amount
+    assert_equal "Try for $1.50", product.trial.checkout_label
+  end
+
+  test "edit Pro fills the trial days and amount" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro")
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/#{pro.id}/edit"
+
+    assert_response :success
+    assert_select "input[name='trial_days'][value='14']"
+    assert_select "input[name='trial_unit_amount'][value='100']"
+  end
+
   test "staff can edit a Product and tick paywalls" do
     starter = RecordingStudioStripe::Product.find_by!(name: "Starter")
     get RecordingStudioStripe.configuration.mount_path + "/admin/products/#{starter.id}/edit"
@@ -139,6 +170,9 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Pricing card"
     assert_includes response.body, "Hide on the card"
     assert_includes response.body, "Save"
+    assert_includes response.body, "Paid trial"
+    assert_includes response.body, "Trial days"
+    assert_includes response.body, "Trial amount in cents"
     refute_includes response.body, "What this plan opens"
     refute_includes response.body, "On the plan card"
     refute_includes response.body, "Save Product"

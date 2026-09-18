@@ -70,6 +70,14 @@ module RecordingStudioStripe
       self.metadata = (metadata || {}).stringify_keys.merge("plan_card" => PlanCardSettings.normalize(settings))
     end
 
+    def trial
+      RecordingStudioStripe::Trial.for(self)
+    end
+
+    def assign_trial(days:, unit_amount: 0)
+      RecordingStudioStripe::AssignTrial.call(product: self, days: days, unit_amount: unit_amount)
+    end
+
     def limit_inclusion_lines
       Limits.for_subscription_type(subscription_type).filter_map do |definition|
         quantity = limit_quantity(definition.name)

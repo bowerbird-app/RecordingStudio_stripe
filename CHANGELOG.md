@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.5] - 2026-09-18
+
+### Added
+- Optional paid or $0 trial on a plan Product through `RecordingStudioStripe::Trial`
+- `AssignTrial` writes trial metadata and a one-time `kind=trial_fee` Price on that Product
+- Checkout sends `trial_period_days`, the fee line item when the amount is above 0, and `payment_method_collection: always` when the group has no live plan
+- Dummy Pro seeds a $1, 14-day trial
+
+### Changed
+- Checkout webhooks persist Stripe's subscription status, including `trialing`
+- Plan cards say Try for $1, or Start trial when the amount is 0, when a trial is offered and there is no live plan
+- Billing trial subtitle names the end date and the plan price that starts after
+- Admin plan new and edit have a Paid trial section
+
+### Upgrade notes
+- No extra migrations
+- Set Trial days and Trial amount in cents on a plan Product. Empty days means no trial. 0 cents is a free trial on the same path
+- Hosts that replaced `PlanCardComponent` should use `product.trial.checkout_label` when `product.trial.offered?` and there is no live plan in that group
+- Hosts that replaced billing copy should name the trial end date and that the plan price starts after
+- `invoice.paid` still only moves `past_due` to `active`. Trial end still comes from `customer.subscription.updated`
+- `UpsertProduct` keeps local trial metadata when Stripe omits those keys. Create and Update send `trial_days` and `trial_unit_amount` on Stripe Product metadata
+
 ## [0.8.4] - 2026-09-18
 
 ### Added
@@ -285,6 +307,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
+[0.8.5]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.8.2

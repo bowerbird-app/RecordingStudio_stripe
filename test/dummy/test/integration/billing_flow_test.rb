@@ -850,7 +850,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Trial"
-    assert_includes response.body, "Trial runs until October 12, 2026."
+    assert_includes response.body, "Trial until October 12, 2026. Then $29/month."
+    refute_includes response.body, "Trial runs until"
     refute_includes response.body, ">Active</"
   end
 

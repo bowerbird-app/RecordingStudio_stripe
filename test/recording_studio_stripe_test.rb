@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.8.4", ::RecordingStudioStripe::VERSION
+    assert_equal "0.8.5", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -203,6 +203,9 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "limit_press_kits"
     assert_includes docs, "plan_card"
     assert_includes docs, "plan_line"
+    assert_includes docs, "## Paid trials"
+    assert_includes docs, "trial_period_days"
+    assert_includes docs, "kind=trial_fee"
   end
 
   def test_billing_docs_explain_customer_portal

@@ -3,7 +3,7 @@
 module RecordingStudioStripe
   class CreateProduct
     def self.call(name:, kind:, description: nil, active: true, paywall_names: [], subscription_type: nil, limits: {},
-                  plan_card: nil)
+                  plan_card: nil, trial_days: nil, trial_unit_amount: nil)
       new(
         name: name,
         kind: kind,
@@ -12,11 +12,14 @@ module RecordingStudioStripe
         paywall_names: paywall_names,
         subscription_type: subscription_type,
         limits: limits,
-        plan_card: plan_card
+        plan_card: plan_card,
+        trial_days: trial_days,
+        trial_unit_amount: trial_unit_amount
       ).call
     end
 
-    def initialize(name:, kind:, description:, active:, paywall_names:, subscription_type:, limits:, plan_card:)
+    def initialize(name:, kind:, description:, active:, paywall_names:, subscription_type:, limits:, plan_card:,
+                   trial_days:, trial_unit_amount:)
       @name = name
       @kind = kind
       @description = description
@@ -25,6 +28,8 @@ module RecordingStudioStripe
       @subscription_type = subscription_type
       @limits = limits
       @plan_card = plan_card
+      @trial_days = trial_days
+      @trial_unit_amount = trial_unit_amount
     end
 
     def call
@@ -47,10 +52,18 @@ module RecordingStudioStripe
       product.assign_plan_card(@plan_card)
       product.save!
       product.assign_paywalls(@paywall_names)
+      assign_trial(product)
       product
     end
 
     private
+
+    def assign_trial(product)
+      return unless product.plan?
+      return if @trial_days.nil? && @trial_unit_amount.nil?
+
+      AssignTrial.call(product: product, days: @trial_days, unit_amount: @trial_unit_amount)
+    end
 
     def create_stripe_id(type)
       return "prod_local_#{SecureRandom.hex(6)}" if RecordingStudioStripe.configuration.local_mode?
@@ -75,7 +88,16 @@ module RecordingStudioStripe
 
         data["limit_#{name}"] = value.to_i.to_s
       end
+      merge_trial_metadata(data)
       data
+    end
+
+    def merge_trial_metadata(data)
+      days = Integer(@trial_days, exception: false).to_i
+      return unless days.positive?
+
+      data["trial_days"] = days.to_s
+      data["trial_unit_amount"] = Integer(@trial_unit_amount, exception: false).to_i.to_s
     end
   end
 end

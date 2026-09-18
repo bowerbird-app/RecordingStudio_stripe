@@ -30,6 +30,24 @@ Cards sort cheapest first for the interval on the page. Groups follow the host�
 
 Included usage lives on the Price, not the Product. Two Prices on Starter can include different amounts, though dummy uses the same numbers for month and year. Paywalls and standing limits live on the Product, so monthly and yearly Pro share the same features and the same press-kit cap.
 
+## Paid trials
+
+A plan Product can offer a trial. Set trial days and a one-time amount in cents on the Product. 0 cents is a free trial on the same path.
+
+```ruby
+RecordingStudioStripe::AssignTrial.call(product: pro, days: 14, unit_amount: 100)
+pro.trial.offered?
+pro.trial.checkout_label
+```
+
+`AssignTrial` writes `trial_days` and `trial_unit_amount` on Product metadata. When the amount is above 0 it creates a one-time Price on that same Product with `kind=trial_fee`. That is not an extra pack and not a second monthly Price. `Product#monthly_price` stays the paid monthly Price.
+
+Checkout for a group with no live plan starts the real plan Price. It sends Stripe `trial_period_days`, `payment_method_collection: always`, and the fee line item when a fee Price exists. Metadata `price_id` stays the plan Price so webhooks still project that Price. Status is `trialing`. When the window ends, Stripe invoices the plan Price.
+
+Empty trial days in Admin clears the trial and deactivates fee Prices. Stripe Prices cannot change `unit_amount`, so a new amount deactivates the old fee Price and creates another. Create and Update send `trial_days` and `trial_unit_amount` on Stripe Product metadata. `UpsertProduct` keeps those keys when a webhook omits them, the same way it keeps local `plan_card`.
+
+A workspace that already has a live plan in that group still upgrades or downgrades. Dummy Pro is 14 days and 100 cents.
+
 ## Plan cards
 
 `/plans` and `/pricing` cards are generated from those connections. They are not a handwritten bullet list.
@@ -75,7 +93,7 @@ Per-plan control lives on the Product as `plan_card` metadata. It stays local. S
 
 Keys are `limit:<name>`, `meter:<name>`, `paywall:<name>`, `extra:<key>`. Blank `order` is caps, then usage, then features, then extras. Hide omits a line from the card; the cap, meter, or paywall still bills and gates. Extras are display-only. Admin new plan and edit screens put those card controls in a Pricing card disclosure. The extra line is what the card says plus an icon. The key stays hidden and is filled from the text when blank.
 
-The card is a Flatpack list with an icon on each line. Dummy Team also shows “Someone picks up the phone”. Cards in a group share one height. Choose, Upgrade, and Current sit in the card footer, so extra space sits between the last line and the action. A Studio row and an Inbox row can still differ from each other.
+The card is a Flatpack list with an icon on each line. Dummy Team also shows “Someone picks up the phone”. Cards in a group share one height. Choose, Upgrade, and Current sit in the card footer, so extra space sits between the last line and the action. A Studio row and an Inbox row can still differ from each other. When the Product offers a trial and the workspace has no live plan in that group, the footer says Try for $1, or Start trial when the amount is 0.
 
 ## Plan groups
 
@@ -226,11 +244,11 @@ Customer UI is a mountable engine slice at `/plans`, `/billing`, and `/billing/u
 
 `/billing/usage` shows standing caps and period meters, one full-width card per metric. Caps sit with that group's meters, not on the plan card. There is no group heading (Studio usage stays off). Cap cards show `used/included` above the bar, including when over. Usage cards show percent used this period. When a meter mixes plan include and extra packs, a **Breakdown** dropdown on the card explains that sum. Meter bars stay quiet when nothing is included yet. HTML `MeterLimitReached` redirects here, or to `config.usage_path`. `RecordingStudioStripe::UsageComponent` is the reusable block. Pass `billing:` and optional `lines:`. Dummy's Usage sidebar item is this page.
 
-`RecordingStudioStripe::PlansComponent` is the reusable pricing block. Pass `groups:` from `Catalog.plan_groups` when types are configured, with each group's own interval hrefs from `PlanIntervals`. Default `align: :center` centers the title, subtitle, and monthly/yearly pills. Pass `align: :left` if the host screen needs that. Dummy `/plans` and `/pricing` are both centered. Dummy `/pricing` does not require a login. Each group's cards sit in a Flatpack Grid that stretches them to one height. Each card is a Flatpack list of caps, included usage, ticked features, and any extra lines on that Product, with the action in the footer. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Paywalls, Customers, and Subscriptions. Mutation forms (new plan, Price, Meter, Paywall, and edit plan) live on the billing engine and link from those screens. Edit names the plan, groups features with caps, and tucks pricing-card lines into a disclosure. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
+`RecordingStudioStripe::PlansComponent` is the reusable pricing block. Pass `groups:` from `Catalog.plan_groups` when types are configured, with each group's own interval hrefs from `PlanIntervals`. Default `align: :center` centers the title, subtitle, and monthly/yearly pills. Pass `align: :left` if the host screen needs that. Dummy `/plans` and `/pricing` are both centered. Dummy `/pricing` does not require a login. Each group's cards sit in a Flatpack Grid that stretches them to one height. Each card is a Flatpack list of caps, included usage, ticked features, and any extra lines on that Product, with the action in the footer. Staff use Recording Studio Admin. The gem registers one `:stripe` section with screens for Products, Prices, Meters, Paywalls, Customers, and Subscriptions. Mutation forms (new plan, Price, Meter, Paywall, and edit plan) live on the billing engine and link from those screens. Edit names the plan, groups features with caps, and tucks pricing-card lines into a disclosure. Paid trial is its own section on new and edit plan. Dummy's Admin button switches onto the Studio Admin root first. Admin authorizes against that root, not the workspace you were billing.
 
 ## Local mode
 
-When `STRIPE_SECRET_KEY` is blank, Checkout writes a local Customer and Subscription (or allowance purchase) and returns the success URL. Dummy uses this so you can click through without Stripe keys. Unsigned webhook JSON is accepted only in that local mode. Do not deploy local mode on a public host. When Stripe is configured, `STRIPE_WEBHOOK_SECRET` is required. A handler that cannot apply yet returns 503 and leaves the event unstored so Stripe can retry. Webhook rows store the event id, type, created, and object id. They do not store the full Stripe object.
+When `STRIPE_SECRET_KEY` is blank, Checkout writes a local Customer and Subscription (or allowance purchase) and returns the success URL. A trial checkout writes `trialing` and a period end of now plus the trial days. Dummy uses this so you can click through without Stripe keys. Unsigned webhook JSON is accepted only in that local mode. Do not deploy local mode on a public host. When Stripe is configured, `STRIPE_WEBHOOK_SECRET` is required. A handler that cannot apply yet returns 503 and leaves the event unstored so Stripe can retry. Webhook rows store the event id, type, created, and object id. They do not store the full Stripe object.
 
 Hosts that do not use `current_user` set `config.current_actor`. Hosts that do not use `current_root_recording` set `config.current_root_recording`. `draw_recording_studio_stripe at:` overwrites `config.mount_path`. Usage then lives at `{mount_path}/usage` unless you set `config.usage_path`. If Accessible is not loaded, set `config.authenticate` or every billing money action is forbidden.
 
