@@ -363,7 +363,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "a[href='/'][aria-label='Close']"
     assert_select "[data-usage='true']"
-    assert_includes response.body, "Usage this period"
+    refute_includes response.body, "Usage this period"
+    refute_includes response.body, "Studio usage"
     assert_includes response.body, "AI tokens"
     assert_includes response.body, "API calls"
   end
@@ -481,7 +482,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     get recording_studio_stripe.usage_path
 
     assert_response :success
-    assert_includes response.body, "Studio usage"
+    refute_includes response.body, "Studio usage"
+    refute_includes response.body, "Inbox usage"
     assert_includes response.body, "AI tokens"
     assert_includes response.body, "0%"
     refute_includes response.body, "Need a bit more"
@@ -496,6 +498,26 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "md:grid-cols-2"
     refute_includes response.body, "Manage billing on Stripe"
     refute_includes response.body, "Current plan"
+    refute_includes response.body, "Breakdown"
+  end
+
+  test "usage card offers breakdown when extra packs add to the plan" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    pack = RecordingStudioStripe::Price.one_time.find_by!("metadata ->> 'allowance' = '5000000'")
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+    RecordingStudioStripe::ApplyAllowance.call(root_recording: @root, price: pack)
+
+    get recording_studio_stripe.usage_path
+
+    assert_response :success
+    assert_includes response.body, "Breakdown"
+    assert_includes response.body, "On this plan"
+    assert_includes response.body, "Extra packs"
+    assert_includes response.body, "Total this period"
+    assert_includes response.body, "10m"
+    assert_includes response.body, "5m"
+    assert_includes response.body, "15m"
+    refute_includes response.body, "Studio usage"
   end
 
   test "billing page omits meters until usage is recorded" do
@@ -735,7 +757,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     get recording_studio_stripe.usage_path
 
     assert_response :success
-    assert_includes response.body, "Studio usage"
+    assert_includes response.body, "AI tokens"
+    refute_includes response.body, "Studio usage"
     refute_includes response.body, "Manage billing on Stripe"
 
     post recording_studio_stripe.portal_path

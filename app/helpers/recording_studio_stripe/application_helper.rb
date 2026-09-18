@@ -68,12 +68,6 @@ module RecordingStudioStripe
       "Resets on #{ends.first.to_date.to_fs(:long)}."
     end
 
-    def usage_section_title(line)
-      return "#{line.label} usage" if RecordingStudioStripe::SubscriptionTypes.configured?
-
-      "Usage this period"
-    end
-
     def billing_line_meters(line)
       handles = RecordingStudioStripe::Meter.order(:name).map { |meter| line.meter(meter.name) }
       return handles unless RecordingStudioStripe::SubscriptionTypes.configured?

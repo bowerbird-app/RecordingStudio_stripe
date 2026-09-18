@@ -45,25 +45,16 @@ module RecordingStudioStripe
       meters = billing_line_meters(line)
       return if limits.empty? && meters.empty?
 
-      parts = [
-        render(FlatPack::SectionTitle::Component.new(title: usage_section_title(line))),
-        cards_grid(limits, meters)
-      ]
       helpers.tag.div(
-        helpers.safe_join(parts),
-        class: "flex w-full flex-col gap-6",
+        cards_grid(limits, meters),
+        class: "w-full",
         data: { usage_line: line.subscription_type }
       )
     end
 
     def unsubscribed_meters
       meters = Meter.order(:name).map { |meter| @billing.meter(meter.name) }
-      helpers.safe_join(
-        [
-          render(FlatPack::SectionTitle::Component.new(title: "Usage this period")),
-          cards_grid([], meters)
-        ]
-      )
+      cards_grid([], meters)
     end
 
     def cards_grid(limits, meters)

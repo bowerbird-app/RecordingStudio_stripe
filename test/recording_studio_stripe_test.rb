@@ -223,6 +223,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "config.usage_path"
     assert_includes docs, "used/included"
     assert_includes docs, "See usage"
+    assert_includes docs, "Breakdown"
   end
 
   def test_billing_view_offers_manage_billing
@@ -269,7 +270,8 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes view_source, "Manage billing on Stripe"
     assert_includes component, "LimitCardComponent"
     assert_includes component, "MeterCardComponent"
-    assert_includes component, "usage_section_title"
+    refute_includes component, "usage_section_title"
+    refute_includes component, "SectionTitle"
     assert_includes component, "cols: 1"
     assert_includes component, "w-full"
     assert_includes rescue_source, "recording_studio_stripe_usage_url"
@@ -311,6 +313,17 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes source, "show_label: true"
     refute_includes source, "left"
     refute_includes source, "Included"
+  end
+
+  def test_meter_card_offers_breakdown_when_include_and_packs_combine
+    source = File.read(File.expand_path("../app/components/recording_studio_stripe/meter_card_component.rb", __dir__))
+
+    assert_includes source, "combined?"
+    assert_includes source, "text: \"Breakdown\""
+    assert_includes source, "style: :default"
+    assert_includes source, "On this plan"
+    assert_includes source, "Extra packs"
+    assert_includes source, "Total this period"
   end
 
   def test_limit_card_shows_used_of_included_when_over

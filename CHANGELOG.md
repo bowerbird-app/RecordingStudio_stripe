@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HTML `MeterLimitReached` redirects to usage, not billing
 - Dummy sidebar has Usage
 - Usage cards are one full-width row. Cap copy is `used/included` above the bar
+- Usage does not title each live plan group (no Studio usage heading)
+- A meter that mixes plan include and extra packs has a Breakdown dropdown for that sum
 - Billing See usage only when a live plan has recorded cap or meter use
 - Billing no longer titles each live plan with the group name
 - Live plan badge is Current in the success colour. The type badge sits after it when more than one type is configured
@@ -28,7 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hosts that replaced `billing/show` should hide See usage until a live plan has recorded cap or meter use
 - Hosts that replaced `CurrentPlanComponent` should show Current (success) instead of Active (primary), and put the type badge after status only when more than one subscription type is configured
 - Hosts that replaced `LimitCardComponent` should put `used/included` above the bar
-- Hosts that replaced `UsageComponent` should render one full-width card per metric
+- Hosts that replaced `UsageComponent` should render one full-width card per metric, with no group heading
+- Hosts that replaced `MeterCardComponent` should show Breakdown when included and purchased are both positive
 - Set `config.usage_path` if usage is not `{mount_path}/usage`
 - HTML meter-limit redirects go to usage
 - Dummy sidebar Billing is not current on `/billing/usage`

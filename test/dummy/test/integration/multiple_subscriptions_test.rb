@@ -143,8 +143,8 @@ class MultipleSubscriptionsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "[data-usage-line='studio']"
     assert_select "[data-usage-line='inbox']"
-    assert_includes response.body, "Studio usage"
-    assert_includes response.body, "Inbox usage"
+    refute_includes response.body, "Studio usage"
+    refute_includes response.body, "Inbox usage"
     assert_includes response.body, "Press kits"
     assert_includes response.body, "AI tokens"
     assert_includes response.body, "API calls"
