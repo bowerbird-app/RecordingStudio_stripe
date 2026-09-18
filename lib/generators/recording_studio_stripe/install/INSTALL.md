@@ -21,4 +21,6 @@ If you use Tailwind, rebuild:
 
   bin/rails tailwindcss:build
 
+If your layout does not yield :head, link recording_studio_stripe/button after Flatpack.
+
 ===============================================================================

@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.3] - 2026-09-18
+
+### Added
+- Manage billing on Stripe uses the gem's `:stripe` Flatpack button style
+- `recording_studio_stripe/button` paints that style with Stripe blurple (`#635bff`) and navy hover (`#0a2540`)
+
+### Changed
+- Dummy Flatpack pin is `v0.1.189` so `register_style` is available
+
+### Upgrade notes
+- Hosts need Flatpack 0.1.189 or newer for `register_style`
+- The billing view loads `recording_studio_stripe/button` through `content_for :head`
+- If the host layout does not yield `:head`, link that stylesheet after Flatpack
+- Update card, Cancel, Change plan, and See plans stay on their current styles
+- No extra migrations
+
 ## [0.8.2] - 2026-09-16
 
 ### Added
@@ -232,6 +248,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
+[0.8.3]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.8.2
 [0.8.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.8.1
 [0.8.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.8.0

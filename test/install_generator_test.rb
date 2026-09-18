@@ -146,6 +146,7 @@ class InstallGeneratorTest < Minitest::Test
     assert_includes install_guide, "bin/rails generate recording_studio_stripe:migrations"
     assert_includes install_guide, "db:migrate"
     assert_includes install_guide, "Billable"
+    assert_includes install_guide, "recording_studio_stripe/button"
     refute_includes install_guide, "RecordingStudio v3"
   end
 

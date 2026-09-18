@@ -1,3 +1,6 @@
+<% content_for :head do %>
+  <%= stylesheet_link_tag "recording_studio_stripe/button", "data-turbo-track": "reload" %>
+<% end %>
 <% recording_studio_page_nav(title: "Billing", page_nav_anchor_url: main_app.root_path) %>
 
 <div class="flex w-full flex-col gap-6">
@@ -26,7 +29,7 @@
       <%= render FlatPack::Button::Component.new(
         text: "Manage billing on Stripe",
         icon: "credit-card",
-        style: :secondary,
+        style: :stripe,
         size: :md,
         type: "submit"
       ) %>
