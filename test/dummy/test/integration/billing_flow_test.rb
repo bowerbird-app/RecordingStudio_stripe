@@ -517,6 +517,17 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "recording_studio_stripe/button"
   end
 
+  test "stripe button stylesheet is served" do
+    css_path = ActionController::Base.helpers.stylesheet_path("recording_studio_stripe/button")
+
+    get css_path
+
+    assert_response :success
+    assert_includes response.body, "#635bff"
+    assert_includes response.body, "#0a2540"
+    assert_includes response.body, 'data-fp-style="stripe"'
+  end
+
   test "manage billing shows after checkout and stays local without keys" do
     price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
 
