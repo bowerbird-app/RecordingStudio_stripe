@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.4] - 2026-09-18
+
+### Added
+- Customer usage page at `/billing/usage` for standing caps and period meters
+- `UsageComponent` so hosts can render that block on their own screen
+- `config.usage_path` (defaults to `{mount_path}/usage`)
+
+### Changed
+- `/billing` is the money page. Caps and meters live on usage
+- HTML `MeterLimitReached` redirects to usage, not billing
+- Dummy sidebar has Usage
+- Usage cards are one full-width row. Cap copy is `used/included` above the bar
+- Usage does not title each live plan group (no Studio usage heading)
+- A meter that mixes plan include and extra packs has a Breakdown dropdown for that sum
+- Billing See usage only when a live plan has recorded cap or meter use
+- Billing no longer titles each live plan with the group name
+- Live plan badge is Current in the success colour. The type badge sits after it when more than one type is configured
+- Signed-in `/plans` is titled Pricing, centered like public `/pricing`
+- Cheaper plan changes say Downgrade, not Switch at renewal
+- Studio and Inbox section titles only appear when more than one plan type has Products
+
+### Upgrade notes
+- No extra migrations
+- Usage moved off `/billing` to `/billing/usage`
+- Hosts that replaced `billing/show` should drop the meter and cap cards, or render `UsageComponent`
+- Hosts that replaced `billing/show` should hide See usage until a live plan has recorded cap or meter use
+- Hosts that replaced `CurrentPlanComponent` should show Current (success) instead of Active (primary), and put the type badge after status only when more than one subscription type is configured
+- Hosts that replaced `LimitCardComponent` should put `used/included` above the bar
+- Hosts that replaced `UsageComponent` should render one full-width card per metric, with no group heading
+- Hosts that replaced `MeterCardComponent` should show Breakdown when included and purchased are both positive
+- Set `config.usage_path` if usage is not `{mount_path}/usage`
+- HTML meter-limit redirects go to usage
+- Dummy sidebar Billing is not current on `/billing/usage`
+- Hosts that replaced `plans/index` should title the page Pricing and pass `align: :center`
+- Hosts that replaced `PlanCardComponent` or `PlanChange` should label a cheaper plan Downgrade
+- Hosts that replaced billing empty or dummy home should say See pricing
+
 ## [0.8.3] - 2026-09-18
 
 ### Added
@@ -248,6 +285,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
+[0.8.4]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.8.2
 [0.8.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/releases/tag/v0.8.1

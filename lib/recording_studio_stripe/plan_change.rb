@@ -41,7 +41,7 @@ module RecordingStudioStripe
       return "Switch #{to_name} to #{interval_word(@to_price)}?" if same_product?
       return "Upgrade to #{to_name}?" if upgrade?
 
-      "Switch to #{to_name}?"
+      "Downgrade to #{to_name}?"
     end
 
     def subtitle
@@ -49,7 +49,7 @@ module RecordingStudioStripe
     end
 
     def confirm_label
-      upgrade? ? "Upgrade" : "Switch at renewal"
+      upgrade? ? "Upgrade" : "Downgrade"
     end
 
     private

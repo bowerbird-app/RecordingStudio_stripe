@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.8.3", ::RecordingStudioStripe::VERSION
+    assert_equal "0.8.4", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -91,11 +91,14 @@ class RecordingStudioStripeTest < Minitest::Test
 
   def test_customer_screens_set_close_to_home
     billing = File.read(File.expand_path("../app/views/recording_studio_stripe/billing/show.html.erb", __dir__))
+    usage = File.read(File.expand_path("../app/views/recording_studio_stripe/usage/show.html.erb", __dir__))
     plans = File.read(File.expand_path("../app/views/recording_studio_stripe/plans/index.html.erb", __dir__))
     change = File.read(File.expand_path("../app/views/recording_studio_stripe/subscriptions/edit.html.erb", __dir__))
 
     assert_includes billing, "page_nav_anchor_url: main_app.root_path"
     refute_includes billing, "page_nav_back_url"
+    assert_includes usage, "page_nav_anchor_url: main_app.root_path"
+    refute_includes usage, "page_nav_back_url"
     assert_includes plans, "page_nav_anchor_url: main_app.root_path"
     refute_includes plans, "page_nav_back_url"
     assert_includes change, "page_nav_anchor_url: main_app.root_path"
@@ -149,6 +152,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "authorized_action?"
     assert_includes readme, "Customer Portal"
     assert_includes readme, ":stripe"
+    assert_includes readme, "/billing/usage"
+    assert_includes readme, "UsageComponent"
     refute_includes readme, "ExampleService"
   end
 
@@ -179,6 +184,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes template, "recordable_type"
     assert_includes template, "plan_line"
     assert_includes template, "limit_reached_path"
+    assert_includes template, "usage_path"
     refute_includes template, "media_monitoring"
   end
 
@@ -212,33 +218,65 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "503"
     assert_includes docs, "automatic_tax"
     assert_includes docs, "confirmation"
+    assert_includes docs, "/billing/usage"
+    assert_includes docs, "UsageComponent"
+    assert_includes docs, "config.usage_path"
+    assert_includes docs, "used/included"
+    assert_includes docs, "See usage"
+    assert_includes docs, "Breakdown"
   end
 
   def test_billing_view_offers_manage_billing
     view_source = File.read(File.expand_path("../app/views/recording_studio_stripe/billing/show.html.erb", __dir__))
+    controller = File.read(
+      File.expand_path("../app/controllers/recording_studio_stripe/billing_controller.rb", __dir__)
+    )
 
     assert_includes view_source, "Manage billing on Stripe"
     assert_includes view_source, 'icon: "credit-card"'
     assert_includes view_source, "style: :stripe"
     assert_includes view_source, 'stylesheet_link_tag "recording_studio_stripe/button"'
     assert_includes view_source, "portal_path"
-    refute_includes view_source, "style: :secondary"
-    assert_includes view_source, "LimitCardComponent"
-    assert_includes view_source, "MeterCardComponent"
+    assert_includes view_source, "style: :secondary"
     assert_includes view_source, "@waiting_on_stripe"
     assert_includes view_source, "@confirming_allowance"
     assert_includes view_source, "can_manage: @show_manage_billing"
+    assert_includes view_source, "See usage"
+    assert_includes view_source, "@show_see_usage"
+    assert_includes view_source, "usage_path"
+    refute_includes view_source, "SectionTitle"
     refute_includes view_source, "Need a bit more"
     refute_includes view_source, "AllowanceCardComponent"
     refute_includes view_source, "@allowance_prices"
+    refute_includes view_source, "LimitCardComponent"
+    refute_includes view_source, "MeterCardComponent"
+    refute_includes view_source, "usage_section_title"
     assert_match(/Grid::Component.new\(cols: 2.*CurrentPlanComponent/m, view_source)
-    plan_grid, usage_grid = view_source.split("usage_section_title", 2)
-    refute_includes plan_grid, "LimitCardComponent"
-    assert_includes usage_grid, "LimitCardComponent"
-    assert_includes usage_grid, "MeterCardComponent"
     refute_includes view_source, "Add press kit"
     refute_includes view_source, "press_kits_path"
     refute_includes view_source, "dashboard.stripe.com"
+    assert_includes controller, "@show_see_usage = show_see_usage?"
+    assert_includes controller, "helpers.usage_in_use?(billing)"
+  end
+
+  def test_usage_view_renders_caps_and_meters
+    view_source = File.read(File.expand_path("../app/views/recording_studio_stripe/usage/show.html.erb", __dir__))
+    component = File.read(File.expand_path("../app/components/recording_studio_stripe/usage_component.rb", __dir__))
+    rescue_source = File.read(File.expand_path("../lib/recording_studio_stripe/plan_limit_rescue.rb", __dir__))
+
+    assert_includes view_source, "UsageComponent"
+    assert_includes view_source, "page_nav_anchor_url: main_app.root_path"
+    refute_includes view_source, "CurrentPlanComponent"
+    refute_includes view_source, "Manage billing on Stripe"
+    assert_includes component, "LimitCardComponent"
+    assert_includes component, "MeterCardComponent"
+    refute_includes component, "usage_section_title"
+    refute_includes component, "SectionTitle"
+    assert_includes component, "cols: 1"
+    assert_includes component, "w-full"
+    assert_includes rescue_source, "recording_studio_stripe_usage_url"
+    assert_includes rescue_source, "usage_path"
+    refute_includes rescue_source, "recording_studio_stripe_billing_url"
   end
 
   def test_stripe_button_style_paints_official_brand_colours
@@ -257,7 +295,10 @@ class RecordingStudioStripeTest < Minitest::Test
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/current_plan_component.rb", __dir__))
 
     assert_includes source, "stripe_card_stack(badges, title, actions)"
-    assert_includes source, "badge(\"Active\", :primary)"
+    assert_includes source, "badge(\"Current\", :success)"
+    assert_includes source, "show_type_badge?"
+    assert_includes source, "SubscriptionTypes.keys.size > 1"
+    refute_includes source, "badge(\"Active\", :primary)"
     assert_includes source, "Past due"
     assert_includes source, "Trial"
     assert_includes source, "Update card"
@@ -274,12 +315,26 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes source, "Included"
   end
 
+  def test_meter_card_offers_breakdown_when_include_and_packs_combine
+    source = File.read(File.expand_path("../app/components/recording_studio_stripe/meter_card_component.rb", __dir__))
+
+    assert_includes source, "combined?"
+    assert_includes source, "text: \"Breakdown\""
+    assert_includes source, "style: :default"
+    assert_includes source, "On this plan"
+    assert_includes source, "Extra packs"
+    assert_includes source, "Total this period"
+  end
+
   def test_limit_card_shows_used_of_included_when_over
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/limit_card_component.rb", __dir__))
 
-    assert_includes source, "caption_text"
+    assert_includes source, "amount_text"
+    assert_includes source, "stripe_card_stack(title, amount, details, over_hint)"
+    assert_includes source, "\#{@handle.used}/\#{@handle.included}"
     assert_includes source, "over?"
     assert_includes source, "Archive some, or upgrade."
+    refute_includes source, " of "
   end
 
   def test_dummy_home_page_points_at_plans
@@ -287,13 +342,15 @@ class RecordingStudioStripeTest < Minitest::Test
     view_source = File.read(view_path)
     sidebar = File.read(File.expand_path("dummy/app/views/layouts/_sidebar_nav.html.erb", __dir__))
 
-    assert_includes view_source, "See plans"
+    assert_includes view_source, "See pricing"
     refute_includes view_source, "dummy_page_nav"
     assert_includes view_source, "FlatPack::EmptyState::Component"
     assert_includes sidebar, "Public pricing"
     assert_includes sidebar, "press_kits_path"
     assert_includes sidebar, "plans_path"
+    assert_includes sidebar, 'text: "Pricing"'
     assert_includes sidebar, "dummy_billing_path"
+    assert_includes sidebar, "dummy_usage_path"
     refute_includes view_source, "Add press kit"
     refute_includes view_source, "What this plan opens"
     refute_includes view_source, "dummy_paywall_open?"
@@ -310,12 +367,16 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes source, "PlanFeatures.for"
     assert_includes source, "stripe_plan_feature_lines"
+    assert_includes source, "usage_in_use?"
+    assert_includes source, "line_has_recorded_usage?"
     assert_includes card, "stripe_plan_feature_lines"
     assert_includes card, "FlatPack::List::Component"
     assert_includes card, "FlatPack::List::Item"
     assert_includes card, "footer(divider: false)"
     assert_includes card, "class: \"w-full\""
     assert_includes card, "subscription_change_path"
+    assert_includes card, "\"Downgrade\""
+    refute_includes card, "Switch at renewal"
     assert_includes features, "PlanFeatureCandidates"
     assert_includes candidates, "paywall:"
     assert_includes candidates, "limit:"
@@ -335,14 +396,21 @@ class RecordingStudioStripeTest < Minitest::Test
     plans_view = File.read(File.expand_path("../app/views/recording_studio_stripe/plans/index.html.erb", __dir__))
     pricing_view = File.read(File.expand_path("dummy/app/views/pricing/show.html.erb", __dir__))
 
-    assert_includes component, "align: :left"
+    assert_includes component, "ALIGNS = %i[left center]"
+    assert_includes component, "align: :center"
+    assert_includes component, "title: \"Pricing\""
+    assert_includes component, "No prices yet"
     assert_includes component, "Grid::Component"
     assert_includes component, "align: :stretch"
     assert_includes component, "h-full"
     assert_includes component, "text-center"
     assert_includes component, "show_group_headings?"
+    assert_includes component, "populated_groups"
+    assert_includes component, "shared_interval_pills"
     assert_includes component, "Catalog.sorted_plans"
-    assert_includes plans_view, "align: :left"
+    assert_includes plans_view, "align: :center"
+    assert_includes plans_view, "Pricing"
+    refute_includes plans_view, "title: \"Plans\""
     assert_includes pricing_view, "align: :center"
   end
 

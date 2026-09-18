@@ -17,11 +17,11 @@
   <% elsif dummy_home_plan_names.empty? %>
     <%= render FlatPack::EmptyState::Component.new(
       title: "No plan on this workspace",
-      description: "Pick a plan when you want included usage. Billing keeps the meters.",
+      description: "Pick a plan when you want included usage.",
       icon: :inbox
     ) do |empty| %>
       <% empty.slot do %>
-        <%= render FlatPack::Button::Component.new(text: "See plans", style: :primary, size: :md, href: plans_path) %>
+        <%= render FlatPack::Button::Component.new(text: "See pricing", style: :primary, size: :md, href: plans_path) %>
       <% end %>
     <% end %>
   <% end %>

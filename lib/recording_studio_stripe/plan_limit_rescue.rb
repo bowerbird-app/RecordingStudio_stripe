@@ -23,7 +23,7 @@ module RecordingStudioStripe
       if request.format.json?
         render json: { code: "meter_limit_reached", message: error.user_message }, status: :forbidden
       else
-        redirect_to recording_studio_stripe_billing_url, alert: error.user_message
+        redirect_to recording_studio_stripe_usage_url, alert: error.user_message
       end
     end
 
@@ -40,9 +40,8 @@ module RecordingStudioStripe
       end
     end
 
-    def recording_studio_stripe_billing_url
-      RecordingStudioStripe.configuration.success_path.presence ||
-        RecordingStudioStripe.configuration.mount_path
+    def recording_studio_stripe_usage_url
+      RecordingStudioStripe.configuration.usage_path
     end
   end
 end

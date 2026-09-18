@@ -39,12 +39,13 @@ module RecordingStudioStripe
     end
 
     def badge_parts
-      parts = []
-      if RecordingStudioStripe::SubscriptionTypes.configured?
-        parts << badge(@subscription.subscription_type_label, :info)
-      end
-      parts.concat(status_badges)
+      parts = status_badges
+      parts << badge(@subscription.subscription_type_label, :info) if show_type_badge?
       parts
+    end
+
+    def show_type_badge?
+      RecordingStudioStripe::SubscriptionTypes.keys.size > 1
     end
 
     def status_badges
@@ -56,7 +57,7 @@ module RecordingStudioStripe
       elsif @subscription.scheduled_downgrade?
         parts << badge("Change scheduled", :info)
       elsif !@subscription.past_due? && !@subscription.trialing?
-        parts << badge("Active", :primary)
+        parts << badge("Current", :success)
       end
       parts
     end

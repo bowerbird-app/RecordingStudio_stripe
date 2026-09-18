@@ -106,7 +106,7 @@ module RecordingStudioStripe
     def change_label
       return "Switch now" unless @subscription&.price
 
-      ComparePrices.upgrade?(from: @subscription.price, to: price) ? "Upgrade" : "Switch at renewal"
+      ComparePrices.upgrade?(from: @subscription.price, to: price) ? "Upgrade" : "Downgrade"
     end
 
     def recording_studio_stripe

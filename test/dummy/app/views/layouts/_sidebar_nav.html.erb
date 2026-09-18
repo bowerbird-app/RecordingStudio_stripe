@@ -23,7 +23,7 @@
         ) %>
       <% end %>
       <%= render FlatPack::Sidebar::Item::Component.new(
-        text: "Plans",
+        text: "Pricing",
         href: plans_path,
         icon: :rectangle_stack,
         active: current_page?(plans_path)
@@ -33,6 +33,12 @@
         href: dummy_billing_path,
         icon: :credit_card,
         active: dummy_billing_current?
+      ) %>
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        text: "Usage",
+        href: dummy_usage_path,
+        icon: :chart_bar,
+        active: dummy_usage_current?
       ) %>
       <%= render FlatPack::Sidebar::Item::Component.new(
         text: "Public pricing",

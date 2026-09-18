@@ -100,6 +100,7 @@ class EngineTest < Minitest::Test
 
     assert_nil RecordingStudioStripe.configuration.secret_key
     assert_equal "/billing", RecordingStudioStripe.configuration.success_path
+    assert_equal "/billing/usage", RecordingStudioStripe.configuration.usage_path
   end
 
   def test_load_config_ignores_non_enumerable_yaml_and_merge_errors

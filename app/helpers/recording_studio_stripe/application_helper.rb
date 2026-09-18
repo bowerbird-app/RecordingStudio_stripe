@@ -24,7 +24,7 @@ module RecordingStudioStripe
 
     def billing_subtitle(lines)
       active = Array(lines).select(&:subscribed?)
-      return "Usage resets when a paid period starts." if active.empty?
+      return "Nothing to charge yet." if active.empty?
       return single_line_subtitle(active.first.subscription) if active.size == 1
 
       names = active.map { |line| line.subscription.price&.product&.name }.compact
@@ -58,10 +58,14 @@ module RecordingStudioStripe
       "Next period switches to #{subscription.scheduled_price.product.name}."
     end
 
-    def usage_section_title(line)
-      return "#{line.label} usage" if RecordingStudioStripe::SubscriptionTypes.configured?
+    def usage_subtitle(lines)
+      active = Array(lines).select(&:subscribed?)
+      return "Usage resets when a paid period starts." if active.empty?
 
-      "Usage this period"
+      ends = active.filter_map { |line| line.subscription&.current_period_end }.uniq
+      return "Included amounts reset with each paid period." unless ends.size == 1 && ends.first
+
+      "Resets on #{ends.first.to_date.to_fs(:long)}."
     end
 
     def billing_line_meters(line)
@@ -76,6 +80,17 @@ module RecordingStudioStripe
         handle = line.limit(definition.name)
         handle if handle.included.positive? || handle.used.positive?
       end
+    end
+
+    def usage_in_use?(billing)
+      return false unless billing.subscribed?
+
+      billing.active_lines.any? { |line| line_has_recorded_usage?(line) }
+    end
+
+    def line_has_recorded_usage?(line)
+      billing_line_meters(line).any? { |handle| handle.usage.positive? } ||
+        billing_line_limits(line).any? { |handle| handle.used.positive? }
     end
 
     def limit_field_value(name)

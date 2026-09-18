@@ -1,6 +1,6 @@
-<% recording_studio_page_nav(title: "Plans", page_nav_anchor_url: main_app.root_path) %>
+<% recording_studio_page_nav(title: "Pricing", page_nav_anchor_url: main_app.root_path) %>
 
 <%= render RecordingStudioStripe::PlansComponent.new(
   groups: @groups,
-  align: :left
+  align: :center
 ) %>

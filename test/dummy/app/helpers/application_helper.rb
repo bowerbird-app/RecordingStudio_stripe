@@ -7,7 +7,18 @@ module ApplicationHelper
     RecordingStudioStripe.configuration.mount_path
   end
 
+  def dummy_usage_path
+    recording_studio_stripe.usage_path
+  end
+
+  def dummy_usage_current?
+    path = dummy_usage_path
+    request.path == path || request.path.start_with?("#{path}/")
+  end
+
   def dummy_billing_current?
+    return false if dummy_usage_current?
+
     request.path.start_with?(dummy_billing_path)
   end
 
@@ -90,7 +101,7 @@ module ApplicationHelper
 
   def dummy_home_subtitle
     names = dummy_home_plan_names
-    return "Plans and billing live on their own pages." if names.empty?
+    return "Pricing, billing, and usage live on their own pages." if names.empty?
 
     "You're on #{names.to_sentence}."
   end

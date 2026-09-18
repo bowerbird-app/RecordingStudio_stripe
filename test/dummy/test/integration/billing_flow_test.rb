@@ -23,7 +23,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     get "/plans"
 
     assert_response :success
-    assert_includes response.body, "Pick a plan"
+    assert_includes response.body, "Pricing"
+    refute_includes response.body, "Pick a plan"
     assert_includes response.body, "Studio"
     assert_includes response.body, "Inbox"
     assert_includes response.body, "Pro"
@@ -58,9 +59,10 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "border-t border-[var(--card-border-color)]"
     assert_select "body[data-theme='rounded']", count: 1
     assert_select "html[data-theme='rounded']", count: 1
-    assert_select "[data-plans-align='left']", count: 1
-    assert_select "[data-plans-heading].text-center", count: 0
+    assert_select "[data-plans-align='center']", count: 1
+    assert_select "[data-plans-heading].text-center", count: 1
     assert_select "[data-plan-group-heading]", count: 2
+    assert_select "[data-plan-group-heading].items-center", count: 2
     assert_select "a[href='/'][aria-label='Close']"
     assert_includes response.body, "items-stretch"
     assert_includes response.body, "lg:grid-cols-3"
@@ -74,7 +76,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     get "/pricing"
 
     assert_response :success
-    assert_includes response.body, "Pick a plan"
+    assert_includes response.body, "Pricing"
+    refute_includes response.body, "Pick a plan"
     assert_includes response.body, "Studio"
     assert_includes response.body, "Inbox"
     assert_includes response.body, "Pro"
@@ -152,10 +155,14 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     )
 
     assert_includes html, "Pro"
+    assert_includes html, "Pricing"
+    assert_includes html, "Monthly"
+    assert_includes html, "Yearly"
     refute_includes html, "data-plan-group-heading"
     refute_includes html, ">Studio<"
     refute_includes html, ">Inbox<"
     assert_includes html, "text-center"
+    assert_includes html, "items-center"
   end
 
   test "public pricing page shows yearly Prices" do
@@ -192,7 +199,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "[data-plan-group='studio'] [data-plan-group-heading]", count: 1
     assert_select "[data-plan-group='inbox'] [data-plan-group-heading]", count: 1
-    assert_select "[data-plan-group-heading].items-start", count: 2
+    assert_select "[data-plan-group-heading].items-center", count: 2
     assert_select "[data-plan-group='studio'] a", text: "Yearly"
     assert_select "[data-plan-group='inbox'] a", text: "Yearly"
     assert_select "[aria-label='Studio yearly']"
@@ -264,6 +271,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "a[href*='subscription/change'][href*='#{pro.id}']", text: "Upgrade"
+    refute_includes response.body, "Switch at renewal"
     refute_select "form[action*='subscription'][method='post']"
 
     get recording_studio_stripe.subscription_change_path, params: { price_id: pro.id }
@@ -290,14 +298,21 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
       current_period_end: Time.utc(2026, 10, 12)
     )
 
+    get "/plans"
+
+    assert_response :success
+    assert_select "a[href*='subscription/change'][href*='#{starter.id}']", text: "Downgrade"
+    refute_includes response.body, "Switch at renewal"
+
     get recording_studio_stripe.subscription_change_path, params: { price_id: starter.id }
 
     assert_response :success
-    assert_includes response.body, "Switch to Starter?"
+    assert_includes response.body, "Downgrade to Starter?"
     assert_includes response.body, "$9/month, down from $29/month. Starts on October 12, 2026."
     refute_includes response.body, "From renewal"
     refute_includes response.body, "You keep Pro"
-    assert_includes response.body, "Switch at renewal"
+    refute_includes response.body, "Switch at renewal"
+    assert_includes response.body, "Downgrade"
   end
 
   test "confirmation without a live plan sends you back to plans" do
@@ -355,6 +370,18 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "a[href='/'][aria-label='Close']"
+  end
+
+  test "usage close goes home" do
+    get "/billing/usage"
+
+    assert_response :success
+    assert_select "a[href='/'][aria-label='Close']"
+    assert_select "[data-usage='true']"
+    refute_includes response.body, "Usage this period"
+    refute_includes response.body, "Studio usage"
+    assert_includes response.body, "AI tokens"
+    assert_includes response.body, "API calls"
   end
 
   test "change plan reads the Stripe item id when metadata is missing" do
@@ -463,14 +490,15 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_equal 15_000_101, @workspace.billing.meter(:ai_tokens).usage
   end
 
-  test "billing page shows usage percent" do
+  test "usage page shows usage percent" do
     pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
 
-    get recording_studio_stripe.root_path
+    get recording_studio_stripe.usage_path
 
     assert_response :success
-    assert_includes response.body, "Studio usage"
+    refute_includes response.body, "Studio usage"
+    refute_includes response.body, "Inbox usage"
     assert_includes response.body, "AI tokens"
     assert_includes response.body, "0%"
     refute_includes response.body, "Need a bit more"
@@ -478,8 +506,77 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "Add this pack"
     refute_includes response.body, "10m left"
     refute_includes response.body, "Included 10m"
+    refute_includes response.body, "0 of 10"
+    refute_includes response.body, "on this plan."
+    assert_includes response.body, "0/10"
+    assert_includes response.body, "grid-cols-1"
+    refute_includes response.body, "md:grid-cols-2"
+    refute_includes response.body, "Manage billing on Stripe"
+    refute_includes response.body, "Current plan"
+    refute_includes response.body, "Breakdown"
+  end
+
+  test "usage card offers breakdown when extra packs add to the plan" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    pack = RecordingStudioStripe::Price.one_time.find_by!("metadata ->> 'allowance' = '5000000'")
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+    RecordingStudioStripe::ApplyAllowance.call(root_recording: @root, price: pack)
+
+    get recording_studio_stripe.usage_path
+
+    assert_response :success
+    assert_includes response.body, "Breakdown"
+    assert_includes response.body, "On this plan"
+    assert_includes response.body, "Extra packs"
+    assert_includes response.body, "Total this period"
+    assert_includes response.body, "10m"
+    assert_includes response.body, "5m"
+    assert_includes response.body, "15m"
+    refute_includes response.body, "Studio usage"
+  end
+
+  test "billing page omits meters until usage is recorded" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    refute_includes response.body, "See usage"
+    refute_includes response.body, "Studio usage"
+    refute_includes response.body, "0%"
+    assert_includes response.body, ">Current</"
+    refute_includes response.body, ">Active</"
+    assert_includes response.body, "badge-success-background-color"
+    refute_includes response.body, "badge-primary-background-color"
+    assert_match(/Current.*Studio/m, response.body)
     assert_includes response.body, "md:grid-cols-2"
-    assert_includes response.body, "badge-primary-background-color"
+  end
+
+  test "billing shows see usage after a cap is used" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+    @root.record(PressKit) { |kit| kit.name = "Launch kit" }
+
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    assert_includes response.body, "See usage"
+    assert_includes response.body, recording_studio_stripe.usage_path
+    refute_includes response.body, "Studio usage"
+    refute_includes response.body, "Launch kit"
+  end
+
+  test "billing shows see usage after a meter is spent" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+    @workspace.billing.line(:studio).meter(:ai_tokens).record(1)
+
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    assert_includes response.body, "See usage"
+    assert_includes response.body, recording_studio_stripe.usage_path
   end
 
   test "buying an extra pack increases remaining" do
@@ -499,7 +596,10 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     refute_includes response.body, "Manage billing on Stripe"
     refute_includes response.body, 'data-fp-style="stripe"'
-    assert_includes response.body, "Usage still counts if you record it"
+    refute_includes response.body, "See usage"
+    assert_includes response.body, "Nothing to charge yet."
+    assert_includes response.body, "Pick a plan when you’re ready."
+    refute_includes response.body, "Usage still counts if you record it"
     refute_includes response.body, "Need a bit more"
     refute_includes response.body, "Add this pack"
     refute_includes response.body, "Unlimited vibes"
@@ -514,8 +614,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "No plan yet"
     assert_includes response.body, "Manage billing on Stripe"
     assert_includes response.body, "recording_studio_stripe/button"
+    refute_includes response.body, "See usage"
     assert_select '[data-fp-style="stripe"]', text: /Manage billing on Stripe/
-    assert_select '[data-fp-style="primary"]', text: /See plans/
+    assert_select '[data-fp-style="primary"]', text: /See pricing/
   end
 
   test "boot registers the stripe Flatpack button style" do
@@ -666,6 +767,14 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     refute_includes response.body, "Manage billing on Stripe"
     refute_includes response.body, 'data-fp-style="stripe"'
+    refute_includes response.body, "See usage"
+
+    get recording_studio_stripe.usage_path
+
+    assert_response :success
+    assert_includes response.body, "AI tokens"
+    refute_includes response.body, "Studio usage"
+    refute_includes response.body, "Manage billing on Stripe"
 
     post recording_studio_stripe.portal_path
 
@@ -790,7 +899,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     follow_redirect!
     refute_predicate @workspace.billing.subscription.reload, :scheduled_downgrade?
     assert_includes response.body, "You’ll stay on this plan."
-    assert_includes response.body, "Active"
+    assert_includes response.body, "Current"
+    refute_includes response.body, ">Active</"
   end
 
   test "extra pack return asks people to refresh" do

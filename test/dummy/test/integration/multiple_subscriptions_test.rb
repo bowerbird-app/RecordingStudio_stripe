@@ -132,6 +132,32 @@ class MultipleSubscriptionsTest < ActionDispatch::IntegrationTest
     assert_equal 10_000_000, @workspace.billing.meter(:ai_tokens).included
   end
 
+  test "usage page groups caps and meters by plan type" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    inbox = RecordingStudioStripe::Product.find_by!(name: "Inbox Plus").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: inbox)
+
+    get recording_studio_stripe.usage_path
+
+    assert_response :success
+    assert_select "[data-usage-line='studio']"
+    assert_select "[data-usage-line='inbox']"
+    refute_includes response.body, "Studio usage"
+    refute_includes response.body, "Inbox usage"
+    assert_includes response.body, "Press kits"
+    assert_includes response.body, "AI tokens"
+    assert_includes response.body, "API calls"
+    refute_includes response.body, "Manage billing on Stripe"
+
+    get recording_studio_stripe.root_path
+
+    assert_response :success
+    refute_includes response.body, "Studio usage"
+    refute_includes response.body, "Inbox usage"
+    refute_includes response.body, "See usage"
+  end
+
   test "assign remaps implied plan rows when the host has one type" do
     previous = RecordingStudioStripe.configuration.subscription_types
     RecordingStudioStripe.configuration.subscription_types = { "kits" => { "label" => "Kits" } }

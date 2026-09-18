@@ -2,6 +2,7 @@
 
 RecordingStudioStripe::Engine.routes.draw do
   root to: "billing#show"
+  get "usage", to: "usage#show"
   get "plans", to: "plans#index", as: :engine_plans
   post "checkout", to: "checkouts#create"
   post "portal", to: "portals#create"

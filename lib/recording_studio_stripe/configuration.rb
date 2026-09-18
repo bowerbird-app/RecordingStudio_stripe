@@ -21,6 +21,7 @@ module RecordingStudioStripe
                   :current_actor,
                   :current_root_recording
     attr_reader :hooks
+    attr_writer :usage_path
 
     def initialize
       @secret_key = ENV.fetch("STRIPE_SECRET_KEY", nil)
@@ -35,6 +36,7 @@ module RecordingStudioStripe
       @success_path = "/billing"
       @cancel_path = "/plans"
       @limit_reached_path = nil
+      @usage_path = nil
       @allow_promotion_codes = true
       @automatic_tax = false
       @mount_path = "/billing"
@@ -65,6 +67,7 @@ module RecordingStudioStripe
         success_path: success_path,
         cancel_path: cancel_path,
         limit_reached_path: limit_reached_path,
+        usage_path: usage_path,
         allow_promotion_codes: allow_promotion_codes,
         automatic_tax: automatic_tax,
         local_mode: local_mode?,
@@ -80,6 +83,10 @@ module RecordingStudioStripe
         setter = "#{key}="
         public_send(setter, value) if respond_to?(setter)
       end
+    end
+
+    def usage_path
+      @usage_path.presence || "#{mount_path.to_s.chomp('/')}/usage"
     end
 
     private

@@ -2,7 +2,7 @@
 
 Recording Studio Stripe is in.
 
-draw_recording_studio_stripe mounted billing at /billing, plans at /plans, and Stripe webhooks at /webhooks/stripe.
+draw_recording_studio_stripe mounted billing at /billing, usage at /billing/usage, plans at /plans, and Stripe webhooks at /webhooks/stripe.
 
 Include RecordingStudioStripe::Billable on your workspace root.
 
