@@ -33,21 +33,17 @@ module RecordingStudioStripe
     end
 
     def heading
-      title = page_title
-      pills = shared_interval_pills
-      return title if pills.blank?
-
-      helpers.tag.div(helpers.safe_join([title, pills]), class: heading_stack_class)
-    end
-
-    def page_title
-      render FlatPack::PageTitle::Component.new(
+      title = render FlatPack::PageTitle::Component.new(
         title: @title,
         subtitle: @subtitle,
         variant: :h1,
         class: (@align == :center ? "mb-0 pb-0 w-full text-center" : "mb-0 pb-0"),
         data: { plans_heading: true }
       )
+      pills = shared_interval_pills
+      return title if pills.blank?
+
+      helpers.tag.div(helpers.safe_join([title, pills]), class: heading_stack_class)
     end
 
     def groups
