@@ -60,7 +60,7 @@ draw_recording_studio_stripe
 
 That mounts billing at `/billing`, plans at `/plans`, and webhooks at `/webhooks/stripe`.
 
-Turn on the Customer Portal in the Stripe Dashboard. Manage billing on Stripe mints a portal session for the workspace Customer and sends the browser to Stripe. The gem does not copy invoices or cards. Leave keys blank in dummy and the button still shows after a local checkout, then flashes instead of calling Stripe.
+Turn on the Customer Portal in the Stripe Dashboard. Manage billing on Stripe mints a portal session for the workspace Customer and sends the browser to Stripe. The button uses the gem's `:stripe` Flatpack style. The gem does not copy invoices or cards. Leave keys blank in dummy and the button still shows after a local checkout, then flashes instead of calling Stripe.
 
 Render the same plan cards on a host screen. Pass `groups:` from `Catalog.plan_groups` when you sell more than one kind of plan:
 

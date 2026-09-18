@@ -159,6 +159,14 @@ module RecordingStudioStripe
       end
     end
 
+    initializer "recording_studio_stripe.flatpack_button_style" do
+      config.to_prepare do
+        next unless defined?(FlatPack::Button) && FlatPack::Button.respond_to?(:register_style)
+
+        FlatPack::Button.register_style(:stripe, press: :raised)
+      end
+    end
+
     initializer "recording_studio_stripe.plan_limits" do
       config.to_prepare do
         next unless defined?(RecordingStudio::Recording)

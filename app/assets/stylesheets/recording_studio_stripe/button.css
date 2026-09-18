@@ -1,0 +1,6 @@
+.fp-button[data-fp-style="stripe"] {
+  --fp-button-background: #635bff;
+  --fp-button-hover-background: #0a2540;
+  --fp-button-text: #ffffff;
+  --fp-button-border: #635bff;
+}

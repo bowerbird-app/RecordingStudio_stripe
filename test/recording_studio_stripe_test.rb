@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.8.2", ::RecordingStudioStripe::VERSION
+    assert_equal "0.8.3", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -49,7 +49,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.6.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.0.2"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.5.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.133"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.189"'
   end
 
   def test_template_does_not_ship_copied_core_hooks_or_base_service
@@ -148,6 +148,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "config.limits"
     assert_includes readme, "authorized_action?"
     assert_includes readme, "Customer Portal"
+    assert_includes readme, ":stripe"
     refute_includes readme, "ExampleService"
   end
 
@@ -202,6 +203,9 @@ class RecordingStudioStripeTest < Minitest::Test
     docs = File.read(File.expand_path("../docs/billing.md", __dir__))
 
     assert_includes docs, "Manage billing on Stripe"
+    assert_includes docs, ":stripe"
+    assert_includes docs, "register_style"
+    assert_includes docs, "recording_studio_stripe/button"
     assert_includes docs, "Customer Portal"
     assert_includes docs, "Do not copy invoices"
     assert_includes docs, "spend"
@@ -215,7 +219,10 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes view_source, "Manage billing on Stripe"
     assert_includes view_source, 'icon: "credit-card"'
+    assert_includes view_source, "style: :stripe"
+    assert_includes view_source, 'stylesheet_link_tag "recording_studio_stripe/button"'
     assert_includes view_source, "portal_path"
+    refute_includes view_source, "style: :secondary"
     assert_includes view_source, "LimitCardComponent"
     assert_includes view_source, "MeterCardComponent"
     assert_includes view_source, "@waiting_on_stripe"
@@ -232,6 +239,18 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes view_source, "Add press kit"
     refute_includes view_source, "press_kits_path"
     refute_includes view_source, "dashboard.stripe.com"
+  end
+
+  def test_stripe_button_style_paints_official_brand_colours
+    css = File.read(File.expand_path("../app/assets/stylesheets/recording_studio_stripe/button.css", __dir__))
+
+    assert_includes css, 'data-fp-style="stripe"'
+    assert_includes css, "#635bff"
+    assert_includes css, "#0a2540"
+    assert_includes css, "--fp-button-background"
+    assert_includes css, "--fp-button-hover-background"
+    assert_includes css, "--fp-button-text"
+    assert_includes css, "--fp-button-border"
   end
 
   def test_current_plan_puts_status_badges_above_the_name
