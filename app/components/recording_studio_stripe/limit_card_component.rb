@@ -11,7 +11,7 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(style: :outlined) do |card|
-        card.body { helpers.stripe_card_stack(title, details, caption) }
+        card.body { helpers.stripe_card_stack(title, amount, details, over_hint) }
       end
     end
 
@@ -25,6 +25,16 @@ module RecordingStudioStripe
       )
     end
 
+    def amount
+      helpers.tag.p(amount_text, class: "text-sm leading-6")
+    end
+
+    def amount_text
+      return "None on this plan." if @handle.included <= 0
+
+      "#{@handle.used}/#{@handle.included}"
+    end
+
     def details
       cap = progress_max
       render FlatPack::Progress::Component.new(
@@ -36,18 +46,10 @@ module RecordingStudioStripe
       )
     end
 
-    def caption
-      helpers.tag.p(caption_text, class: "text-sm leading-6")
-    end
+    def over_hint
+      return unless @handle.over?
 
-    def caption_text
-      if @handle.included <= 0
-        "None on this plan."
-      elsif @handle.over?
-        "#{@handle.used} of #{@handle.included} on this plan. Archive some, or upgrade."
-      else
-        "#{@handle.used} of #{@handle.included} on this plan."
-      end
+      helpers.tag.p("Archive some, or upgrade.", class: "text-sm leading-6")
     end
 
     def progress_max

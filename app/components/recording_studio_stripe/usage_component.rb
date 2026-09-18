@@ -67,7 +67,7 @@ module RecordingStudioStripe
     end
 
     def cards_grid(limits, meters)
-      render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do
+      render FlatPack::Grid::Component.new(cols: 1, gap: :lg, class: "w-full") do
         helpers.safe_join(
           limits.map { |handle| render LimitCardComponent.new(handle: handle) } +
             meters.map { |handle| render MeterCardComponent.new(handle: handle) }

@@ -10,8 +10,8 @@ Sign in with `admin@admin.com` / `Password`.
 - `/press_kits` — list and add press kits for the workspace
 - `/plans` — Products and Prices, left aligned, with a monthly/yearly toggle under each plan group name when dummy seeds more than one type. Upgrade and Switch at renewal open a confirmation page first
 - `/pricing` — the same plan cards, centered title and subtitle, no login
-- `/billing` — one card per live plan group, and Manage billing on Stripe (Customer Portal)
-- `/billing/usage` — standing caps and period meters
+- `/billing` — one card per live plan group, and Manage billing on Stripe (Customer Portal). See usage only when a live plan has recorded cap or meter use
+- `/billing/usage` — one full-width card per standing cap or period meter
 - `/admin` — Stripe admin section. The Admin button switches to Studio Admin first, because Admin authorizes against that root.
 - `/webhooks/stripe` — Stripe webhook intake
 - `/users/sign_in` — Devise
@@ -22,4 +22,4 @@ Dummy home uses Flatpack `SidebarLayout` with `html data-theme="rounded"`. Plans
 
 Dummy registers `generate_image` and `export_csv` paywalls. Pro and Team open image generation. Inbox Plus and Inbox Pro open CSV export. Staff tick those on the Product in Admin.
 
-Dummy also registers a `press_kits` standing limit on Studio plans. Starter includes 3. Pro includes 10. Team includes 25. `/billing/usage` shows how many you can keep. `/press_kits` lists them and adds more. Creating past the cap sends you to `/plans`. Plan cards on `/plans` and `/pricing` list those caps, included usage, and ticked features, with icons from the initializer. Team also shows a display-only line. Hide or reorder lines on the Product in Admin.
+Dummy also registers a `press_kits` standing limit on Studio plans. Starter includes 3. Pro includes 10. Team includes 25. `/billing/usage` shows how many you can keep as `used/included` above the bar. `/press_kits` lists them and adds more. Creating past the cap sends you to `/plans`. Plan cards on `/plans` and `/pricing` list those caps, included usage, and ticked features, with icons from the initializer. Team also shows a display-only line. Hide or reorder lines on the Product in Admin.

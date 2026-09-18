@@ -155,7 +155,7 @@ class MultipleSubscriptionsTest < ActionDispatch::IntegrationTest
     assert_response :success
     refute_includes response.body, "Studio usage"
     refute_includes response.body, "Inbox usage"
-    assert_includes response.body, "See usage"
+    refute_includes response.body, "See usage"
   end
 
   test "assign remaps implied plan rows when the host has one type" do

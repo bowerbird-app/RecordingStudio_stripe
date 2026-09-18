@@ -7,6 +7,7 @@ module RecordingStudioStripe
     def show
       @lines = billing.active_lines
       @show_manage_billing = show_manage_billing?
+      @show_see_usage = show_see_usage?
       @confirming_checkout = confirming_checkout?
       @confirming_allowance = confirming_allowance?
       @waiting_on_stripe = waiting_on_stripe?
@@ -23,6 +24,10 @@ module RecordingStudioStripe
         recording: current_billing_root,
         role: :admin
       )
+    end
+
+    def show_see_usage?
+      helpers.usage_in_use?(billing)
     end
 
     def confirming_checkout?

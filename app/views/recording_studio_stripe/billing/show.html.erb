@@ -24,31 +24,32 @@
     ) %>
   <% end %>
 
-  <div class="flex flex-wrap gap-2">
-    <% if @show_manage_billing %>
-      <%= button_to recording_studio_stripe.portal_path, class: "inline-flex", form: { data: { turbo: false } } do %>
+  <% if @show_manage_billing || @show_see_usage %>
+    <div class="flex flex-wrap gap-2">
+      <% if @show_manage_billing %>
+        <%= button_to recording_studio_stripe.portal_path, class: "inline-flex", form: { data: { turbo: false } } do %>
+          <%= render FlatPack::Button::Component.new(
+            text: "Manage billing on Stripe",
+            icon: "credit-card",
+            style: :stripe,
+            size: :md,
+            type: "submit"
+          ) %>
+        <% end %>
+      <% end %>
+      <% if @show_see_usage %>
         <%= render FlatPack::Button::Component.new(
-          text: "Manage billing on Stripe",
-          icon: "credit-card",
-          style: :stripe,
+          text: "See usage",
+          style: :secondary,
           size: :md,
-          type: "submit"
+          href: recording_studio_stripe.usage_path
         ) %>
       <% end %>
-    <% end %>
-    <%= render FlatPack::Button::Component.new(
-      text: "See usage",
-      style: :secondary,
-      size: :md,
-      href: recording_studio_stripe.usage_path
-    ) %>
-  </div>
+    </div>
+  <% end %>
 
   <% if @lines.any? %>
     <% @lines.each do |line| %>
-      <% if RecordingStudioStripe::SubscriptionTypes.configured? %>
-        <%= render FlatPack::SectionTitle::Component.new(title: line.label) %>
-      <% end %>
       <%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
         <%= render RecordingStudioStripe::CurrentPlanComponent.new(
           subscription: line.subscription,

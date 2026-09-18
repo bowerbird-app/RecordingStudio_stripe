@@ -88,6 +88,17 @@ module RecordingStudioStripe
       end
     end
 
+    def usage_in_use?(billing)
+      return false unless billing.subscribed?
+
+      billing.active_lines.any? { |line| line_has_recorded_usage?(line) }
+    end
+
+    def line_has_recorded_usage?(line)
+      billing_line_meters(line).any? { |handle| handle.usage.positive? } ||
+        billing_line_limits(line).any? { |handle| handle.used.positive? }
+    end
+
     def limit_field_value(name)
       submitted = params.dig(:limits, name)
       return submitted unless submitted.nil?

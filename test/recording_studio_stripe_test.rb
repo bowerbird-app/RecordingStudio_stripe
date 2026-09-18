@@ -221,10 +221,13 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "/billing/usage"
     assert_includes docs, "UsageComponent"
     assert_includes docs, "config.usage_path"
+    assert_includes docs, "used/included"
+    assert_includes docs, "See usage"
   end
 
   def test_billing_view_offers_manage_billing
     view_source = File.read(File.expand_path("../app/views/recording_studio_stripe/billing/show.html.erb", __dir__))
+    controller = File.read(File.expand_path("../app/controllers/recording_studio_stripe/billing_controller.rb", __dir__))
 
     assert_includes view_source, "Manage billing on Stripe"
     assert_includes view_source, 'icon: "credit-card"'
@@ -236,7 +239,9 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "@confirming_allowance"
     assert_includes view_source, "can_manage: @show_manage_billing"
     assert_includes view_source, "See usage"
+    assert_includes view_source, "@show_see_usage"
     assert_includes view_source, "usage_path"
+    refute_includes view_source, "SectionTitle"
     refute_includes view_source, "Need a bit more"
     refute_includes view_source, "AllowanceCardComponent"
     refute_includes view_source, "@allowance_prices"
@@ -247,6 +252,8 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes view_source, "Add press kit"
     refute_includes view_source, "press_kits_path"
     refute_includes view_source, "dashboard.stripe.com"
+    assert_includes controller, "@show_see_usage = show_see_usage?"
+    assert_includes controller, "helpers.usage_in_use?(billing)"
   end
 
   def test_usage_view_renders_caps_and_meters
@@ -261,6 +268,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes component, "LimitCardComponent"
     assert_includes component, "MeterCardComponent"
     assert_includes component, "usage_section_title"
+    assert_includes component, "cols: 1"
+    assert_includes component, "w-full"
     assert_includes rescue_source, "recording_studio_stripe_usage_url"
     assert_includes rescue_source, "usage_path"
     refute_includes rescue_source, "recording_studio_stripe_billing_url"
@@ -282,7 +291,10 @@ class RecordingStudioStripeTest < Minitest::Test
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/current_plan_component.rb", __dir__))
 
     assert_includes source, "stripe_card_stack(badges, title, actions)"
-    assert_includes source, "badge(\"Active\", :primary)"
+    assert_includes source, "badge(\"Current\", :success)"
+    assert_includes source, "show_type_badge?"
+    assert_includes source, "SubscriptionTypes.keys.size > 1"
+    refute_includes source, "badge(\"Active\", :primary)"
     assert_includes source, "Past due"
     assert_includes source, "Trial"
     assert_includes source, "Update card"
@@ -302,9 +314,12 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_limit_card_shows_used_of_included_when_over
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/limit_card_component.rb", __dir__))
 
-    assert_includes source, "caption_text"
+    assert_includes source, "amount_text"
+    assert_includes source, "stripe_card_stack(title, amount, details, over_hint)"
+    assert_includes source, '#{@handle.used}/#{@handle.included}'
     assert_includes source, "over?"
     assert_includes source, "Archive some, or upgrade."
+    refute_includes source, " of "
   end
 
   def test_dummy_home_page_points_at_plans
@@ -336,6 +351,8 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes source, "PlanFeatures.for"
     assert_includes source, "stripe_plan_feature_lines"
+    assert_includes source, "usage_in_use?"
+    assert_includes source, "line_has_recorded_usage?"
     assert_includes card, "stripe_plan_feature_lines"
     assert_includes card, "FlatPack::List::Component"
     assert_includes card, "FlatPack::List::Item"
