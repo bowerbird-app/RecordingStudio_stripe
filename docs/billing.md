@@ -37,7 +37,9 @@ A plan Product can offer a trial. Set trial days and a one-time amount in cents 
 ```ruby
 RecordingStudioStripe::AssignTrial.call(product: pro, days: 14, unit_amount: 100)
 pro.trial.offered?
-pro.trial.checkout_label
+pro.trial.checkout_label # "Try now"
+pro.trial.duration_label # "14 day trial"
+pro.trial.amount_label # "$1"
 ```
 
 `AssignTrial` writes `trial_days` and `trial_unit_amount` on Product metadata. When the amount is above 0 it creates a one-time Price on that same Product with `kind=trial_fee`. That is not an extra pack and not a second monthly Price. `Product#monthly_price` stays the paid monthly Price.
@@ -93,7 +95,7 @@ Per-plan control lives on the Product as `plan_card` metadata. It stays local. S
 
 Keys are `limit:<name>`, `meter:<name>`, `paywall:<name>`, `extra:<key>`. Blank `order` is caps, then usage, then features, then extras. Hide omits a line from the card; the cap, meter, or paywall still bills and gates. Extras are display-only. Admin new plan and edit screens put those card controls in a Pricing card disclosure. The extra line is what the card says plus an icon. The key stays hidden and is filled from the text when blank.
 
-The card is a Flatpack list with an icon on each line. Dummy Team also shows “Someone picks up the phone”. Cards in a group share one height. Choose, Upgrade, and Current sit in the card footer, so extra space sits between the last line and the action. A Studio row and an Inbox row can still differ from each other. When the Product offers a trial and the workspace has no live plan in that group, the footer says Try for $1, or Start trial when the amount is 0.
+The card is a Flatpack list with an icon on each line. Dummy Team also shows “Someone picks up the phone”. Cards in a group share one height. The price sits in the footer, just above the button, at the h2 title size. Month is `/mo`. Year is `/yr`. Choose, Upgrade, and Current sit under that price, so extra space sits between the last feature and the price. A Studio row and an Inbox row can still differ from each other. When the Product offers a trial and the workspace has no live plan in that group, the plan amount is struck through, the trial amount sits beside it (`$29` `$1/mo`), a badge names the length (14 day trial, 1 month trial), and the button says Try now. A $0 trial still says Try now and shows `$0/mo`. Changing plans keeps Upgrade or Downgrade and the plan price.
 
 ## Plan groups
 

@@ -27,7 +27,8 @@ class PaidTrialTest < ActionDispatch::IntegrationTest
     assert trial.offered?
     assert_equal 14, trial.days
     assert_equal 100, trial.unit_amount
-    assert_equal "Try for $1", trial.checkout_label
+    assert_equal "Try now", trial.checkout_label
+    assert_equal "14 day trial", trial.duration_label
     assert_equal 100, trial.fee_price.unit_amount
     assert_nil trial.fee_price.interval
     assert_equal "trial_fee", trial.fee_price.metadata["kind"]
@@ -209,20 +210,24 @@ class PaidTrialTest < ActionDispatch::IntegrationTest
     assert_equal "trialing", @workspace.billing.subscription.reload.status
   end
 
-  test "plans and public pricing say Try for $1 on Pro when there is no live plan" do
+  test "plans and public pricing strike the plan price and offer Try now" do
     get "/plans"
 
     assert_response :success
-    assert_includes response.body, "Try for $1"
+    assert_includes response.body, "14 day trial"
+    assert_includes response.body, "Try now"
     assert_includes response.body, "Choose plan"
-    assert_select "[data-plan-group='studio']", text: /Try for \$1/
+    assert_select "[data-plan-group='studio'] s", text: "$29"
+    assert_select "[data-plan-group='studio'] p", text: "$29$1/mo"
+    refute_includes response.body, "Try for $1"
     refute_includes response.body, "Start trial"
 
     sign_out @user
     get "/pricing"
 
     assert_response :success
-    assert_includes response.body, "Try for $1"
+    assert_includes response.body, "Try now"
+    assert_includes response.body, "14 day trial"
   end
 
   test "already subscribed Pro stays Current and Starter stays Downgrade" do
@@ -233,7 +238,8 @@ class PaidTrialTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "button, a", text: "Current plan"
     assert_select "a[href*='subscription/change']", text: "Downgrade"
-    refute_includes response.body, "Try for $1"
+    refute_includes response.body, "Try now"
+    refute_includes response.body, "14 day trial"
   end
 
   test "upsert product keeps trial metadata when Stripe omits those keys" do

@@ -13,25 +13,38 @@ class TrialTest < Minitest::Test
     assert trial.offered?
     assert_equal 14, trial.days
     assert_equal 100, trial.unit_amount
-    assert_equal "Try for $1", trial.checkout_label
+    assert_equal "Try now", trial.checkout_label
+    assert_equal "14 day trial", trial.duration_label
+    assert_equal "$1", trial.amount_label
   end
 
-  def test_checkout_label_keeps_cents_when_the_amount_is_not_whole_dollars
+  def test_amount_label_keeps_cents_when_the_amount_is_not_whole_dollars
     trial = RecordingStudioStripe::Trial.for(
       ProductStub.new(metadata: { "trial_days" => "7", "trial_unit_amount" => "150" })
     )
 
-    assert_equal "Try for $1.50", trial.checkout_label
+    assert_equal "$1.50", trial.amount_label
+    assert_equal "7 day trial", trial.duration_label
   end
 
-  def test_zero_amount_uses_start_trial
+  def test_whole_months_use_a_month_duration_label
+    trial = RecordingStudioStripe::Trial.for(
+      ProductStub.new(metadata: { "trial_days" => "30", "trial_unit_amount" => "0" })
+    )
+
+    assert_equal "1 month trial", trial.duration_label
+    assert_equal "Try now", trial.checkout_label
+  end
+
+  def test_zero_amount_still_offers_try_now
     trial = RecordingStudioStripe::Trial.for(
       ProductStub.new(metadata: { "trial_days" => "14", "trial_unit_amount" => "0" })
     )
 
     assert trial.offered?
     assert_equal 0, trial.unit_amount
-    assert_equal "Start trial", trial.checkout_label
+    assert_equal "$0", trial.amount_label
+    assert_equal "Try now", trial.checkout_label
   end
 
   def test_not_offered_when_days_are_blank_or_zero

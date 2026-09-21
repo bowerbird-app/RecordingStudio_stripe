@@ -151,7 +151,9 @@ A plan can offer a trial. Set Trial days and Trial amount in cents on the Produc
 ```ruby
 RecordingStudioStripe::AssignTrial.call(product: pro, days: 14, unit_amount: 100)
 pro.trial.offered? # true
-pro.trial.checkout_label # "Try for $1"
+pro.trial.checkout_label # "Try now"
+pro.trial.duration_label # "14 day trial"
+pro.trial.amount_label # "$1"
 ```
 
 Checkout starts the real plan Price with Stripe `trial_period_days`. A one-time fee Price on the same Product (`kind=trial_fee`) is the charge now. 0 cents is a free trial on that same path. `Product#monthly_price` stays the paid monthly Price. Empty days clears the trial and deactivates fee Prices. A workspace that already has a live plan in that group still upgrades or downgrades. Dummy Pro is $1 for 14 days.

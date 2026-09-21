@@ -146,7 +146,8 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_equal 7, product.trial.days
     assert_equal 150, product.trial.unit_amount
     assert_equal 150, product.trial.fee_price.unit_amount
-    assert_equal "Try for $1.50", product.trial.checkout_label
+    assert_equal "Try now", product.trial.checkout_label
+    assert_equal "$1.50", product.trial.amount_label
   end
 
   test "edit Pro fills the trial days and amount" do
