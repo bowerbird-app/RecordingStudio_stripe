@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional subtitle under the plan name on a pricing card. Staff set it next to the name. It stays in local `plan_card` metadata. `Product#card_subtitle` reads it
 
 ### Changed
-- Plan card prices sit above the button, at the page-title h2 size, with `/mo` or `/yr`
+- Plan card prices sit above the button, at the page-title h2 size, with `/mo` or `/yr`, and a little space above the badge and below the amount
 - A trial card strikes the plan price, shows the trial amount, and adds a duration badge such as 14 day trial or 1 month trial
 - That card's button says Try now. Upgrade, Downgrade, and Current plan stay when the workspace is already on a plan in that group
 

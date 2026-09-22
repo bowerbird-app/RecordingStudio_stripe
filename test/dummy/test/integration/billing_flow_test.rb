@@ -38,6 +38,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "[data-plan-group='inbox'] p", text: "$25/mo"
     assert_select "[data-plan-group='inbox'] p", text: "$90/mo"
     assert_select "[data-plan-group='studio'] p", text: "For a quiet start"
+    assert_includes response.body, "py-[var(--card-padding-md)]"
     assert_select "[data-plan-group='studio'] p", text: "For the usual week"
     assert_select "[data-plan-group='studio'] p", text: "For the whole crew"
     assert_select "[data-plan-group='inbox'] p", text: "For what people send"

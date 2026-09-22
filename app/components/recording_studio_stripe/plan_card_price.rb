@@ -17,7 +17,7 @@ module RecordingStudioStripe
     end
 
     def render
-      @view.tag.div(class: "flex flex-col items-start gap-2") do
+      @view.tag.div(class: "flex flex-col items-start gap-2 py-[var(--card-padding-md)]") do
         @view.safe_join([badge, line].compact)
       end
     end
