@@ -74,7 +74,7 @@ module RecordingStudioStripe
     end
 
     def trial_word
-      @view.content_tag(:span, " trial", style: UNIT_SIZE)
+      @view.content_tag(:span, "trial", style: "#{UNIT_SIZE} margin-left: 0.25em;")
     end
 
     def interval_abbrev

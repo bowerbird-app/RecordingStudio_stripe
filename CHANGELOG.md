@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Plan card prices sit above the button, at the page-title h2 size, with `/mo` or `/yr`, and a little space above the badge and below the amount
-- A trial card strikes the plan price with its interval (`$29/mo`), shows the trial amount followed by the word trial (`$1 trial`), and adds a duration badge such as 14 day trial or 1 month trial
+- A trial card strikes the plan price with its interval (`$29/mo`), shows the trial amount, a space, then the word trial (`$1 trial`), and adds a duration badge such as 14 day trial or 1 month trial
 - That card's button says Try now. Upgrade, Downgrade, and Current plan stay when the workspace is already on a plan in that group
 
 ### Upgrade notes

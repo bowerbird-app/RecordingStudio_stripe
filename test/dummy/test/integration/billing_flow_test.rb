@@ -33,7 +33,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Inbox Plus"
     assert_includes response.body, "Inbox Pro"
     assert_select "[data-plan-group='studio'] p", text: "$9/mo"
-    assert_select "[data-plan-group='studio'] p", text: "$29/mo$1 trial"
+    assert_select "[data-plan-group='studio'] p", text: "$29/mo$1trial"
     assert_select "[data-plan-group='studio'] p", text: "$79/mo"
     assert_select "[data-plan-group='inbox'] p", text: "$25/mo"
     assert_select "[data-plan-group='inbox'] p", text: "$90/mo"
@@ -102,7 +102,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Team"
     assert_includes response.body, "Inbox Plus"
     assert_includes response.body, "Inbox Pro"
-    assert_select "[data-plan-group='studio'] p", text: "$29/mo$1 trial"
+    assert_select "[data-plan-group='studio'] p", text: "$29/mo$1trial"
     assert_select "[data-plan-group='studio'] p", text: "For the usual week"
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='center']", count: 1
@@ -189,7 +189,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "[data-plan-group='studio'] p", text: "$90/yr"
-    assert_select "[data-plan-group='studio'] p", text: "$290/yr$1 trial"
+    assert_select "[data-plan-group='studio'] p", text: "$290/yr$1trial"
     assert_select "[data-plan-group='studio'] p", text: "$790/yr"
     assert_select "[data-plans-align='center']", count: 1
     assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
@@ -204,7 +204,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Inbox Plus"
     assert_includes response.body, "Team"
     assert_select "[data-plan-group='studio'] p", text: "$90/yr"
-    assert_select "[data-plan-group='studio'] p", text: "$290/yr$1 trial"
+    assert_select "[data-plan-group='studio'] p", text: "$290/yr$1trial"
     assert_select "[data-plan-group='studio'] p", text: "$790/yr"
     assert_select "[data-plan-group='inbox'] p", text: "$250/yr"
     assert_select "[data-plan-group='inbox'] p", text: "$900/yr"
@@ -223,7 +223,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "[aria-label='Studio yearly']"
     assert_select "[aria-label='Inbox monthly']"
     assert_select "[data-plan-group='studio'] p", text: "$90/yr"
-    assert_select "[data-plan-group='studio'] p", text: "$290/yr$1 trial"
+    assert_select "[data-plan-group='studio'] p", text: "$290/yr$1trial"
     assert_select "[data-plan-group='inbox'] p", text: "$25/mo"
     assert_select "[data-plan-group='inbox'] p", text: "$50/mo"
     refute_includes response.body, "$250/year"

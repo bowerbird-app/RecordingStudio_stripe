@@ -218,7 +218,8 @@ class PaidTrialTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Try now"
     assert_includes response.body, "Choose plan"
     assert_select "[data-plan-group='studio'] s", text: "$29/mo"
-    assert_select "[data-plan-group='studio'] p", text: "$29/mo$1 trial"
+    assert_select "[data-plan-group='studio'] p", text: "$29/mo$1trial"
+    assert_includes response.body, "margin-left: 0.25em"
     refute_includes response.body, "Try for $1"
     refute_includes response.body, "Start trial"
 
