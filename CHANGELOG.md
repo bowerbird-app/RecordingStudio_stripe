@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.6] - 2026-09-21
 
+### Added
+- Optional subtitle under the plan name on a pricing card. Staff set it next to the name. It stays in local `plan_card` metadata. `Product#card_subtitle` reads it
+
 ### Changed
 - Plan card prices sit above the button, at the page-title h2 size, with `/mo` or `/yr`
 - A trial card strikes the plan price, shows the trial amount, and adds a duration badge such as 14 day trial or 1 month trial
@@ -17,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hosts that replaced `PlanCardComponent` should move the price into the footer, above the button
 - Hosts that replaced `PlanCardComponent` should strike the plan amount and show `product.trial.amount_label` plus a `product.trial.duration_label` badge when a trial is offered and that group has no live plan
 - The trial button is Try now. `Trial#checkout_label` returns that. Plan changes still say Upgrade or Downgrade
+- Hosts that replaced `PlanCardComponent` can pass `product.card_subtitle` as the title subtitle. A missing Price still uses that slot for "No month Price yet" or "No year Price yet"
 
 ## [0.8.5] - 2026-09-18
 

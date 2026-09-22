@@ -85,6 +85,7 @@ Per-plan control lives on the Product as `plan_card` metadata. It stays local. S
 
 ```json
 {
+  "subtitle": "For the usual week",
   "hide": ["meter:api_calls"],
   "order": ["limit:press_kits", "meter:ai_tokens", "paywall:generate_image", "extra:priority"],
   "extras": [
@@ -93,7 +94,7 @@ Per-plan control lives on the Product as `plan_card` metadata. It stays local. S
 }
 ```
 
-Keys are `limit:<name>`, `meter:<name>`, `paywall:<name>`, `extra:<key>`. Blank `order` is caps, then usage, then features, then extras. Hide omits a line from the card; the cap, meter, or paywall still bills and gates. Extras are display-only. Admin new plan and edit screens put those card controls in a Pricing card disclosure. The extra line is what the card says plus an icon. The key stays hidden and is filled from the text when blank.
+Keys are `limit:<name>`, `meter:<name>`, `paywall:<name>`, `extra:<key>`. Blank `order` is caps, then usage, then features, then extras. Hide omits a line from the card; the cap, meter, or paywall still bills and gates. Extras are display-only. `subtitle` is one line under the plan name. Blank leaves the name on its own. A missing Price still says "No month Price yet" or "No year Price yet" in that spot. Admin new plan and edit screens put Subtitle next to the name. The rest of the card controls sit in a Pricing card disclosure. The extra line is what the card says plus an icon. The key stays hidden and is filled from the text when blank. Read the line with `product.card_subtitle`.
 
 The card is a Flatpack list with an icon on each line. Dummy Team also shows “Someone picks up the phone”. Cards in a group share one height. The price sits in the footer, just above the button, at the h2 title size. Month is `/mo`. Year is `/yr`. Choose, Upgrade, and Current sit under that price, so extra space sits between the last feature and the price. A Studio row and an Inbox row can still differ from each other. When the Product offers a trial and the workspace has no live plan in that group, the plan amount is struck through, the trial amount sits beside it (`$29` `$1/mo`), a badge names the length (14 day trial, 1 month trial), and the button says Try now. A $0 trial still says Try now and shows `$0/mo`. Changing plans keeps Upgrade or Downgrade and the plan price.
 

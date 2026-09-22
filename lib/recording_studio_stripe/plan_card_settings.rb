@@ -7,8 +7,9 @@ module RecordingStudioStripe
       {
         "hide" => Array(data["hide"]).map(&:to_s).reject(&:blank?),
         "order" => order_rows(data["order"]),
-        "extras" => extra_rows(data["extras"]).filter_map { |extra| extra_row(extra) }
-      }
+        "extras" => extra_rows(data["extras"]).filter_map { |extra| extra_row(extra) },
+        "subtitle" => data["subtitle"].to_s.strip.presence
+      }.compact
     end
 
     def self.order_rows(value)

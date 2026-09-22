@@ -65,11 +65,12 @@ module RecordingStudioStripe
       def product_plan_card
         return unless params[:plan_card]
 
-        raw = params.require(:plan_card).permit(:order, hide: [], extras: %i[key text icon])
+        raw = params.require(:plan_card).permit(:order, :subtitle, hide: [], extras: %i[key text icon])
         {
           "hide" => Array(raw[:hide]).reject(&:blank?),
           "order" => plan_card_order(raw[:order]),
-          "extras" => plan_card_extras(raw[:extras])
+          "extras" => plan_card_extras(raw[:extras]),
+          "subtitle" => raw[:subtitle]
         }
       end
 

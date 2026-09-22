@@ -27,10 +27,16 @@ module RecordingStudioStripe
     def title
       render FlatPack::PageTitle::Component.new(
         title: @product.name,
-        subtitle: ("No #{stripe_interval_label(@interval)} Price yet" unless price),
+        subtitle: title_subtitle,
         variant: :h3,
         class: "mb-0 pb-0"
       )
+    end
+
+    def title_subtitle
+      return "No #{stripe_interval_label(@interval)} Price yet" unless price
+
+      @product.card_subtitle
     end
 
     def footer

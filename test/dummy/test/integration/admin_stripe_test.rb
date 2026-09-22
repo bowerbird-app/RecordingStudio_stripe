@@ -97,6 +97,8 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Trial amount in cents"
     assert_includes response.body, "They pay this now. The plan price starts when the trial ends."
     assert_includes response.body, "Create"
+    assert_select "input[name='plan_card[subtitle]']"
+    assert_includes response.body, "Shows under the name on the pricing card."
     refute_includes response.body, "What this plan opens"
     refute_includes response.body, "On the plan card"
     refute_includes response.body, "Someone picks up the phone"
@@ -109,6 +111,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
         paywall_names: %w[generate_image export_csv],
         limits: { press_kits: 4 },
         plan_card: {
+          subtitle: "  For people who ship  ",
           hide: [ "meter:api_calls" ],
           order: "limit:press_kits\nmeter:ai_tokens\npaywall:generate_image\nextra:priority",
           extras: {
@@ -125,6 +128,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_equal %w[export_csv generate_image], product.paywalls.order(:name).pluck(:name)
     assert_equal 4, product.limit_quantity("press_kits")
     card = product.plan_card_settings
+    assert_equal "For people who ship", product.card_subtitle
     assert_equal [ "meter:api_calls" ], card["hide"]
     assert_equal %w[limit:press_kits meter:ai_tokens paywall:generate_image extra:priority], card["order"]
     assert_equal "Someone picks up the phone", card["extras"].first["text"]
@@ -164,6 +168,8 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     get RecordingStudioStripe.configuration.mount_path + "/admin/products/#{starter.id}/edit"
 
     assert_response :success
+    assert_select "input[name='plan_card[subtitle]'][value='For a quiet start']"
+    assert_includes response.body, "Shows under the name on the pricing card."
     assert_includes response.body, "Edit Starter"
     assert_includes response.body, "What this plan includes, and what the pricing card says."
     assert_includes response.body, "This plan"
@@ -186,6 +192,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
       paywall_names: %w[export_csv],
       limits: { press_kits: 5 },
       plan_card: {
+        subtitle: "",
         hide: [ "meter:api_calls" ],
         extras: {
           "0" => { text: "A human answers when you ring", icon: "phone" }
@@ -196,6 +203,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_equal %w[export_csv], starter.reload.paywalls.order(:name).pluck(:name)
     assert_equal 5, starter.limit_quantity("press_kits")
+    assert_nil starter.card_subtitle
     assert_equal [ "meter:api_calls" ], starter.plan_card_settings["hide"]
     assert_equal "A human answers when you ring", starter.plan_card_settings["extras"].first["text"]
     assert_equal "a_human_answers_when_you_ring", starter.plan_card_settings["extras"].first["key"]
