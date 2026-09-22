@@ -12,13 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Plan card prices sit above the button, at the page-title h2 size, with `/mo` or `/yr`, and a little space above the badge and below the amount
-- A trial card strikes the plan price, shows the trial amount, and adds a duration badge such as 14 day trial or 1 month trial
+- A trial card strikes the plan price with its interval (`$29/mo`), shows the trial amount followed by the word trial (`$1 trial`), and adds a duration badge such as 14 day trial or 1 month trial
 - That card's button says Try now. Upgrade, Downgrade, and Current plan stay when the workspace is already on a plan in that group
 
 ### Upgrade notes
 - No extra migrations
 - Hosts that replaced `PlanCardComponent` should move the price into the footer, above the button
-- Hosts that replaced `PlanCardComponent` should strike the plan amount and show `product.trial.amount_label` plus a `product.trial.duration_label` badge when a trial is offered and that group has no live plan
+- Hosts that replaced `PlanCardComponent` should strike the plan amount with `/mo` or `/yr`, show `product.trial.amount_label` followed by the word trial, and add a `product.trial.duration_label` badge when a trial is offered and that group has no live plan
 - The trial button is Try now. `Trial#checkout_label` returns that. Plan changes still say Upgrade or Downgrade
 - Hosts that replaced `PlanCardComponent` can pass `product.card_subtitle` as the title subtitle. A missing Price still uses that slot for "No month Price yet" or "No year Price yet"
 

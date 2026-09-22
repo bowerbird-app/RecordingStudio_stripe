@@ -37,28 +37,44 @@ module RecordingStudioStripe
     end
 
     def standard_line
-      @view.safe_join([amount(@price.formatted_amount), unit])
+      price_with_unit(@price.formatted_amount)
     end
 
     def offer_line
       @view.safe_join([
-                        amount(@price.formatted_amount, struck: true),
-                        amount(@trial.amount_label),
-                        unit
+                        price_with_unit(@price.formatted_amount, struck: true),
+                        trial_amount
                       ])
     end
 
-    def amount(text, struck: false)
-      @view.content_tag(
-        struck ? :s : :span,
-        text,
-        class: ("text-[var(--surface-muted-content-color)]" if struck),
-        style: PRICE_SIZE
-      )
+    def price_with_unit(text, struck: false)
+      @view.content_tag(struck ? :s : :span, class: price_group_class(struck)) do
+        @view.safe_join([amount(text), unit])
+      end
+    end
+
+    def price_group_class(struck)
+      classes = ["inline-flex items-baseline"]
+      classes << "text-[var(--surface-muted-content-color)]" if struck
+      classes.join(" ")
+    end
+
+    def trial_amount
+      @view.content_tag(:span, class: "inline-flex items-baseline") do
+        @view.safe_join([amount(@trial.amount_label), trial_word])
+      end
+    end
+
+    def amount(text)
+      @view.content_tag(:span, text, style: PRICE_SIZE)
     end
 
     def unit
       @view.content_tag(:span, "/#{interval_abbrev}", style: UNIT_SIZE)
+    end
+
+    def trial_word
+      @view.content_tag(:span, " trial", style: UNIT_SIZE)
     end
 
     def interval_abbrev
