@@ -12,10 +12,9 @@ module RecordingStudioStripe
     end
 
     def call
-      cta = action
       render FlatPack::Card::Component.new(style: current? ? :elevated : :outlined, class: "h-full") do |card|
         card.body { helpers.stripe_card_stack(title, inclusions) }
-        card.footer(divider: false) { cta } if cta
+        card.footer(divider: false) { footer } if price
       end
     end
 
@@ -28,16 +27,30 @@ module RecordingStudioStripe
     def title
       render FlatPack::PageTitle::Component.new(
         title: @product.name,
-        subtitle: price_subtitle,
+        subtitle: title_subtitle,
         variant: :h3,
         class: "mb-0 pb-0"
       )
     end
 
-    def price_subtitle
+    def title_subtitle
       return "No #{stripe_interval_label(@interval)} Price yet" unless price
 
-      "#{price.formatted_amount}/#{stripe_interval_label(price.interval)}"
+      @product.card_subtitle
+    end
+
+    def footer
+      helpers.tag.div(class: "flex w-full flex-col gap-3") do
+        safe_join([rendered_price, action].compact)
+      end
+    end
+
+    def rendered_price
+      PlanCardPrice.render(view: helpers, price: price, trial: @product.trial, offer: trial_offer?)
+    end
+
+    def trial_offer?
+      @product.trial.offered? && !current? && !@subscription&.active?
     end
 
     def inclusions
@@ -94,8 +107,7 @@ module RecordingStudioStripe
     end
 
     def checkout_label
-      trial = @product.trial
-      trial.offered? ? trial.checkout_label : "Choose plan"
+      trial_offer? ? "Try now" : "Choose plan"
     end
 
     def change_button

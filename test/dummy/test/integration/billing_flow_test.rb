@@ -32,11 +32,16 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Team"
     assert_includes response.body, "Inbox Plus"
     assert_includes response.body, "Inbox Pro"
-    assert_includes response.body, "$29/month"
-    assert_includes response.body, "$9/month"
-    assert_includes response.body, "$79/month"
-    assert_includes response.body, "$25/month"
-    assert_includes response.body, "$90/month"
+    assert_select "[data-plan-group='studio'] p", text: "$9/mo"
+    assert_select "[data-plan-group='studio'] p", text: "$29/mo$1trial"
+    assert_select "[data-plan-group='studio'] p", text: "$79/mo"
+    assert_select "[data-plan-group='inbox'] p", text: "$25/mo"
+    assert_select "[data-plan-group='inbox'] p", text: "$90/mo"
+    assert_select "[data-plan-group='studio'] p", text: "For a quiet start"
+    assert_includes response.body, "py-[var(--card-padding-md)]"
+    assert_select "[data-plan-group='studio'] p", text: "For the usual week"
+    assert_select "[data-plan-group='studio'] p", text: "For the whole crew"
+    assert_select "[data-plan-group='inbox'] p", text: "For what people send"
     assert_select "[data-plan-group='studio'] h3", count: 3
     assert_select "[data-plan-group='inbox'] h3", count: 3
     assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
@@ -71,6 +76,18 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "Add included usage on the Price"
   end
 
+  test "a missing Price takes the subtitle spot" do
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter")
+    starter.monthly_price.update!(active: false)
+
+    get "/plans"
+
+    assert_response :success
+    assert_includes response.body, "No month Price yet"
+    refute_includes response.body, "For a quiet start"
+    assert_includes response.body, "For the usual week"
+  end
+
   test "public pricing page centers the plan cards" do
     sign_out @user
     get "/pricing"
@@ -85,7 +102,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Team"
     assert_includes response.body, "Inbox Plus"
     assert_includes response.body, "Inbox Pro"
-    assert_includes response.body, "$29/month"
+    assert_select "[data-plan-group='studio'] p", text: "$29/mo$1trial"
+    assert_select "[data-plan-group='studio'] p", text: "For the usual week"
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='center']", count: 1
     assert_select "[data-plans-heading].text-center", count: 1
@@ -170,9 +188,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     get "/pricing", params: { interval: "year" }
 
     assert_response :success
-    assert_includes response.body, "$290/year"
-    assert_includes response.body, "$90/year"
-    assert_includes response.body, "$790/year"
+    assert_select "[data-plan-group='studio'] p", text: "$90/yr"
+    assert_select "[data-plan-group='studio'] p", text: "$290/yr$1trial"
+    assert_select "[data-plan-group='studio'] p", text: "$790/yr"
     assert_select "[data-plans-align='center']", count: 1
     assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
   end
@@ -185,11 +203,11 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Starter"
     assert_includes response.body, "Inbox Plus"
     assert_includes response.body, "Team"
-    assert_includes response.body, "$290/year"
-    assert_includes response.body, "$90/year"
-    assert_includes response.body, "$790/year"
-    assert_includes response.body, "$250/year"
-    assert_includes response.body, "$900/year"
+    assert_select "[data-plan-group='studio'] p", text: "$90/yr"
+    assert_select "[data-plan-group='studio'] p", text: "$290/yr$1trial"
+    assert_select "[data-plan-group='studio'] p", text: "$790/yr"
+    assert_select "[data-plan-group='inbox'] p", text: "$250/yr"
+    assert_select "[data-plan-group='inbox'] p", text: "$900/yr"
     assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
   end
 
@@ -204,10 +222,10 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "[data-plan-group='inbox'] a", text: "Yearly"
     assert_select "[aria-label='Studio yearly']"
     assert_select "[aria-label='Inbox monthly']"
-    assert_includes response.body, "$290/year"
-    assert_includes response.body, "$90/year"
-    assert_includes response.body, "$25/month"
-    assert_includes response.body, "$50/month"
+    assert_select "[data-plan-group='studio'] p", text: "$90/yr"
+    assert_select "[data-plan-group='studio'] p", text: "$290/yr$1trial"
+    assert_select "[data-plan-group='inbox'] p", text: "$25/mo"
+    assert_select "[data-plan-group='inbox'] p", text: "$50/mo"
     refute_includes response.body, "$250/year"
     refute_includes response.body, "$500/year"
   end
@@ -711,6 +729,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
       paywall_names: product.paywalls.map(&:name),
       limits: { "press_kits" => 3 },
       plan_card: {
+        "subtitle" => "For a quiet start",
         "hide" => [ "meter:api_calls" ],
         "extras" => [ { "key" => "priority", "text" => "Someone picks up the phone", "icon" => "phone" } ]
       }
@@ -719,6 +738,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     stored = client.v1.products.retrieve(product.stripe_id)
     refute stored.metadata.key?("plan_card")
     card = product.reload.plan_card_settings
+    assert_equal "For a quiet start", card["subtitle"]
     assert_equal [ "meter:api_calls" ], card["hide"]
     assert_equal "Someone picks up the phone", card["extras"].first["text"]
 
@@ -731,6 +751,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     )
     RecordingStudioStripe::UpsertProduct.call(stripe_product)
     card = product.reload.plan_card_settings
+    assert_equal "For a quiet start", card["subtitle"]
     assert_equal [ "meter:api_calls" ], card["hide"]
     assert_equal "Someone picks up the phone", card["extras"].first["text"]
   ensure

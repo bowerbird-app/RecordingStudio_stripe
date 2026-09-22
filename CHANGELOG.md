@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.6] - 2026-09-21
+
+### Added
+- Optional subtitle under the plan name on a pricing card. Staff set it next to the name. It stays in local `plan_card` metadata. `Product#card_subtitle` reads it
+
+### Changed
+- Plan card prices sit above the button, at the page-title h2 size, with `/mo` or `/yr`, and a little space above the badge and below the amount
+- A trial card strikes the plan price with its interval (`$29/mo`), shows the trial amount, a space, then the word trial (`$1 trial`), and adds a duration badge such as 14 day trial or 1 month trial
+- That card's button says Try now. Upgrade, Downgrade, and Current plan stay when the workspace is already on a plan in that group
+
+### Upgrade notes
+- No extra migrations
+- Hosts that replaced `PlanCardComponent` should move the price into the footer, above the button
+- Hosts that replaced `PlanCardComponent` should strike the plan amount with `/mo` or `/yr`, show `product.trial.amount_label` followed by the word trial, and add a `product.trial.duration_label` badge when a trial is offered and that group has no live plan
+- The trial button is Try now. `Trial#checkout_label` returns that. Plan changes still say Upgrade or Downgrade
+- Hosts that replaced `PlanCardComponent` can pass `product.card_subtitle` as the title subtitle. A missing Price still uses that slot for "No month Price yet" or "No year Price yet"
+
 ## [0.8.5] - 2026-09-18
 
 ### Added
@@ -307,6 +324,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
+[0.8.6]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.5...v0.8.6
 [0.8.5]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.2...v0.8.3

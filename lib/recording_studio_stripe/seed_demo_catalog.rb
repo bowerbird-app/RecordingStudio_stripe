@@ -33,12 +33,15 @@ module RecordingStudioStripe
         team.assign_limits("press_kits" => 25)
         team.save!
       end
-      team.assign_plan_card(
-        "extras" => [
+      assign_card(starter, "For a quiet start")
+      assign_card(pro, "For the usual week")
+      assign_card(
+        team,
+        "For the whole crew",
+        extras: [
           { "key" => "priority", "text" => "Someone picks up the phone", "icon" => "phone" }
         ]
       )
-      team.save!
     end
 
     def seed_prices(starter, pro, team, tokens)
@@ -59,12 +62,22 @@ module RecordingStudioStripe
       inbox_pro = upsert_product("Inbox Pro", "plan", "The inbox that can take it.", "inbox")
       inbox_plus.assign_paywalls(%w[export_csv])
       inbox_pro.assign_paywalls(%w[export_csv])
+      assign_card(inbox, "For what people send")
+      assign_card(inbox_plus, "For a busier inbox")
+      assign_card(inbox_pro, "For the full inbox")
       upsert_price(inbox, 2500, "month", { "included_api_calls" => "5000" })
       upsert_price(inbox, 25_000, "year", { "included_api_calls" => "5000" })
       upsert_price(inbox_plus, 5000, "month", { "included_api_calls" => "50000" })
       upsert_price(inbox_plus, 50_000, "year", { "included_api_calls" => "50000" })
       upsert_price(inbox_pro, 9000, "month", { "included_api_calls" => "200000" })
       upsert_price(inbox_pro, 90_000, "year", { "included_api_calls" => "200000" })
+    end
+
+    def assign_card(product, subtitle, extras: nil)
+      settings = { "subtitle" => subtitle }
+      settings["extras"] = extras if extras
+      product.assign_plan_card(settings)
+      product.save!
     end
 
     def typed?(key)

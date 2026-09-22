@@ -11,6 +11,15 @@
     <%= render FlatPack::SectionTitle::Component.new(title: "This plan", class: "my-0") %>
     <div class="flex flex-col gap-4">
       <%= render FlatPack::TextInput::Component.new(name: "name", label: "Name", required: true, value: @product.name) %>
+      <% if @product.plan? %>
+        <%= render FlatPack::TextInput::Component.new(
+          name: "plan_card[subtitle]",
+          label: "Subtitle",
+          value: @product.card_subtitle,
+          placeholder: "For small teams",
+          help_text: "Shows under the name on the pricing card."
+        ) %>
+      <% end %>
       <% if RecordingStudioStripe::SubscriptionTypes.configured? && @product.plan? %>
         <%= render FlatPack::Select::Component.new(
           name: "subscription_type",

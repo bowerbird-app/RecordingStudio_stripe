@@ -63,6 +63,10 @@ module RecordingStudioStripe
       raw.stringify_keys
     end
 
+    def card_subtitle
+      plan_card_settings["subtitle"].presence
+    end
+
     def assign_plan_card(settings)
       return if allowance?
       return if settings.nil?

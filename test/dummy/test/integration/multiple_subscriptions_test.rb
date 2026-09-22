@@ -30,9 +30,9 @@ class MultipleSubscriptionsTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Inbox Plus"
     assert_includes response.body, "Inbox Pro"
     assert_includes response.body, "Team"
-    assert_includes response.body, "$25/month"
-    assert_includes response.body, "$50/month"
-    assert_includes response.body, "$90/month"
+    assert_select "[data-plan-group='inbox'] p", text: "$25/mo"
+    assert_select "[data-plan-group='inbox'] p", text: "$50/mo"
+    assert_select "[data-plan-group='inbox'] p", text: "$90/mo"
     assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
     assert_select "[data-plan-group='studio'] a", text: "Monthly"
     assert_select "[data-plan-group='inbox'] a", text: "Monthly"

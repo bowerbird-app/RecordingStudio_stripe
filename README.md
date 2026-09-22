@@ -144,14 +144,16 @@ tokens = account.billing.line(:studio).meter(:ai_tokens)
 tokens.spend(1) if tokens.available?(1)
 ```
 
-Omit `subscription_type` and the gem uses a matching plan group name if one exists, otherwise the first group. Do not give a limit the same name as a plan group unless they are meant to share it. Dummy Starter includes 3 press kits, Pro includes 10, and Team includes 25. Plan cards list those caps, included usage, and ticked paywalls. Hide, reorder, or add a display-only line on the Product with `plan_card` metadata. That hash stays local. Staff edit that on the plan form under Pricing card.
+Omit `subscription_type` and the gem uses a matching plan group name if one exists, otherwise the first group. Do not give a limit the same name as a plan group unless they are meant to share it. Dummy Starter includes 3 press kits, Pro includes 10, and Team includes 25. Plan cards list those caps, included usage, and ticked paywalls. Hide, reorder, or add a display-only line on the Product with `plan_card` metadata. That hash stays local. `subtitle` in that hash sits under the plan name. Staff edit it next to the name. The rest of the card controls sit under Pricing card. `product.card_subtitle` reads the line.
 
 A plan can offer a trial. Set Trial days and Trial amount in cents on the Product in Admin, or call `AssignTrial`:
 
 ```ruby
 RecordingStudioStripe::AssignTrial.call(product: pro, days: 14, unit_amount: 100)
 pro.trial.offered? # true
-pro.trial.checkout_label # "Try for $1"
+pro.trial.checkout_label # "Try now"
+pro.trial.duration_label # "14 day trial"
+pro.trial.amount_label # "$1"
 ```
 
 Checkout starts the real plan Price with Stripe `trial_period_days`. A one-time fee Price on the same Product (`kind=trial_fee`) is the charge now. 0 cents is a free trial on that same path. `Product#monthly_price` stays the paid monthly Price. Empty days clears the trial and deactivates fee Prices. A workspace that already has a live plan in that group still upgrades or downgrades. Dummy Pro is $1 for 14 days.

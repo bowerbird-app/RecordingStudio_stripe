@@ -29,9 +29,20 @@ module RecordingStudioStripe
     end
 
     def checkout_label
-      return "Start trial" unless offered? && unit_amount.positive?
+      offered? ? "Try now" : "Choose plan"
+    end
 
-      "Try for #{formatted_amount}"
+    def duration_label
+      return unless offered?
+
+      months, extra_days = days.divmod(30)
+      return "#{months} month trial" if extra_days.zero?
+
+      "#{days} day trial"
+    end
+
+    def amount_label
+      formatted_amount
     end
 
     def apply_to_checkout(params, plan_price:)
