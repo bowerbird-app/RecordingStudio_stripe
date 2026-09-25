@@ -2,6 +2,7 @@
 
 module RecordingStudioStripe
   class PlanCardPrice
+    ABBREV = { "year" => "yr", "week" => "wk" }.freeze
     PRICE_SIZE = "font-size: var(--page-title-h2-size); line-height: 1;"
     UNIT_SIZE = "font-size: var(--text-lg); line-height: 1;"
 
@@ -78,7 +79,7 @@ module RecordingStudioStripe
     end
 
     def interval_abbrev
-      @price.interval == "year" ? "yr" : "mo"
+      ABBREV.fetch(@price.interval, "mo")
     end
   end
 end

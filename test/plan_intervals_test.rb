@@ -55,6 +55,33 @@ class PlanIntervalsTest < Minitest::Test
     assert_equal({}, intervals.query("studio", "month"))
   end
 
+  def test_week_is_an_interval_and_day_falls_back_to_month
+    assert_equal "week", RecordingStudioStripe::PlanIntervals.from({ interval: "week" }).for("studio")
+    assert_equal "month", RecordingStudioStripe::PlanIntervals.from({ interval: "day" }).for("studio")
+  end
+
+  def test_hrefs_include_a_weekly_link
+    RecordingStudioStripe.configuration.subscription_types = {}
+    hrefs = RecordingStudioStripe::PlanIntervals.from({ interval: "month" }).hrefs_for("plan") { |query| query }
+
+    assert_equal "month", hrefs[:interval]
+    assert_equal({ interval: "week" }, hrefs[:weekly_href])
+    assert_equal({ interval: "month" }, hrefs[:monthly_href])
+    assert_equal({ interval: "year" }, hrefs[:yearly_href])
+  end
+
+  def test_nested_week_query_keeps_the_other_group_monthly
+    RecordingStudioStripe.configuration.subscription_types = {
+      "studio" => { "label" => "Studio" },
+      "inbox" => { "label" => "Inbox" }
+    }
+    intervals = RecordingStudioStripe::PlanIntervals.from({ interval: { "inbox" => "year" } })
+
+    assert_equal({ interval: { "studio" => "week", "inbox" => "year" } }, intervals.query("studio", "week"))
+    assert_equal "month", intervals.for("studio")
+    assert_equal "year", intervals.for("inbox")
+  end
+
   def test_single_type_stays_a_plain_interval_param
     RecordingStudioStripe.configuration.subscription_types = {}
     intervals = RecordingStudioStripe::PlanIntervals.from({ interval: "month" })

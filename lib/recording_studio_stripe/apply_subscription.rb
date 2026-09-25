@@ -151,6 +151,8 @@ module RecordingStudioStripe
     def default_period_end(period_start)
       if @price&.annual?
         period_start + 1.year
+      elsif @price&.weekly?
+        period_start + 1.week
       else
         period_start + 1.month
       end

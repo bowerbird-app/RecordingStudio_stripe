@@ -26,8 +26,7 @@ module RecordingStudioStripe
     end
 
     def self.plan_amount(product, interval)
-      price = interval.to_s == "year" ? product.annual_price : product.monthly_price
-      price&.unit_amount || Float::INFINITY
+      product.price_for(interval)&.unit_amount || Float::INFINITY
     end
     private_class_method :plan_amount
   end

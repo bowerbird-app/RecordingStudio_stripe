@@ -6,12 +6,13 @@ module RecordingStudioStripe
 
     ALIGNS = %i[left center].freeze
 
-    def initialize(interval: "month", monthly_href: nil, yearly_href: nil, products: [], subscription: nil,
-                   groups: nil, align: :center, title: "Pricing",
+    def initialize(interval: "month", weekly_href: nil, monthly_href: nil, yearly_href: nil, products: [],
+                   subscription: nil, groups: nil, align: :center, title: "Pricing",
                    subtitle: "Monthly or yearly. You can switch later.")
       super()
       @interval = interval
       @align = align.to_sym
+      @weekly_href = weekly_href
       @monthly_href = monthly_href
       @yearly_href = yearly_href
       @title = title
@@ -65,20 +66,18 @@ module RecordingStudioStripe
       subscription = group_value(group, :subscription)
       label = group_value(group, :label)
       key = group_value(group, :key)
-      monthly_href = group_value(group, :monthly_href).presence || @monthly_href
-      yearly_href = group_value(group, :yearly_href).presence || @yearly_href
       parts = []
-      parts << group_heading(label, interval, monthly_href, yearly_href)
+      parts << group_heading(label, interval, products, interval_hrefs(group))
       parts << cards_row(products, subscription, interval)
       attrs = { class: "flex w-full flex-col gap-4" }
       attrs[:data] = { plan_group: key } if key.present?
       helpers.tag.div(helpers.safe_join(parts.compact), **attrs)
     end
 
-    def group_heading(label, interval, monthly_href, yearly_href)
+    def group_heading(label, interval, products, hrefs)
       return unless show_group_headings?
 
-      pills = interval_pills(interval, monthly_href, yearly_href, label)
+      pills = interval_pills(interval, products, hrefs, label)
       title = (section_title(label) if label.present?)
       return if title.blank? && pills.blank?
 
@@ -97,8 +96,8 @@ module RecordingStudioStripe
 
       interval_pills(
         group_value(group, :interval).presence || @interval,
-        group_value(group, :monthly_href).presence || @monthly_href,
-        group_value(group, :yearly_href).presence || @yearly_href,
+        group_value(group, :products),
+        interval_hrefs(group),
         nil
       )
     end
@@ -115,25 +114,27 @@ module RecordingStudioStripe
       aligned_class("flex w-full flex-col items-center gap-3", "flex w-full flex-col items-start gap-3")
     end
 
-    def interval_pills(interval, monthly_href, yearly_href, label)
-      return if monthly_href.blank? || yearly_href.blank?
+    def interval_hrefs(group)
+      {
+        weekly: group_value(group, :weekly_href).presence || @weekly_href,
+        monthly: group_value(group, :monthly_href).presence || @monthly_href,
+        yearly: group_value(group, :yearly_href).presence || @yearly_href
+      }
+    end
+
+    def interval_pills(interval, products, hrefs, label)
+      return if hrefs[:monthly].blank? || hrefs[:yearly].blank?
 
       render FlatPack::Button::Pill::Component.new(
-        items: pill_items(interval, monthly_href, yearly_href, label)
+        items: PlanIntervalPills.items(
+          interval: interval,
+          products: products,
+          weekly_href: hrefs[:weekly],
+          monthly_href: hrefs[:monthly],
+          yearly_href: hrefs[:yearly],
+          label: label
+        )
       )
-    end
-
-    def pill_items(interval, monthly_href, yearly_href, label)
-      [
-        pill_item("Monthly", monthly_href, interval == "month", label, "monthly"),
-        pill_item("Yearly", yearly_href, interval == "year", label, "yearly")
-      ]
-    end
-
-    def pill_item(text, href, active, label, cadence)
-      item = { text: text, href: href, active: active }
-      item[:aria] = { label: "#{label} #{cadence}" } if label.present?
-      item
     end
 
     def section_title(label)

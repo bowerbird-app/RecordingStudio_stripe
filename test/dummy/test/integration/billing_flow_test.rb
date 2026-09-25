@@ -58,6 +58,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "photo"
     assert_includes response.body, "Monthly"
     assert_includes response.body, "Yearly"
+    assert_select "a", text: "Weekly", count: 0
     assert_includes response.body, "[border-radius:var(--tabs-pill-corner-radius)]"
     refute_includes response.body, "[&>*]:border-r-0"
     refute_includes response.body, "border-b border-[var(--card-border-color)]"
@@ -176,6 +177,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes html, "Pricing"
     assert_includes html, "Monthly"
     assert_includes html, "Yearly"
+    refute_includes html, ">Weekly<"
     refute_includes html, "data-plan-group-heading"
     refute_includes html, ">Studio<"
     refute_includes html, ">Inbox<"

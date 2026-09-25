@@ -2,7 +2,7 @@
 
 module RecordingStudioStripe
   class PlanIntervals
-    INTERVALS = %w[month year].freeze
+    INTERVALS = %w[week month year].freeze
     DEFAULT = "month"
 
     def self.from(params)
@@ -35,6 +35,7 @@ module RecordingStudioStripe
     def hrefs_for(key)
       {
         interval: self.for(key),
+        weekly_href: yield(query(key, "week")),
         monthly_href: yield(query(key, "month")),
         yearly_href: yield(query(key, "year"))
       }

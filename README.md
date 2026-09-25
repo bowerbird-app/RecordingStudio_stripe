@@ -81,7 +81,7 @@ Render the same plan cards on a host screen. Pass `groups:` from `Catalog.plan_g
 ) %>
 ```
 
-A single-type host can still pass `products:`, `subscription:`, and one pair of monthly/yearly hrefs. `align: :center` is the default and centers the title, subtitle, and monthly/yearly pills. Pass `align: :left` if the host screen needs that. Copy inside each card stays left either way. Group titles such as Studio and Inbox only render when more than one type has Products.
+A single-type host can still pass `products:`, `subscription:`, `weekly_href`, `monthly_href`, and `yearly_href`. `hrefs_for` already includes `weekly_href`. The Weekly pill shows only when that group has a weekly Price. `align: :center` is the default and centers the title, subtitle, and interval pills. Pass `align: :left` if the host screen needs that. Copy inside each card stays left either way. Group titles such as Studio and Inbox only render when more than one type has Products. Week is `/wk` on the card. `?interval=week` and `?interval[studio]=week` select it. Default view stays monthly.
 
 Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave them blank in dummy to click through locally.
 

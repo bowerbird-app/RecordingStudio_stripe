@@ -14,9 +14,14 @@ class PlanChangeTest < Minitest::Test
       interval == "year"
     end
 
+    def weekly?
+      interval == "week"
+    end
+
     def monthly_unit_amount
       return unit_amount if monthly? || interval.blank?
       return (unit_amount.to_f / 12).round if annual?
+      return (unit_amount.to_f * 52 / 12).round if weekly?
 
       unit_amount
     end
@@ -59,6 +64,28 @@ class PlanChangeTest < Minitest::Test
     assert change.upgrade?
     assert_equal "Switch Pro to yearly?", change.title
     assert_equal "$290/year, up from $29/month. You pay the difference today.", change.subtitle
+  end
+
+  def test_same_product_week_switch_names_weekly
+    product = ProductStub.new(name: "Pro", id: "pro")
+    weekly = PriceStub.new(id: "w", product: product, product_id: "pro", interval: "week", unit_amount: 900,
+                           metadata: {}, formatted_amount: "$9")
+    monthly = PriceStub.new(id: "m", product: product, product_id: "pro", interval: "month", unit_amount: 2900,
+                            metadata: {}, formatted_amount: "$29")
+    subscription = SubscriptionStub.new(price: weekly, current_period_end: nil)
+    change = RecordingStudioStripe::PlanChange.new(subscription: subscription, price: monthly)
+
+    assert change.upgrade?
+    assert_equal "Switch Pro to monthly?", change.title
+    assert_equal "$29/month, up from $9/week. You pay the difference today.", change.subtitle
+
+    back = RecordingStudioStripe::PlanChange.new(
+      subscription: SubscriptionStub.new(price: monthly, current_period_end: nil),
+      price: weekly
+    )
+    assert back.downgrade?
+    assert_equal "Switch Pro to weekly?", back.title
+    assert_equal "$9/week, down from $29/month. Starts at the next renewal.", back.subtitle
   end
 
   def self.change(from_amount:, to_amount:, from_name:, to_name:, period_end: nil)

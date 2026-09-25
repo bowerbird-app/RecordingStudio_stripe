@@ -14,7 +14,7 @@
     <%= render FlatPack::Select::Component.new(
       name: "interval",
       label: "Interval",
-      options: [["One-time", ""], ["Month", "month"], ["Year", "year"]],
+      options: [["One-time", ""], ["Week", "week"], ["Month", "month"], ["Year", "year"]],
       value: @product&.plan? ? "month" : ""
     ) %>
     <% if @product&.plan? %>

@@ -2,6 +2,8 @@
 
 module RecordingStudioStripe
   class ComparePrices
+    INTERVAL_ORDER = %w[week month year].freeze
+
     def self.upgrade?(from:, to:)
       new(from: from, to: to).upgrade?
     end
@@ -31,11 +33,19 @@ module RecordingStudioStripe
     end
 
     def interval_upgrade?
-      @from.monthly? && @to.annual?
+      interval_delta.positive?
     end
 
     def interval_downgrade?
-      @from.annual? && @to.monthly?
+      interval_delta.negative?
+    end
+
+    def interval_delta
+      to_index = INTERVAL_ORDER.index(@to.interval.to_s)
+      from_index = INTERVAL_ORDER.index(@from.interval.to_s)
+      return 0 unless to_index && from_index
+
+      to_index - from_index
     end
 
     def from_rank
