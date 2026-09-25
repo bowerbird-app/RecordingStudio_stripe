@@ -55,6 +55,21 @@ class PlanIntervalsTest < Minitest::Test
     assert_equal({}, intervals.query("studio", "month"))
   end
 
+  def test_offered_intervals_follow_prices_and_a_host_limit
+    product = Struct.new(:priced) do
+      def price_for(interval)
+        priced[interval.to_s]
+      end
+    end.new({ "month" => :month, "year" => :year })
+
+    assert_equal %w[month year], RecordingStudioStripe::PlanIntervals.offered([product])
+    assert_equal %w[month year], RecordingStudioStripe::PlanIntervals.offered([product], intervals: [])
+    assert_equal %w[month], RecordingStudioStripe::PlanIntervals.offered([product], intervals: %w[month week])
+    assert_equal "year", RecordingStudioStripe::PlanIntervals.choose([product], "week", intervals: %w[year])
+    assert_equal "month", RecordingStudioStripe::PlanIntervals.choose([product], "week")
+    assert_equal "week", RecordingStudioStripe::PlanIntervals.choose([product], "month", intervals: %w[week])
+  end
+
   def test_week_is_an_interval_and_day_falls_back_to_month
     assert_equal "week", RecordingStudioStripe::PlanIntervals.from({ interval: "week" }).for("studio")
     assert_equal "month", RecordingStudioStripe::PlanIntervals.from({ interval: "day" }).for("studio")

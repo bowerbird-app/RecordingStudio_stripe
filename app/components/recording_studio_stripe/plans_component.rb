@@ -3,15 +3,19 @@
 module RecordingStudioStripe
   class PlansComponent < ViewComponent::Base
     include RecordingStudioStripe::ApplicationHelper
+    include RecordingStudioStripe::PlanCardDisplay
+
+    private(*RecordingStudioStripe::PlanCardDisplay.instance_methods(false))
 
     ALIGNS = %i[left center].freeze
 
-    def initialize(interval: "month", weekly_href: nil, monthly_href: nil, yearly_href: nil, products: [],
-                   subscription: nil, groups: nil, align: :center, title: "Pricing",
+    def initialize(interval: "month", weekly_href: nil, monthly_href: nil, yearly_href: nil, intervals: nil,
+                   products: [], subscription: nil, groups: nil, align: :center, title: "Pricing",
                    subtitle: "Monthly or yearly. You can switch later.")
       super()
       @interval = interval
       @align = align.to_sym
+      @intervals = intervals
       @weekly_href = weekly_href
       @monthly_href = monthly_href
       @yearly_href = yearly_href
@@ -59,25 +63,28 @@ module RecordingStudioStripe
     end
 
     def group_block(group)
-      interval = group_value(group, :interval).presence || @interval
-      products = Catalog.sorted_plans(group_value(group, :products), interval: interval)
+      raw = Array(group_value(group, :products))
+      return if raw.empty?
+
+      interval = display_interval(group, raw)
+      products = Catalog.sorted_plans(priced_for(raw, interval), interval: interval)
       return if products.empty?
 
       subscription = group_value(group, :subscription)
       label = group_value(group, :label)
       key = group_value(group, :key)
       parts = []
-      parts << group_heading(label, interval, products, interval_hrefs(group))
+      parts << group_heading(label, interval, raw, interval_hrefs(group), interval_limit(group))
       parts << cards_row(products, subscription, interval)
       attrs = { class: "flex w-full flex-col gap-4" }
       attrs[:data] = { plan_group: key } if key.present?
       helpers.tag.div(helpers.safe_join(parts.compact), **attrs)
     end
 
-    def group_heading(label, interval, products, hrefs)
+    def group_heading(label, interval, products, hrefs, intervals)
       return unless show_group_headings?
 
-      pills = interval_pills(interval, products, hrefs, label)
+      pills = interval_pills(interval, products, hrefs, label, intervals)
       title = (section_title(label) if label.present?)
       return if title.blank? && pills.blank?
 
@@ -94,11 +101,13 @@ module RecordingStudioStripe
       group = populated_groups.first
       return unless group
 
+      raw = Array(group_value(group, :products))
       interval_pills(
-        group_value(group, :interval).presence || @interval,
-        group_value(group, :products),
+        display_interval(group, raw),
+        raw,
         interval_hrefs(group),
-        nil
+        nil,
+        interval_limit(group)
       )
     end
 
@@ -112,29 +121,6 @@ module RecordingStudioStripe
 
     def heading_stack_class
       aligned_class("flex w-full flex-col items-center gap-3", "flex w-full flex-col items-start gap-3")
-    end
-
-    def interval_hrefs(group)
-      {
-        weekly: group_value(group, :weekly_href).presence || @weekly_href,
-        monthly: group_value(group, :monthly_href).presence || @monthly_href,
-        yearly: group_value(group, :yearly_href).presence || @yearly_href
-      }
-    end
-
-    def interval_pills(interval, products, hrefs, label)
-      return if hrefs[:monthly].blank? || hrefs[:yearly].blank?
-
-      render FlatPack::Button::Pill::Component.new(
-        items: PlanIntervalPills.items(
-          interval: interval,
-          products: products,
-          weekly_href: hrefs[:weekly],
-          monthly_href: hrefs[:monthly],
-          yearly_href: hrefs[:yearly],
-          label: label
-        )
-      )
     end
 
     def section_title(label)
@@ -161,7 +147,7 @@ module RecordingStudioStripe
     end
 
     def empty_state
-      return if populated_groups.any?
+      return if @groups.any? { |group| group_has_cards?(group) }
 
       helpers.tag.div(class: "w-full") do
         render FlatPack::EmptyState::Component.new(

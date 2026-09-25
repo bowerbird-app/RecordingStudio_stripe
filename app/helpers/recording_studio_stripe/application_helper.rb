@@ -12,6 +12,10 @@ module RecordingStudioStripe
       INTERVAL_LABELS.fetch(interval.to_s, "month")
     end
 
+    def stripe_plan_intervals(products, intervals: nil)
+      PlanIntervals.offered(products, intervals: intervals)
+    end
+
     def stripe_plan_feature_lines(product, price)
       PlanFeatures.for(product, price)
     end

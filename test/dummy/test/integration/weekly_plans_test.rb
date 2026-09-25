@@ -38,18 +38,74 @@ class WeeklyPlansTest < ActionDispatch::IntegrationTest
     assert_select "[aria-label='Inbox weekly']", count: 0
   end
 
-  test "weekly cards use /wk and name a missing week Price" do
+  test "weekly cards show only Products that have a weekly Price" do
     get "/plans", params: { interval: { studio: "week" } }
 
     assert_response :success
     assert_select "[data-plan-group='studio'] p", text: "$7/wk"
-    assert_select "[data-plan-group='studio'] p", text: "No week Price yet"
     assert_select "[aria-label='Studio weekly']"
     assert_select "[data-plan-group='inbox'] p", text: "$25/mo"
     assert_select "[data-plan-group='inbox'] a", text: "Weekly", count: 0
-    assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
+    assert_equal ["Starter"], css_select("[data-plan-group='studio'] h3").map(&:text)
+    refute_includes response.body, "No week Price yet"
     assert_equal @weekly, @starter.price_for("week")
     assert_equal 3033, @weekly.monthly_unit_amount
+  end
+
+  test "stripe_plan_intervals lists priced intervals and honors a limit" do
+    helper = Object.new.extend(RecordingStudioStripe::ApplicationHelper)
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro")
+
+    assert_equal %w[week month year], helper.stripe_plan_intervals([@starter])
+    assert_equal %w[month year], helper.stripe_plan_intervals([pro])
+    assert_equal %w[week], helper.stripe_plan_intervals([@starter, pro], intervals: %w[week])
+  end
+
+  test "a week-only page stays empty when nothing is priced weekly" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro")
+    html = ApplicationController.render(
+      RecordingStudioStripe::PlansComponent.new(
+        products: [pro],
+        weekly_href: "/plans?interval=week",
+        monthly_href: "/plans",
+        yearly_href: "/plans?interval=year",
+        intervals: %w[week]
+      )
+    )
+
+    assert_includes html, "No prices yet"
+    refute_includes html, ">Monthly<"
+    refute_includes html, "$29"
+  end
+
+  test "a priced interval stays hidden when the page limits intervals" do
+    html = ApplicationController.render(
+      RecordingStudioStripe::PlansComponent.new(
+        products: [@starter],
+        weekly_href: "/plans?interval=week",
+        monthly_href: "/plans",
+        yearly_href: "/plans?interval=year",
+        intervals: %w[week]
+      )
+    )
+
+    assert_includes html, ">Weekly<"
+    assert_includes html, "$7"
+    assert_includes html, "/wk"
+    refute_includes html, ">Monthly<"
+    refute_includes html, ">Yearly<"
+  end
+
+  test "yearly hides when no Product has a yearly Price" do
+    RecordingStudioStripe::Price.where(interval: "year").update_all(active: false)
+
+    get "/plans"
+
+    assert_response :success
+    assert_select "a", text: "Yearly", count: 0
+    assert_select "[data-plan-group='studio'] a", text: "Monthly"
+    assert_select "[data-plan-group='studio'] p", text: "$9/mo"
+    assert_select "[data-plan-group='inbox'] p", text: "$25/mo"
   end
 
   test "local checkout on a weekly Price ends one week out" do

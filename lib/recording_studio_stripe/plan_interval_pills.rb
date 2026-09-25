@@ -2,39 +2,43 @@
 
 module RecordingStudioStripe
   class PlanIntervalPills
-    def self.items(interval:, products:, weekly_href:, monthly_href:, yearly_href:, label: nil)
+    ROWS = [
+      %w[week Weekly weekly],
+      %w[month Monthly monthly],
+      %w[year Yearly yearly]
+    ].freeze
+
+    def self.items(interval:, products:, weekly_href:, monthly_href:, yearly_href:, label: nil, intervals: nil)
       new(
         interval: interval,
         products: products,
         weekly_href: weekly_href,
         monthly_href: monthly_href,
         yearly_href: yearly_href,
-        label: label
+        label: label,
+        intervals: intervals
       ).items
     end
 
-    def initialize(interval:, products:, weekly_href:, monthly_href:, yearly_href:, label:)
+    def initialize(interval:, products:, weekly_href:, monthly_href:, yearly_href:, label:, intervals:)
       @interval = interval.to_s
       @products = Array(products)
-      @weekly_href = weekly_href
-      @monthly_href = monthly_href
-      @yearly_href = yearly_href
+      @hrefs = { "week" => weekly_href, "month" => monthly_href, "year" => yearly_href }
       @label = label
+      @intervals = intervals
     end
 
     def items
-      list = []
-      list << item("Weekly", @weekly_href, "weekly") if weekly?
-      list << item("Monthly", @monthly_href, "monthly")
-      list << item("Yearly", @yearly_href, "yearly")
-      list
+      offered = PlanIntervals.offered(@products, intervals: @intervals)
+      ROWS.filter_map do |interval, text, cadence|
+        href = @hrefs[interval]
+        next unless offered.include?(interval) && href.present?
+
+        item(text, href, cadence)
+      end
     end
 
     private
-
-    def weekly?
-      @weekly_href.present? && @products.any? { |product| product.weekly_price.present? }
-    end
 
     def item(text, href, cadence)
       row = { text: text, href: href, active: @interval == cadence_interval(cadence) }

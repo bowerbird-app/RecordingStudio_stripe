@@ -9,6 +9,26 @@ module RecordingStudioStripe
       new(params[:interval])
     end
 
+    def self.offered(products, intervals: nil)
+      allowed = allowed_intervals(intervals)
+      list = Array(products)
+      allowed.select { |interval| list.any? { |product| product.price_for(interval).present? } }
+    end
+
+    def self.choose(products, requested, intervals: nil)
+      available = offered(products, intervals: intervals)
+      requested = requested.to_s
+      return requested if available.include?(requested)
+
+      available.first || allowed_intervals(intervals).first || DEFAULT
+    end
+
+    def self.allowed_intervals(intervals)
+      names = Array(intervals.presence || INTERVALS).map(&:to_s)
+      INTERVALS.select { |interval| names.include?(interval) }
+    end
+    private_class_method :allowed_intervals
+
     def initialize(raw)
       @raw = raw
     end

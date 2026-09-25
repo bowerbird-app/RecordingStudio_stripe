@@ -370,6 +370,7 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes source, "PlanFeatures.for"
     assert_includes source, "stripe_plan_feature_lines"
+    assert_includes source, "stripe_plan_intervals"
     assert_includes source, "usage_in_use?"
     assert_includes source, "line_has_recorded_usage?"
     assert_includes card, "stripe_plan_feature_lines"
@@ -410,6 +411,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes component, "show_group_headings?"
     assert_includes component, "populated_groups"
     assert_includes component, "shared_interval_pills"
+    assert_includes component, "intervals:"
     assert_includes component, "Catalog.sorted_plans"
     assert_includes plans_view, "align: :center"
     assert_includes plans_view, "Pricing"

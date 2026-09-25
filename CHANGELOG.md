@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `week` is a recurring Price interval beside `month` and `year`. One Price per Product per interval
 - `Product#weekly_price` and `Product#price_for` pick the card and the sort for that interval
 - Weekly pill on plan cards when that group has a weekly Price. `PlanIntervals#hrefs_for` adds `weekly_href`
+- `stripe_plan_intervals` lists the intervals that have a Price. Pass `intervals:` on `PlansComponent` to limit that list
 - Admin new Price can be Week. The Prices list can filter on `week`
 
 ### Changed
@@ -19,10 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Across Products, a blank rank compares a monthly equivalent. Weekly amount times 52 divided by 12. Yearly amount divided by 12
 - A local checkout on a weekly Price ends the period one week out
 - `CreatePrice` accepts week, month, year, or a blank one-time interval
+- An interval pill shows only when that group has a Price for it. The card row includes only Products that have that Price
+- When that interval has no Price, cards use the first offered interval. An `intervals:` limit that matches nothing leaves the grid empty
 
 ### Upgrade notes
 - No extra migrations. Existing month and year Prices stay as they are
-- Hosts that replaced `PlansComponent` pills should pass `weekly_href` and show Weekly only when a weekly Price exists in that group
+- Hosts that replaced `PlansComponent` pills should call `stripe_plan_intervals(products)` and show a pill only for an interval in that list, and only when its href is set. Pass `intervals:` to keep a page on month and year, or on week alone
+- The plans grid drops a Product that has no Price for the interval on screen. `PlanCardComponent` still says "No week Price yet" when a host renders that card directly
+- A requested interval with no Price in the offered list falls back to the first interval that has one. Pass `intervals:` when that fallback should stay inside a shorter list
 - Hosts that replaced `PlanCardComponent` should use `product.price_for(interval)` and `/wk` for a week Price
 - Same-product interval order is week, then month, then year
 - `CreatePrice` rejects any other interval. A webhook upsert still stores the interval Stripe sends

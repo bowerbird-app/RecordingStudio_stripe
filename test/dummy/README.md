@@ -8,7 +8,7 @@ Sign in with `admin@admin.com` / `Password`.
 
 - `/` — current workspace on Flatpack’s sidebar shell. Pricing, billing, and usage live on their own pages
 - `/press_kits` — list and add press kits for the workspace
-- `/plans` — Products and Prices, titled Pricing, centered, with a monthly/yearly toggle under each plan group name when dummy seeds more than one type. Weekly appears in that toggle only after a Product in the group has a weekly Price. Upgrade and Downgrade open a confirmation page first
+- `/plans` — Products and Prices, titled Pricing, centered, with an interval toggle under each plan group name when dummy seeds more than one type. A pill appears only when that group has a Price for it. Pass `intervals:` to keep the page on a shorter list. Upgrade and Downgrade open a confirmation page first
 - `/pricing` — the same cards, centered title, subtitle, and interval pills, no login
 - `/billing` — one card per live plan group, and Manage billing on Stripe (Customer Portal). See usage only when a live plan has recorded cap or meter use
 - `/billing/usage` — one full-width card per standing cap or period meter. Breakdown appears when extra packs add to a meter.
