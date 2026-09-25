@@ -58,6 +58,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "photo"
     assert_includes response.body, "Monthly"
     assert_includes response.body, "Yearly"
+    assert_select "a", text: "Weekly", count: 0
     assert_includes response.body, "[border-radius:var(--tabs-pill-corner-radius)]"
     refute_includes response.body, "[&>*]:border-r-0"
     refute_includes response.body, "border-b border-[var(--card-border-color)]"
@@ -76,16 +77,35 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "Add included usage on the Price"
   end
 
-  test "a missing Price takes the subtitle spot" do
+  test "a missing Price leaves that plan off the interval" do
     starter = RecordingStudioStripe::Product.find_by!(name: "Starter")
     starter.monthly_price.update!(active: false)
 
     get "/plans"
 
     assert_response :success
-    assert_includes response.body, "No month Price yet"
+    refute_includes response.body, "No month Price yet"
     refute_includes response.body, "For a quiet start"
     assert_includes response.body, "For the usual week"
+    assert_equal %w[Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
+
+    html = ApplicationController.render(
+      RecordingStudioStripe::PlanCardComponent.new(product: starter, interval: "month", subscription: nil)
+    )
+
+    assert_includes html, "No month Price yet"
+    refute_includes html, "For a quiet start"
+  end
+
+  test "plans with no Prices show the empty state" do
+    RecordingStudioStripe::Price.update_all(active: false)
+
+    get "/plans"
+
+    assert_response :success
+    assert_includes response.body, "No prices yet"
+    refute_includes response.body, ">Monthly<"
+    refute_includes response.body, "For a quiet start"
   end
 
   test "public pricing page centers the plan cards" do
@@ -176,6 +196,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes html, "Pricing"
     assert_includes html, "Monthly"
     assert_includes html, "Yearly"
+    refute_includes html, ">Weekly<"
     refute_includes html, "data-plan-group-heading"
     refute_includes html, ">Studio<"
     refute_includes html, ">Inbox<"

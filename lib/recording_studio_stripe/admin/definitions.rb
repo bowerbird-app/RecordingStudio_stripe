@@ -84,7 +84,7 @@ module RecordingStudioStripe
         klass.key "prices"
         klass.icon :banknotes
         klass.title "Prices"
-        klass.subtitle "Monthly, yearly, and one-time Prices, grouped under a Product"
+        klass.subtitle "Weekly, monthly, yearly, and one-time Prices, grouped under a Product"
         klass.blast_radius :site
         klass.query { |_context| RecordingStudioStripe::Admin::Definitions.prices_relation }
         klass.filter :product,
@@ -92,7 +92,7 @@ module RecordingStudioStripe
                      apply: lambda { |relation, value, _context|
                        relation.where(recording_studio_stripe_products: { name: value })
                      }
-        klass.filter :interval, options: %w[month year]
+        klass.filter :interval, options: %w[week month year]
         klass.table do
           column :product, sortable: false, value: ->(row, _context) { row.product.name }
           column :interval

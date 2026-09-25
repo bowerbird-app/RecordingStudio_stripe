@@ -2,6 +2,9 @@
 
 module RecordingStudioStripe
   class PlanChange
+    CADENCE = { "year" => "year", "week" => "week" }.freeze
+    INTERVAL_WORD = { "year" => "yearly", "week" => "weekly" }.freeze
+
     attr_reader :subscription, :from_price, :to_price
 
     def self.build(root_recording:, price_id:)
@@ -59,8 +62,7 @@ module RecordingStudioStripe
     end
 
     def amount(price)
-      cadence = price.annual? ? "year" : "month"
-      "#{price.formatted_amount}/#{cadence}"
+      "#{price.formatted_amount}/#{CADENCE.fetch(price.interval, 'month')}"
     end
 
     def change_word
@@ -75,7 +77,7 @@ module RecordingStudioStripe
     end
 
     def interval_word(price)
-      price.annual? ? "yearly" : "monthly"
+      INTERVAL_WORD.fetch(price.interval, "monthly")
     end
 
     def renewal_date

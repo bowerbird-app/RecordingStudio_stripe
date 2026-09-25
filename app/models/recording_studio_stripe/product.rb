@@ -30,12 +30,24 @@ module RecordingStudioStripe
       kind == "allowance"
     end
 
+    def weekly_price
+      prices.active.recurring.find_by(interval: "week")
+    end
+
     def monthly_price
       prices.active.recurring.find_by(interval: "month")
     end
 
     def annual_price
       prices.active.recurring.find_by(interval: "year")
+    end
+
+    def price_for(interval)
+      case interval.to_s
+      when "year" then annual_price
+      when "week" then weekly_price
+      else monthly_price
+      end
     end
 
     def assign_paywalls(names)

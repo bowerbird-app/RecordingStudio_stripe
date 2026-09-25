@@ -2,12 +2,18 @@
 
 module RecordingStudioStripe
   module ApplicationHelper
+    INTERVAL_LABELS = { "year" => "year", "week" => "week" }.freeze
+
     def stripe_quantity_label(quantity)
       PlanFeatures.quantity_label(quantity)
     end
 
     def stripe_interval_label(interval)
-      interval == "year" ? "year" : "month"
+      INTERVAL_LABELS.fetch(interval.to_s, "month")
+    end
+
+    def stripe_plan_intervals(products, intervals: nil)
+      PlanIntervals.offered(products, intervals: intervals)
     end
 
     def stripe_plan_feature_lines(product, price)

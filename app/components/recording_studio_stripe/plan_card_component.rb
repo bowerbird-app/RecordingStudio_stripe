@@ -21,7 +21,7 @@ module RecordingStudioStripe
     private
 
     def price
-      @interval == "year" ? @product.annual_price : @product.monthly_price
+      @product.price_for(@interval)
     end
 
     def title

@@ -284,6 +284,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Amount in cents"
+    assert_includes response.body, "Week"
 
     assert_difference -> { RecordingStudioStripe::Price.count }, 1 do
       post RecordingStudioStripe.configuration.mount_path + "/admin/prices", params: {
@@ -299,6 +300,34 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_equal 1500, price.unit_amount
     assert_equal "month", price.interval
     assert_equal 1000, price.included_quantity("ai_tokens")
+  end
+
+  test "staff can create a weekly Price" do
+    product = RecordingStudioStripe::Product.find_by!(name: "Starter")
+
+    assert_difference -> { RecordingStudioStripe::Price.count }, 1 do
+      post RecordingStudioStripe.configuration.mount_path + "/admin/prices", params: {
+        product_id: product.id,
+        unit_amount: "700",
+        currency: "usd",
+        interval: "week"
+      }
+    end
+
+    price = RecordingStudioStripe::Price.order(:created_at).last
+    assert_equal "week", price.interval
+    assert_equal 700, price.unit_amount
+
+    get "/admin/screens/prices"
+
+    assert_response :success
+    assert_includes response.body, "Weekly, monthly, yearly, and one-time Prices, grouped under a Product"
+
+    get "/admin/screens/prices/table", params: { interval: "week" }
+
+    assert_response :success
+    assert_includes response.body, "week"
+    assert_includes response.body, "700"
   end
 
   test "staff can create a meter from the engine form" do

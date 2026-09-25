@@ -15,6 +15,7 @@ module RecordingStudioStripe
     end
 
     def call
+      validate_interval!
       stripe_id = create_stripe_id
       Price.create!(
         stripe_id: stripe_id,
@@ -27,6 +28,12 @@ module RecordingStudioStripe
     end
 
     private
+
+    def validate_interval!
+      return if @interval.blank? || PlanIntervals::INTERVALS.include?(@interval)
+
+      raise InvalidPrice, "Interval must be week, month, or year."
+    end
 
     def parse_unit_amount(value)
       Integer(value)

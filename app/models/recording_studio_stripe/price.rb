@@ -18,6 +18,10 @@ module RecordingStudioStripe
       interval.present?
     end
 
+    def weekly?
+      interval == "week"
+    end
+
     def monthly?
       interval == "month"
     end
@@ -41,6 +45,7 @@ module RecordingStudioStripe
     def monthly_unit_amount
       return unit_amount if monthly? || interval.blank?
       return (unit_amount.to_f / 12).round if annual?
+      return (unit_amount.to_f * 52 / 12).round if weekly?
 
       unit_amount
     end
