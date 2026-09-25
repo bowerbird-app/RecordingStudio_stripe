@@ -6,23 +6,23 @@ class PlanIntervalPillsTest < Minitest::Test
   Product = Struct.new(:weekly_price)
 
   def test_weekly_stays_hidden_without_a_weekly_price
-    items = pills(products: [Product.new(nil)])
+    labels = labels_for(pills(products: [Product.new(nil)]))
 
-    assert_equal %w[Monthly Yearly], items.map { |item| item[:text] }
+    assert_equal %w[Monthly Yearly], labels
   end
 
   def test_weekly_shows_when_a_product_has_a_weekly_price
     items = pills(products: [Product.new(Object.new)], interval: "week")
 
-    assert_equal %w[Weekly Monthly Yearly], items.map { |item| item[:text] }
+    assert_equal %w[Weekly Monthly Yearly], labels_for(items)
     assert items.first[:active]
     refute items[1][:active]
   end
 
   def test_weekly_stays_hidden_without_a_weekly_href
-    items = pills(products: [Product.new(Object.new)], weekly_href: nil)
+    labels = labels_for(pills(products: [Product.new(Object.new)], weekly_href: nil))
 
-    assert_equal %w[Monthly Yearly], items.map { |item| item[:text] }
+    assert_equal %w[Monthly Yearly], labels
   end
 
   def test_group_label_names_the_weekly_cadence
@@ -34,6 +34,10 @@ class PlanIntervalPillsTest < Minitest::Test
   end
 
   private
+
+  def labels_for(items)
+    items.map { |item| item[:text] }
+  end
 
   def pills(products:, interval: "month", weekly_href: "/plans?interval=week", label: nil)
     RecordingStudioStripe::PlanIntervalPills.items(
