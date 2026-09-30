@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.8] - 2026-09-30
+
+### Added
+- `config.usage_costs` maps a usage key to the credits one unit costs
+- `RecordingStudioStripe.usage_cost` returns that rate. An unknown key raises `ArgumentError`
+- `Billing#spend_usage`, `Billing#usage_cost`, and `Billing#usage_available?`, with the same methods on `Billing::Line`
+- A weighted spend stores `usage_key`, `source_quantity`, and `credit_rate` on the usage row. `quantity` stays the credits deducted
+
+### Upgrade notes
+- Copy the new migration with `bin/rails generate recording_studio_stripe:migrations`, then run `bin/rails db:migrate`
+- Add a `credits` meter in `config.meters` and set `included_credits` on each plan Price that sells credits
+- A credit pack stays a one-time allowance Price. Set `meter` to `credits` and `allowance` to the pack size
+- `spend` and `record` are unchanged. Rows written that way leave the new columns empty
+- When more than one live plan holds credits, call `billing.line`. `billing.spend_usage` raises `AmbiguousSubscriptionLine` instead of picking a plan
+
 ## [0.8.7] - 2026-09-25
 
 ### Added

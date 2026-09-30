@@ -3,24 +3,31 @@
 module RecordingStudioStripe
   class RecordUsage
     def self.call(root_recording:, meter:, quantity:, idempotency_key: nil, recorded_at: Time.current,
-                  subscription_type: nil)
+                  subscription_type: nil, usage_key: nil, source_quantity: nil, credit_rate: nil)
       new(
         root_recording: root_recording,
         meter: meter,
         quantity: quantity,
         idempotency_key: idempotency_key,
         recorded_at: recorded_at,
-        subscription_type: subscription_type
+        subscription_type: subscription_type,
+        usage_key: usage_key,
+        source_quantity: source_quantity,
+        credit_rate: credit_rate
       ).call
     end
 
-    def initialize(root_recording:, meter:, quantity:, idempotency_key:, recorded_at:, subscription_type:)
+    def initialize(root_recording:, meter:, quantity:, idempotency_key:, recorded_at:, subscription_type:,
+                   usage_key:, source_quantity:, credit_rate:)
       @root_recording = root_recording
       @meter = meter
       @quantity = quantity.to_i
       @idempotency_key = idempotency_key
       @recorded_at = recorded_at
       @subscription_type = subscription_type
+      @usage_key = usage_key
+      @source_quantity = source_quantity
+      @credit_rate = credit_rate
     end
 
     def call
@@ -37,7 +44,10 @@ module RecordingStudioStripe
         quantity: @quantity,
         recorded_at: @recorded_at,
         idempotency_key: @idempotency_key,
-        subscription_type: @subscription_type
+        subscription_type: @subscription_type,
+        usage_key: @usage_key,
+        source_quantity: @source_quantity,
+        credit_rate: @credit_rate
       )
     rescue ActiveRecord::RecordNotUnique
       existing_usage || raise

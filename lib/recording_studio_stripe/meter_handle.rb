@@ -30,18 +30,23 @@ module RecordingStudioStripe
       remaining >= quantity.to_i
     end
 
-    def record(quantity, idempotency_key: nil, recorded_at: Time.current)
+    def record(quantity, idempotency_key: nil, recorded_at: Time.current, usage_key: nil,
+               source_quantity: nil, credit_rate: nil)
       RecordingStudioStripe::RecordUsage.call(
         root_recording: root_recording,
         meter: meter,
         quantity: quantity,
         idempotency_key: idempotency_key,
         recorded_at: recorded_at,
-        subscription_type: @subscription_type
+        subscription_type: @subscription_type,
+        usage_key: usage_key,
+        source_quantity: source_quantity,
+        credit_rate: credit_rate
       )
     end
 
-    def spend(quantity, idempotency_key: nil, recorded_at: Time.current)
+    def spend(quantity, idempotency_key: nil, recorded_at: Time.current, usage_key: nil,
+              source_quantity: nil, credit_rate: nil)
       UsageEntry.transaction do
         AdvisoryLock.hold(UsageEntry.connection, "#{root_recording.id}:meter:#{meter.name}")
         if idempotency_key.present?
@@ -53,7 +58,14 @@ module RecordingStudioStripe
         end
         raise MeterLimitReached.new(handle: self) unless available?(quantity)
 
-        record(quantity, idempotency_key: idempotency_key, recorded_at: recorded_at)
+        record(
+          quantity,
+          idempotency_key: idempotency_key,
+          recorded_at: recorded_at,
+          usage_key: usage_key,
+          source_quantity: source_quantity,
+          credit_rate: credit_rate
+        )
       end
     end
 

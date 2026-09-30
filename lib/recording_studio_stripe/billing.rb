@@ -30,6 +30,8 @@ module RecordingStudioStripe
       lines.select(&:subscribed?)
     end
 
+    include UsageSpending
+
     def meter(name)
       type = subscription_type_for_meter(name)
       MeterHandle.new(root_recording: root_recording, meter: Meter.fetch(name), subscription_type: type)
@@ -61,6 +63,10 @@ module RecordingStudioStripe
     end
 
     private
+
+    def credits_meter
+      MeterLine.for(billing: self, name: "credits")
+    end
 
     def subscription_type_for_meter(name)
       scored = active_lines.map { |entry| [entry, entry.meter(name).included] }
@@ -102,6 +108,8 @@ module RecordingStudioStripe
         product.paywalls.exists?(name: paywall_name.to_s)
       end
 
+      include UsageSpending
+
       def meter(name)
         MeterHandle.new(
           root_recording: root_recording,
@@ -116,6 +124,12 @@ module RecordingStudioStripe
           name: name,
           subscription_type: subscription_type
         )
+      end
+
+      private
+
+      def credits_meter
+        meter("credits")
       end
     end
   end

@@ -20,7 +20,7 @@ module RecordingStudioStripe
                   :authenticate,
                   :current_actor,
                   :current_root_recording
-    attr_reader :hooks
+    attr_reader :hooks, :usage_costs
     attr_writer :usage_path
 
     def initialize
@@ -30,6 +30,7 @@ module RecordingStudioStripe
       @api_version = "2026-07-29.dahlia"
       @client = nil
       @meters = default_meters
+      @usage_costs = {}.freeze
       @paywalls = {}
       @limits = {}
       @subscription_types = {}
@@ -61,6 +62,7 @@ module RecordingStudioStripe
         webhook_secret: webhook_secret.present? ? "[set]" : nil,
         api_version: api_version,
         meters: meters,
+        usage_costs: usage_costs,
         paywalls: paywalls,
         limits: limits,
         subscription_types: subscription_types,
@@ -87,6 +89,10 @@ module RecordingStudioStripe
 
     def usage_path
       @usage_path.presence || "#{mount_path.to_s.chomp('/')}/usage"
+    end
+
+    def usage_costs=(costs)
+      @usage_costs = UsageTariff.normalize_costs(costs).freeze
     end
 
     private

@@ -72,6 +72,23 @@ class ConfigurationTest < Minitest::Test
     assert_equal "AI tokens", @configuration.meters.fetch("ai_tokens").fetch("label")
   end
 
+  def test_default_usage_costs_are_empty
+    assert_equal({}, @configuration.usage_costs)
+    assert_includes @configuration.to_h.keys, :usage_costs
+  end
+
+  def test_usage_costs_reject_invalid_values_and_keep_the_previous_map
+    @configuration.usage_costs = { "web.brave" => 5 }
+
+    assert_raises(ArgumentError) { @configuration.usage_costs = { "web.brave" => 0 } }
+    assert_raises(ArgumentError) { @configuration.usage_costs = { "web.brave" => -2 } }
+    assert_raises(ArgumentError) { @configuration.usage_costs = { "web.brave" => 5.0 } }
+    assert_raises(ArgumentError) { @configuration.usage_costs = { web_brave: 5 } }
+    assert_raises(ArgumentError) { @configuration.usage_costs = { "" => 1 } }
+    assert_raises(ArgumentError) { @configuration.usage_costs = nil }
+    assert_equal({ "web.brave" => 5 }, @configuration.usage_costs)
+  end
+
   def test_default_paywalls_are_empty
     assert_equal({}, @configuration.paywalls)
     assert_includes @configuration.to_h.keys, :paywalls

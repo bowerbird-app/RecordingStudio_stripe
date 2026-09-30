@@ -14,7 +14,16 @@ RecordingStudioStripe.configure do |config|
   #     "icon" => "sparkles",
   #     "plan_line" => "%{quantity} AI tokens each period"
   #   },
-  #   "api_calls" => { "label" => "API calls", "icon" => "bolt" }
+  #   "api_calls" => { "label" => "API calls", "icon" => "bolt" },
+  #   "credits" => {
+  #     "label" => "Credits",
+  #     "icon" => "sparkles",
+  #     "plan_line" => "%{quantity} credits each period"
+  #   }
+  # }
+  # config.usage_costs = {
+  #   "ai.jev" => 1,
+  #   "web.brave" => 5
   # }
   # Named plan features. Tick them on a Product in Admin.
   # Check with RecordingStudioAccessible.authorized_action?(action: :generate_image, recording: root)
