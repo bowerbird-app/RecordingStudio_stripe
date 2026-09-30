@@ -211,6 +211,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "spend_usage"
     assert_includes docs, "included_credits"
     assert_includes docs, "AmbiguousSubscriptionLine"
+    assert_includes docs, "SubscriptionLineRequired"
   end
 
   def test_billing_docs_explain_customer_portal

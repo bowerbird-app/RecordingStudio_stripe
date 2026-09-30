@@ -30,7 +30,20 @@ module RecordingStudioStripe
       @credit_rate = credit_rate
     end
 
+    def self.guard_credits_meter!(meter:, usage_key:, source_quantity:, credit_rate:)
+      return if usage_key.nil? && source_quantity.nil? && credit_rate.nil?
+      return if meter.name == "credits"
+
+      raise ArgumentError, "usage source belongs on the credits meter"
+    end
+
     def call
+      self.class.guard_credits_meter!(
+        meter: @meter,
+        usage_key: @usage_key,
+        source_quantity: @source_quantity,
+        credit_rate: @credit_rate
+      )
       raise ArgumentError, "quantity must be positive" if @quantity <= 0
 
       if @idempotency_key.present?

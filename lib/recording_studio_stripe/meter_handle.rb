@@ -47,6 +47,12 @@ module RecordingStudioStripe
 
     def spend(quantity, idempotency_key: nil, recorded_at: Time.current, usage_key: nil,
               source_quantity: nil, credit_rate: nil)
+      RecordUsage.guard_credits_meter!(
+        meter: meter,
+        usage_key: usage_key,
+        source_quantity: source_quantity,
+        credit_rate: credit_rate
+      )
       UsageEntry.transaction do
         AdvisoryLock.hold(UsageEntry.connection, "#{root_recording.id}:meter:#{meter.name}")
         if idempotency_key.present?

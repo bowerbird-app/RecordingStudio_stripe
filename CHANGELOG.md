@@ -17,8 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Copy the new migration with `bin/rails generate recording_studio_stripe:migrations`, then run `bin/rails db:migrate`
 - Add a `credits` meter in `config.meters` and set `included_credits` on each plan Price that sells credits
 - A credit pack stays a one-time allowance Price. Set `meter` to `credits` and `allowance` to the pack size
-- `spend` and `record` are unchanged. Rows written that way leave the new columns empty
+- `spend` and `record` stay the same when no usage source is passed. Passing `usage_key`, `source_quantity`, or `credit_rate` on a meter other than `credits` raises `ArgumentError`
 - When more than one live plan holds credits, call `billing.line`. `billing.spend_usage` raises `AmbiguousSubscriptionLine` instead of picking a plan
+- When more than one subscription type is configured and no live plan holds credits, `billing.spend_usage` raises `SubscriptionLineRequired`. It does not pool line-scoped packs into an untyped balance
+- An idempotency key is unique for the workspace root. Use a fresh request id for each billable operation. Reusing a key across lines or events returns the original usage row
 
 ## [0.8.7] - 2026-09-25
 

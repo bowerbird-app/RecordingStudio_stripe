@@ -14,7 +14,7 @@ module RecordingStudioStripe
     def handle
       case candidates.size
       when 0
-        @billing.meter(@name)
+        unscoped_handle
       when 1
         candidates.first.meter(@name)
       else
@@ -23,6 +23,12 @@ module RecordingStudioStripe
     end
 
     private
+
+    def unscoped_handle
+      raise SubscriptionLineRequired.new(meter: @name) if SubscriptionTypes.keys.size > 1
+
+      @billing.meter(@name)
+    end
 
     def candidates
       @candidates ||= @billing.active_lines.select { |entry| balance(entry).positive? }

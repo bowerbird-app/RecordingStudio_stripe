@@ -217,6 +217,61 @@ class WeightedCreditsTest < ActiveSupport::TestCase
     assert_equal 0, usage_count
     assert_equal 2_000, pressbot.meter(:credits).purchased
     assert_equal 1_000, studio.meter(:credits).purchased
+
+    entry = pressbot.spend_usage(key: "web.brave")
+
+    assert_equal 5, entry.quantity
+    assert_equal "pressbot", entry.subscription_type
+    assert_equal 1_995, pressbot.meter(:credits).remaining
+    assert_equal 1_000, studio.meter(:credits).remaining
+  end
+
+  test "a line with only purchased credits can spend usage" do
+    subscribe(plan_price(type: "pressbot", included: 0))
+    buy_pack(type: "pressbot", allowance: 2_000)
+
+    entry = pressbot.spend_usage(key: "web.brave")
+
+    assert_equal 5, entry.quantity
+    assert_equal "web.brave", entry.usage_key
+    assert_equal 1, entry.source_quantity
+    assert_equal 5, entry.credit_rate
+    assert_equal "pressbot", entry.subscription_type
+    assert_equal 1_995, pressbot.meter(:credits).remaining
+  end
+
+  test "weighted source fields are rejected on a non-credit meter" do
+    subscribe(plan_price(type: "pressbot", included: 100, extra_metadata: { "included_api_calls" => "100" }))
+
+    error = assert_raises(ArgumentError) do
+      pressbot.meter(:api_calls).spend(
+        5,
+        usage_key: "web.brave",
+        source_quantity: 1,
+        credit_rate: 5
+      )
+    end
+
+    assert_equal "usage source belongs on the credits meter", error.message
+    assert_equal 0, pressbot.meter(:api_calls).usage
+
+    entry = pressbot.meter(:api_calls).spend(5)
+
+    assert_equal 5, entry.quantity
+    assert_nil entry.usage_key
+    assert_nil entry.source_quantity
+    assert_nil entry.credit_rate
+    assert_equal 5, pressbot.meter(:api_calls).usage
+  end
+
+  test "one subscription type can still spend credits without a live plan" do
+    RecordingStudioStripe.configuration.subscription_types = { "studio" => { "label" => "Studio" } }
+    buy_pack(type: "studio", allowance: 100)
+
+    entry = @billing.spend_usage(key: "web.brave")
+
+    assert_equal 5, entry.quantity
+    assert_equal 95, @billing.meter(:credits).remaining
   end
 
   test "unscoped spend uses the only plan that holds credits" do
@@ -280,7 +335,7 @@ class WeightedCreditsTest < ActiveSupport::TestCase
     RecordingStudioStripe::PlanFeatures.for(price.product, price).map(&:text)
   end
 
-  def plan_price(type:, included:, interval: "month", name: nil)
+  def plan_price(type:, included:, interval: "month", name: nil, extra_metadata: {})
     product = RecordingStudioStripe::CreateProduct.call(
       name: name || "#{type} #{interval} #{included} #{SecureRandom.hex(3)}",
       kind: "plan",
@@ -290,7 +345,7 @@ class WeightedCreditsTest < ActiveSupport::TestCase
       product: product,
       unit_amount: 1_000,
       interval: interval,
-      metadata: { "included_credits" => included.to_s }
+      metadata: { "included_credits" => included.to_s }.merge(extra_metadata)
     )
   end
 
