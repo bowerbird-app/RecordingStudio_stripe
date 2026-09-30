@@ -104,6 +104,33 @@ A `past_due` plan still counts as subscribed. Paywalls stay open and standing ca
 
 `account.billing.meter(:ai_tokens)` uses the live plan that includes that meter. Prefer `account.billing.line(:studio).meter(:ai_tokens)` when two plans both include it. New usage rows store that plan group. Call `spend` when the work must not run over the included amount. `record` still writes the fact after the work happened, even if that puts usage over remaining.
 
+A `credits` meter can price several operations without a separate quota for each one. Set `included_credits` on the plan Price. A one-time pack uses `meter` `credits` and `allowance` for the pack size. Remaining credits are the plan include, plus purchased packs, minus weighted usage.
+
+```ruby
+config.meters = {
+  "credits" => {
+    "label" => "Credits",
+    "icon" => "sparkles",
+    "plan_line" => "%{quantity} credits each period"
+  }
+}
+
+config.usage_costs = {
+  "ai.jev" => 1,
+  "web.brave" => 5
+}
+```
+
+```ruby
+account.billing.line(:pressbot).spend_usage(
+  key: "web.brave",
+  quantity: 1,
+  idempotency_key: "search:123"
+)
+```
+
+`spend_usage` multiplies the quantity by the configured rate and spends that many credits. The usage row stores the key, the source quantity, and the rate from that call. A later change to `usage_costs` does not rewrite the row. Those source fields belong on the `credits` meter. Passing them to another meter raises `ArgumentError`. `RecordingStudioStripe.usage_cost("web.brave")` returns the rate. `billing.line(:pressbot).usage_cost(key:, quantity:)` returns the credits that spend would use, and `usage_available?` checks the line without writing a row. When more than one live plan holds credits, call `billing.line`. `billing.spend_usage` raises `AmbiguousSubscriptionLine` in that case. When more than one subscription type is configured and no live plan holds credits, it raises `SubscriptionLineRequired`. The idempotency key is unique for the workspace, not for each line. Use a fresh request id for each operation. Reusing a key returns the original usage row.
+
 Pay, change plan, cancel, resume, extra packs, and Manage billing on Stripe need Accessible `:admin` on the workspace. `:view` can still read `/plans`, `/billing`, and `/billing/usage`. `:edit` cannot charge the workspace.
 
 Named plan features live in `config.paywalls`. The gem writes those rows on boot. Staff tick which paywalls a Product opens. Monthly and yearly Prices on the same Product share them. Extra packs do not. Then:

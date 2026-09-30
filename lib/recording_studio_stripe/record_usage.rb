@@ -3,27 +3,47 @@
 module RecordingStudioStripe
   class RecordUsage
     def self.call(root_recording:, meter:, quantity:, idempotency_key: nil, recorded_at: Time.current,
-                  subscription_type: nil)
+                  subscription_type: nil, usage_key: nil, source_quantity: nil, credit_rate: nil)
       new(
         root_recording: root_recording,
         meter: meter,
         quantity: quantity,
         idempotency_key: idempotency_key,
         recorded_at: recorded_at,
-        subscription_type: subscription_type
+        subscription_type: subscription_type,
+        usage_key: usage_key,
+        source_quantity: source_quantity,
+        credit_rate: credit_rate
       ).call
     end
 
-    def initialize(root_recording:, meter:, quantity:, idempotency_key:, recorded_at:, subscription_type:)
+    def initialize(root_recording:, meter:, quantity:, idempotency_key:, recorded_at:, subscription_type:,
+                   usage_key:, source_quantity:, credit_rate:)
       @root_recording = root_recording
       @meter = meter
       @quantity = quantity.to_i
       @idempotency_key = idempotency_key
       @recorded_at = recorded_at
       @subscription_type = subscription_type
+      @usage_key = usage_key
+      @source_quantity = source_quantity
+      @credit_rate = credit_rate
+    end
+
+    def self.guard_credits_meter!(meter:, usage_key:, source_quantity:, credit_rate:)
+      return if usage_key.nil? && source_quantity.nil? && credit_rate.nil?
+      return if meter.name == "credits"
+
+      raise ArgumentError, "usage source belongs on the credits meter"
     end
 
     def call
+      self.class.guard_credits_meter!(
+        meter: @meter,
+        usage_key: @usage_key,
+        source_quantity: @source_quantity,
+        credit_rate: @credit_rate
+      )
       raise ArgumentError, "quantity must be positive" if @quantity <= 0
 
       if @idempotency_key.present?
@@ -37,7 +57,10 @@ module RecordingStudioStripe
         quantity: @quantity,
         recorded_at: @recorded_at,
         idempotency_key: @idempotency_key,
-        subscription_type: @subscription_type
+        subscription_type: @subscription_type,
+        usage_key: @usage_key,
+        source_quantity: @source_quantity,
+        credit_rate: @credit_rate
       )
     rescue ActiveRecord::RecordNotUnique
       existing_usage || raise

@@ -44,4 +44,22 @@ module RecordingStudioStripe
   end
 
   class DeferredWebhook < Error; end
+
+  class AmbiguousSubscriptionLine < Error
+    attr_reader :meter
+
+    def initialize(meter:)
+      @meter = meter
+      super("More than one live plan includes #{meter}. Use billing.line to spend on one plan.")
+    end
+  end
+
+  class SubscriptionLineRequired < Error
+    attr_reader :meter
+
+    def initialize(meter:)
+      @meter = meter
+      super("Cannot determine which subscription line should spend #{meter}. Use billing.line(:type).")
+    end
+  end
 end

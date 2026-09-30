@@ -156,6 +156,66 @@ account.billing.line(:studio).meter(:ai_tokens).spend(1)
 
 `spend` raises `MeterLimitReached` when remaining is too small (HTML goes to `/billing/usage`; JSON is 403). A retry with the same idempotency key returns the first row. `record` writes the fact even when over, for work that already ran.
 
+## Weighted credits
+
+Credits are a normal meter named `credits`. The host names the billable operations and what each one costs. The gem does not ship provider keys.
+
+```ruby
+RecordingStudioStripe.configure do |config|
+  config.meters = {
+    "credits" => {
+      "label" => "Credits",
+      "icon" => "sparkles",
+      "plan_line" => "%{quantity} credits each period"
+    }
+  }
+
+  config.usage_costs = {
+    "ai.jev" => 1,
+    "web.brave" => 5
+  }
+end
+```
+
+`RecordingStudioStripe.usage_cost("web.brave")` returns `5`. Keys must be strings. Values must be positive integers. An unknown key raises `ArgumentError` and does not return zero. A bad assignment raises at configuration time and leaves the previous map in place.
+
+Included credits stay on the Price as `included_credits`. Two Prices on one Product can differ. A weekly Price can include 1,000 while the monthly Price includes 5,000. Plan cards read that through the meter plan line, so `included_credits` of 5000 with the plan line above reads "5k credits each period".
+
+A credit pack is an allowance Price.
+
+```text
+meter = credits
+allowance = 5000
+```
+
+`AllowanceCardComponent` renders that pack with the meter label, for example "+5k credits". Purchased credits keep the allowance Product's subscription type. A Pressbot pack does not add credits to Studio.
+
+Spend with the line when the workspace can hold more than one plan.
+
+```ruby
+account.billing.line(:pressbot).spend_usage(
+  key: "web.brave",
+  quantity: 1,
+  idempotency_key: "search:123"
+)
+```
+
+`quantity` defaults to 1 and must be a positive integer. The credit amount is `quantity * rate`. That amount is what `meter(:credits).spend` records. For two Brave searches at 5 credits each, `quantity` on the usage row is 10, `usage_key` is `web.brave`, `source_quantity` is 2, and `credit_rate` is 5. The row keeps that rate if `usage_costs` later changes.
+
+`usage_cost(key:, quantity:)` and `usage_available?(key:, quantity:)` compute the same credit amount and do not write a row. `usage_available?` calls `meter(:credits).available?`.
+
+The balance is still the meter balance.
+
+```text
+remaining = included + purchased - usage
+```
+
+`included` is the current Price. `purchased` is allowance packs for that subscription type. `usage` is the credits already recorded in that subscription period. `spend_usage` does not calculate remaining on its own. A spend that does not fit raises `MeterLimitReached` and writes nothing. The same idempotency key returns the first row and does not spend again. The key is unique for the workspace root, not for each meter or subscription line. Give each billable operation its own key, such as a request id. Reusing a key across lines or events returns the original usage row.
+
+`billing.spend_usage` uses the one live plan that holds included credits or a purchased credit pack. A plan with no included credits still counts when that line has purchased credits. It raises `AmbiguousSubscriptionLine` when more than one live plan holds credits. When more than one subscription type is configured and no live plan holds credits, it raises `SubscriptionLineRequired` and does not spend an untyped balance. With one subscription type, the unscoped meter fallback remains. `billing.meter(:credits)` still prefers the live plan with the larger included amount. Use `billing.line` for weighted spends whenever two groups can both hold credits. The usage row stores that line's `subscription_type`, and the period is that line's current period. `usage_key`, `source_quantity`, and `credit_rate` are only valid on the `credits` meter. Passing them to another meter raises `ArgumentError`.
+
+`usage_cost` on `Billing` does not pick a plan. It only multiplies the tariff.
+
 ## Paywalls
 
 A paywall is a named feature the host checks before a job. Hosts register names only:

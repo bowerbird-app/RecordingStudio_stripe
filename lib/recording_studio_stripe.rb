@@ -18,6 +18,9 @@ require "recording_studio_stripe/assign_subscription_types"
 require "recording_studio_stripe/billable"
 require "recording_studio_stripe/admin_support"
 require "recording_studio_stripe/client"
+require "recording_studio_stripe/usage_tariff"
+require "recording_studio_stripe/usage_spending"
+require "recording_studio_stripe/meter_line"
 require "recording_studio_stripe/billing"
 require "recording_studio_stripe/meter_handle"
 require "recording_studio_stripe/usage_period"
@@ -69,6 +72,10 @@ module RecordingStudioStripe
 
     def configure
       yield(configuration) if block_given?
+    end
+
+    def usage_cost(key)
+      UsageTariff.rate(key)
     end
 
     def register_capabilities!
