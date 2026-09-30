@@ -21,8 +21,8 @@ RecordingStudioStripe.configure do |config|
     "studio" => { "label" => "Studio" },
     "inbox" => { "label" => "Inbox" }
   }
-  # Standing caps for how many of a type can exist under the workspace.
-  # The number lives on the Product. Missing or 0 means none on that plan.
+  # Standing caps. aggregation defaults to count (live recordings of recordable_type).
+  # The number lives on the Product. Missing or 0 means none on that plan. No billing-period reset.
   config.limits = {
     "press_kits" => {
       "label" => "Press kits",

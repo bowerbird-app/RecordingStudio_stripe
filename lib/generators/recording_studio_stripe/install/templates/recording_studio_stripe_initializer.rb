@@ -37,18 +37,28 @@ RecordingStudioStripe.configure do |config|
   #   "studio" => { "label" => "Studio" },
   #   "inbox" => { "label" => "Inbox" }
   # }
-  # Standing caps for how many of a type can exist under the workspace.
-  # The number lives on the Product. Missing or 0 means none on that plan.
+  # Standing caps. The number lives on the Product. Missing or 0 means none on that plan.
+  # aggregation defaults to count: live recordings of recordable_type. No billing-period reset.
+  # quantity is a current total. Register how to read it. Enforce it with with_capacity!.
   # Do not reuse a plan group name as a limit name unless they are the same thing.
   # config.limits = {
   #   "press_kits" => {
   #     "label" => "Press kits",
   #     "recordable_type" => "PressKit",
+  #     "aggregation" => "count",
   #     "subscription_type" => "studio",
   #     "icon" => "rectangle-stack",
   #     "plan_line" => "%{quantity} press kits"
+  #   },
+  #   "storage_bytes" => {
+  #     "label" => "Storage",
+  #     "aggregation" => "quantity",
+  #     "subscription_type" => "studio"
   #   }
   # }
+  # RecordingStudioStripe.register_limit_usage(:storage_bytes) do |root_recording|
+  #   MyStorageGem.current_bytes_for(root_recording)
+  # end
   # config.limit_reached_path = "/plans"
   # config.usage_path = "/billing/usage"
   # config.automatic_tax = true

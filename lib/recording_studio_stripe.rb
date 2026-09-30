@@ -78,6 +78,10 @@ module RecordingStudioStripe
       UsageTariff.rate(key)
     end
 
+    def register_limit_usage(name, &)
+      configuration.register_limit_usage(name, &)
+    end
+
     def register_capabilities!
       return if @capabilities_registered
 

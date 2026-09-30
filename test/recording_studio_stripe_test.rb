@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.8.8", ::RecordingStudioStripe::VERSION
+    assert_equal "0.8.9", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -149,6 +149,9 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "remaining"
     assert_includes readme, "config.paywalls"
     assert_includes readme, "config.limits"
+    assert_includes readme, "aggregation"
+    assert_includes readme, "register_limit_usage"
+    assert_includes readme, "with_capacity!"
     assert_includes readme, "authorized_action?"
     assert_includes readme, "Customer Portal"
     assert_includes readme, ":stripe"
@@ -202,6 +205,10 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "config.limits"
     assert_includes docs, "PlanLimitReached"
     assert_includes docs, "limit_press_kits"
+    assert_includes docs, "aggregation"
+    assert_includes docs, "register_limit_usage"
+    assert_includes docs, "with_capacity!"
+    assert_includes docs, "storage_bytes"
     assert_includes docs, "plan_card"
     assert_includes docs, "plan_line"
     assert_includes docs, "## Paid trials"

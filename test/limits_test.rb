@@ -38,6 +38,9 @@ class LimitsTest < Minitest::Test
     definition = RecordingStudioStripe::Limits.fetch(:press_kits)
     assert_equal "Press kits", definition.label
     assert_equal "PressKit", definition.recordable_type
+    assert_equal "count", definition.aggregation
+    assert_predicate definition, :count?
+    refute_predicate definition, :quantity?
     assert_equal "studio", definition.subscription_type
     assert_nil definition.icon
     assert_nil definition.plan_line

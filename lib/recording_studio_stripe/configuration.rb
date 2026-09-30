@@ -20,7 +20,7 @@ module RecordingStudioStripe
                   :authenticate,
                   :current_actor,
                   :current_root_recording
-    attr_reader :hooks, :usage_costs
+    attr_reader :hooks, :usage_costs, :limit_usages
     attr_writer :usage_path
 
     def initialize
@@ -33,6 +33,7 @@ module RecordingStudioStripe
       @usage_costs = {}.freeze
       @paywalls = {}
       @limits = {}
+      @limit_usages = {}
       @subscription_types = {}
       @success_path = "/billing"
       @cancel_path = "/plans"
@@ -65,6 +66,7 @@ module RecordingStudioStripe
         usage_costs: usage_costs,
         paywalls: paywalls,
         limits: limits,
+        limit_usages: limit_usages.keys,
         subscription_types: subscription_types,
         success_path: success_path,
         cancel_path: cancel_path,
@@ -95,7 +97,25 @@ module RecordingStudioStripe
       @usage_costs = UsageTariff.normalize_costs(costs).freeze
     end
 
+    def register_limit_usage(name, &block)
+      key = limit_usage_name(name)
+      raise ArgumentError, "register_limit_usage needs a block" unless block
+
+      limit_usages[key] = block
+    end
+
+    def limit_usage_for(name)
+      limit_usages[name.to_s]
+    end
+
     private
+
+    def limit_usage_name(name)
+      key = name.to_s
+      raise ArgumentError, "limit name must not be blank" if key.blank?
+
+      key
+    end
 
     def default_meters
       {
