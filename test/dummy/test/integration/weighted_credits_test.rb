@@ -200,6 +200,25 @@ class WeightedCreditsTest < ActiveSupport::TestCase
     assert_equal 95, pressbot.meter(:credits).remaining
   end
 
+  test "unscoped spend does not pool packs when no plan is live" do
+    buy_pack(type: "pressbot", allowance: 2_000)
+    buy_pack(type: "studio", allowance: 1_000)
+
+    error = assert_raises(RecordingStudioStripe::SubscriptionLineRequired) do
+      @billing.spend_usage(key: "web.brave")
+    end
+
+    assert_equal "credits", error.meter
+    assert_equal "Cannot determine which subscription line should spend credits. Use billing.line(:type).",
+                 error.message
+    assert_raises(RecordingStudioStripe::SubscriptionLineRequired) do
+      @billing.usage_available?(key: "web.brave")
+    end
+    assert_equal 0, usage_count
+    assert_equal 2_000, pressbot.meter(:credits).purchased
+    assert_equal 1_000, studio.meter(:credits).purchased
+  end
+
   test "unscoped spend uses the only plan that holds credits" do
     subscribe(plan_price(type: "pressbot", included: 100))
 
