@@ -14,7 +14,7 @@ Stripe is the source of truth for Products, Prices, Customers, Subscriptions, in
 | Extra packs | `recording_studio_stripe_allowance_purchases` after Checkout |
 | Invoices, cards | Stripe Customer Portal. Not copied locally |
 | Paywall | Local named feature (`generate_image`). Staff tick them on a plan Product |
-| Limit | Config name plus Product metadata (`limit_press_kits`). Count of live recordings of that type |
+| Limit | Config name plus Product metadata (`limit_press_kits`). A standing count of live recordings, or a standing quantity supplied by the host |
 
 Usage is a fact table, not a Recording. High volume stays off the tree. Paywalls and limits are not Recordings either.
 
@@ -247,7 +247,13 @@ Dummy registers `generate_image` and `export_csv`, and ticks `generate_image` on
 
 ## Limits
 
-A limit is how many of a recordable type can exist under the workspace right now. It is not a meter. Meters spend this Stripe period and reset. Limits count live recordings of that type (not trashed) and do not reset.
+A limit is a standing cap on the workspace right now. It is not a meter. Meters spend this Stripe period and reset. Limits do not reset when a period ends. Capacity comes back when current usage falls.
+
+`aggregation` is `count` or `quantity`. Omit it and the limit stays a count, which is the existing behaviour.
+
+A **count** limit is how many live recordings of one type can exist. Example: 5 press kits. It requires `recordable_type`. `used` is `Recording.for_root(workspace).of_type("PressKit")` where `trashed_at` is nil. Nested recordings of that type share the cap. Trashed rows do not count.
+
+A **quantity** limit is a current total, not a row count. Example: 5000000000 for storage. It does not need `recordable_type`. This gem does not know how the quantity is measured. The host, or another gem, registers that calculation. Register before anything reads `used`. A missing provider raises `ArgumentError` instead of pretending usage is 0. The block receives the workspace root recording and returns a non-negative integer.
 
 ```ruby
 RecordingStudioStripe.configure do |config|
@@ -255,15 +261,25 @@ RecordingStudioStripe.configure do |config|
     "press_kits" => {
       "label" => "Press kits",
       "recordable_type" => "PressKit",
+      "aggregation" => "count",
       "subscription_type" => "studio",
       "icon" => "rectangle-stack",
       "plan_line" => "%{quantity} press kits"
+    },
+    "storage_bytes" => {
+      "label" => "Storage",
+      "aggregation" => "quantity",
+      "subscription_type" => "studio"
     }
   }
 end
+
+RecordingStudioStripe.register_limit_usage(:storage_bytes) do |root_recording|
+  MyStorageGem.current_bytes_for(root_recording)
+end
 ```
 
-Omit that map and the gem never gates creates. The number lives on the **Product** as `limit_<name>` metadata, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. Admin New plan and Edit show one integer field per configured limit.
+`config.register_limit_usage` is the same registry. The number lives on the **Product** as `limit_<name>` metadata, for both kinds, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. Admin New plan and Edit show one integer field per configured limit. Quantity limits stay plain integers. There is no separate meter on the plan card or on `/billing/usage`.
 
 ```ruby
 kits = account.billing.limit(:press_kits)
@@ -272,13 +288,35 @@ kits.used
 kits.remaining
 kits.available?(1)
 kits.over?
+
+storage = account.billing.limit(:storage_bytes)
+storage.included
+storage.used
+storage.remaining
+storage.available?(12_000_000)
+storage.over?
+storage.enforce!(incoming_size)
 ```
 
-`line(:studio).limit(:press_kits)` is the same handle scoped to that group's live plan. `used` is `Recording.for_root(workspace).of_type("PressKit")` where `trashed_at` is nil. Nested recordings of that type share the cap.
+`available?` takes a positive integer. The default is 1. Zero, a negative integer, a float, a string, or nil raises `ArgumentError`.
 
-Creating another of that type is blocked at the Recording. `revise` does not consume a slot. Restore from trash does, because used ignores trashed rows. Moving a live row into a full workspace does too. The gate only runs when the destination root enabled `:stripe`. The gem raises `RecordingStudioStripe::PlanLimitReached`. HTML redirects to `/plans`, or `config.limit_reached_path`. JSON is 403 `{ "code": "plan_limit_reached" }`. Dummy copy: “Pick a plan to add press kits.” or “Starter includes 3 press kits. Upgrade, or archive one.” Recording Studio core still swallows `before_record` errors, so the gate is `Recording` `before_create` (and restore, and move) until core can deny `record!`.
+`line(:studio).limit(:press_kits)` is the same handle scoped to that group's live plan. Quantity limits use that same subscription type.
 
-Downgrades do not delete extras. `over?` is true and `available?` is false until they archive. Accessible stays access. Do not `record` usage for these caps.
+Prefer `with_capacity!` when the write should share the check. The block runs in a database transaction on the root recording. On Postgres the gem takes an advisory lock named for that root and that limit, and holds it until the transaction ends. Put the write that changes current usage inside the block, on that same connection, so the provider sees it and a second request waits.
+
+```ruby
+account.billing.limit(:storage_bytes).with_capacity!(incoming_size) do
+  MyStorageGem.store!(account, incoming_size)
+end
+```
+
+`enforce!` runs that same check under the same lock and returns true when the quantity fits. It raises `RecordingStudioStripe::PlanLimitReached` when it does not. The error carries the handle. If you call `enforce!` inside a transaction you already opened, the lock stays until you commit, and a write in that transaction is covered. If you call `enforce!` and write in a later transaction, another request can pass the check first. `enforce!` does not reserve capacity by itself. The write does.
+
+The lock does not cover a write that leaves this database transaction: another process, a file store, or a job queued after the check. Non-Postgres adapters skip the advisory lock, the same way they do for count creates.
+
+Creating another recording of a count-limited type is blocked at the Recording. `revise` does not consume a slot. Restore from trash does, because used ignores trashed rows. Moving a live row into a full workspace does too. The gate only runs when the destination root enabled `:stripe`, and only for limits whose aggregation is `count`. It checks `enforce!(1)`. A quantity limit is not inferred from a Recording create, restore, or move. The gem that performs that operation calls `with_capacity!`. The gem raises `RecordingStudioStripe::PlanLimitReached`. HTML redirects to `/plans`, or `config.limit_reached_path`. JSON is 403 `{ "code": "plan_limit_reached" }`. Dummy copy: “Pick a plan to add press kits.” or “Starter includes 3 press kits. Upgrade, or archive one.” A quantity limit says “Upgrade, or free some up.” Recording Studio core still swallows `before_record` errors, so the count gate is `Recording` `before_create` (and restore, and move) until core can deny `record!`.
+
+Downgrades do not delete extras. `over?` is true and `available?` is false until current usage falls. For a count, that is an archive. For a quantity, that is the registered usage dropping. Accessible stays access. Do not `record` usage for these caps. A billing period does not clear either kind.
 
 Dummy seeds Starter at 3, Pro at 10, and Team at 25 on Studio. Inbox plans do not include press kits. `/billing/usage` shows the standing cap as a progress bar. Dummy `/press_kits` is the product screen that lists kits and adds them. Plan cards on `/plans` and `/pricing` list those caps, included usage, and ticked features, with icons from the host config.
 
@@ -290,7 +328,7 @@ For that plan's subscription period:
 remaining = included + purchased - usage
 ```
 
-Included comes from Price metadata. Purchased comes from allowance packs bought from the start of that period’s calendar month through period end. Usage is what the app recorded for that plan group. Postgres takes an advisory lock around spend and standing-cap creates. Other databases skip the lock.
+Included comes from Price metadata. Purchased comes from allowance packs bought from the start of that period’s calendar month through period end. Usage is what the app recorded for that plan group. Postgres takes an advisory lock around spend, standing count creates, and `with_capacity!` / `enforce!`. Other databases skip the lock. Standing limits are not part of that period math.
 
 ## Plan changes
 

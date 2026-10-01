@@ -18,14 +18,21 @@ module RecordingStudioStripe
 
     def user_message
       label = handle.label.downcase
-      plan = handle.product&.name
-      if handle.included <= 0
-        "Pick a plan to add #{label}."
-      elsif plan
-        "#{plan} includes #{handle.included} #{label}. Upgrade, or archive one."
-      else
-        "This plan includes #{handle.included} #{label}. Upgrade, or archive one."
-      end
+      return "Pick a plan to add #{label}." if handle.included <= 0
+
+      "#{plan_label} includes #{handle.included} #{label}. #{relief}"
+    end
+
+    private
+
+    def plan_label
+      handle.product&.name.presence || "This plan"
+    end
+
+    def relief
+      return "Upgrade, or free some up." if handle.respond_to?(:quantity?) && handle.quantity?
+
+      "Upgrade, or archive one."
     end
   end
 

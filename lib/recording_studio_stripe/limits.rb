@@ -2,23 +2,42 @@
 
 module RecordingStudioStripe
   class Limits
+    AGGREGATIONS = %w[count quantity].freeze
+
     class Definition
-      attr_reader :name, :label, :recordable_type, :subscription_type, :icon, :plan_line
+      attr_reader :name, :label, :recordable_type, :subscription_type, :icon, :plan_line, :aggregation
 
       def initialize(name, attrs)
         @name = name.to_s
         @label = attrs["label"].presence || @name.humanize
+        @aggregation = aggregation_mode(attrs["aggregation"])
         @recordable_type = attrs["recordable_type"].to_s
         @subscription_type = attrs["subscription_type"].presence || implied_subscription_type
         @icon = attrs["icon"].presence
         @plan_line = attrs["plan_line"].presence
       end
 
+      def count?
+        aggregation == "count"
+      end
+
+      def quantity?
+        aggregation == "quantity"
+      end
+
       def covers_type?(type)
-        recordable_type == type.to_s
+        count? && recordable_type == type.to_s
       end
 
       private
+
+      def aggregation_mode(value)
+        mode = value.presence&.to_s || "count"
+        return mode if AGGREGATIONS.include?(mode)
+
+        raise ArgumentError,
+              "Unsupported aggregation #{mode.inspect} for limit #{name}. Use \"count\" or \"quantity\"."
+      end
 
       def implied_subscription_type
         SubscriptionTypes.known?(name) ? name : SubscriptionTypes.keys.first
@@ -31,9 +50,10 @@ module RecordingStudioStripe
 
     def self.all
       raw.filter_map do |name, attrs|
-        next if attrs["recordable_type"].blank?
+        definition = Definition.new(name, attrs)
+        next if definition.count? && definition.recordable_type.blank?
 
-        Definition.new(name, attrs)
+        definition
       end
     end
 

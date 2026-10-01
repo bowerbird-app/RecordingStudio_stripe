@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.9] - 2026-09-30
+
+### Added
+- Standing limits accept `aggregation`: `count` (default) or `quantity`
+- `RecordingStudioStripe.register_limit_usage` (and `config.register_limit_usage`) supplies the current integer for a quantity limit
+- `LimitHandle#enforce!` and `LimitHandle#with_capacity!` raise `PlanLimitReached` when the requested quantity does not fit
+- `with_capacity!` runs the write in the same transaction as the check, under a Postgres advisory lock for that root and limit
+
+### Changed
+- `LimitHandle#available?` requires a positive integer, the same rule as `enforce!` and `with_capacity!`. Calling it with no argument still checks 1
+
+### Upgrade notes
+- Existing `config.limits` entries stay count limits. Omit `aggregation` and press-kit caps keep working, including create, restore, and move
+- A quantity limit does not need `recordable_type`. Register a usage provider before reading `used`. A missing provider raises `ArgumentError`
+- The provider receives the root recording and must return a non-negative integer. Negative or non-integer results raise `ArgumentError`
+- Product metadata is still `limit_<name>` on the Product. Monthly and yearly Prices share it. Nothing resets on a billing period
+- Recording create, restore, and move enforce count limits only. Call `with_capacity!` from the gem that knows the quantity
+- Put the usage write inside the `with_capacity!` block, on the same database connection. `enforce!` does not reserve capacity for a later transaction
+- Postgres holds the advisory lock until that transaction ends. Other databases skip the lock, as they do for count creates
+- A quantity `PlanLimitReached` says “Upgrade, or free some up.” Count copy is unchanged
+- `available?` raises `ArgumentError` for 0, a negative integer, a float, a string, or nil. `available?` and `available?(1)` stay valid
+- No extra migrations
+
 ## [0.8.8] - 2026-09-30
 
 ### Added

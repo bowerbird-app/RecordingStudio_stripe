@@ -145,7 +145,11 @@ RecordingStudioAccessible.authorized_action?(
 
 That is true when the actor has `:view` on the workspace root **and** a live plan Product includes that paywall. Meter spend stays `available?` before the work, or `spend` to check and write in one call. `record` logs usage that already happened. Buying Pro does not grant `:admin`.
 
-Standing caps live in `config.limits`. The number sits on the Product, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. Creating another of that type, restoring it from trash, or moving it into a full workspace raises `RecordingStudioStripe::PlanLimitReached` (HTML redirects to `/plans`, or `config.limit_reached_path`; JSON is 403). The gate only runs under a root that enabled `:stripe`. Downgrades do not delete extras; `over?` is true until they archive. `used` counts every live recording of that type under the workspace, including nested ones.
+Standing caps live in `config.limits`. The number sits on the Product as `limit_<name>`, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. There is no billing-period reset. `aggregation` defaults to `count`.
+
+A count limit is how many live recordings of `recordable_type` can exist under the workspace, including nested ones. Trashed rows do not count. Creating another, restoring one from trash, or moving one into a full workspace raises `RecordingStudioStripe::PlanLimitReached` (HTML redirects to `/plans`, or `config.limit_reached_path`; JSON is 403). That gate only runs under a root that enabled `:stripe`, and only for count limits. Downgrades do not delete extras; `over?` is true until they archive.
+
+A quantity limit is a current total, such as stored bytes. Leave `recordable_type` off. Register how to read that total. This gem does not measure it, and a Recording create does not enforce it. Call `with_capacity!` around the write so the check and the write share one transaction and, on Postgres, one advisory lock for that root and limit. `enforce!` is the same check when you are already inside that transaction. A later separate write can still race.
 
 ```ruby
 RecordingStudioStripe.configure do |config|
@@ -153,11 +157,21 @@ RecordingStudioStripe.configure do |config|
     "press_kits" => {
       "label" => "Press kits",
       "recordable_type" => "PressKit",
+      "aggregation" => "count",
       "subscription_type" => "studio",
       "icon" => "rectangle-stack",
       "plan_line" => "%{quantity} press kits"
+    },
+    "storage_bytes" => {
+      "label" => "Storage",
+      "aggregation" => "quantity",
+      "subscription_type" => "studio"
     }
   }
+end
+
+RecordingStudioStripe.register_limit_usage(:storage_bytes) do |root_recording|
+  MyStorageGem.current_bytes_for(root_recording)
 end
 
 kits = account.billing.limit(:press_kits)
@@ -166,6 +180,9 @@ kits.used
 kits.remaining
 kits.available?(1)
 kits.over?
+
+storage = account.billing.limit(:storage_bytes)
+storage.with_capacity!(incoming_size) { MyStorageGem.store!(account, incoming_size) }
 
 tokens = account.billing.line(:studio).meter(:ai_tokens)
 tokens.spend(1) if tokens.available?(1)
@@ -215,13 +232,14 @@ allowance=5000000
 
 One Product per plan. Monthly and annual are Prices on that Product. Extra packs are a separate Product. `/plans` groups by Product, then by plan group when `config.subscription_types` is set. Admin Prices shows the Product name and filters by Product or interval.
 
-Plan Products also store standing limits:
+Plan Products also store standing limits, count or quantity:
 
 ```text
 limit_press_kits=3
+limit_storage_bytes=5000000000
 ```
 
-Set those in Admin on the Product, not on each Price. Admin Prices has Edit for included usage. Stripe still owns the amount.
+Set those in Admin on the Product, not on each Price. The field is a plain integer for both. Admin Prices has Edit for included usage. Stripe still owns the amount.
 
 ## Webhooks
 
