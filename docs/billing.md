@@ -298,6 +298,8 @@ storage.over?
 storage.enforce!(incoming_size)
 ```
 
+`available?` takes a positive integer. The default is 1. Zero, a negative integer, a float, a string, or nil raises `ArgumentError`.
+
 `line(:studio).limit(:press_kits)` is the same handle scoped to that group's live plan. Quantity limits use that same subscription type.
 
 Prefer `with_capacity!` when the write should share the check. The block runs in a database transaction on the root recording. On Postgres the gem takes an advisory lock named for that root and that limit, and holds it until the transaction ends. Put the write that changes current usage inside the block, on that same connection, so the provider sees it and a second request waits.

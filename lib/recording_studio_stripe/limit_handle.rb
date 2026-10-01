@@ -49,7 +49,8 @@ module RecordingStudioStripe
     end
 
     def available?(quantity = 1)
-      remaining >= quantity.to_i
+      amount = positive_quantity(quantity)
+      remaining >= amount
     end
 
     def over?
