@@ -208,6 +208,29 @@ class LimitUsageTest < Minitest::Test
     assert_match(/needs a block/, error.message)
   end
 
+  def test_available_rejects_a_quantity_that_is_not_a_positive_integer
+    configure_quantity
+    assert_rejected_quantities handle_for(nil)
+  end
+
+  def test_available_rejects_a_count_that_is_not_a_positive_integer
+    configure_count
+    assert_rejected_quantities count_handle
+  end
+
+  def test_available_default_is_one_and_accepts_a_positive_integer
+    configure_quantity
+    quantity = handle_for(nil)
+    configure_count
+    count = count_handle
+
+    [quantity, count].each do |handle|
+      assert_equal false, handle.available?
+      assert_equal false, handle.available?(1)
+      assert_equal false, handle.available?(500_000)
+    end
+  end
+
   private
 
   def configure_quantity
@@ -220,7 +243,25 @@ class LimitUsageTest < Minitest::Test
     }
   end
 
+  def configure_count
+    RecordingStudioStripe.configuration.limits = {
+      "press_kits" => { "label" => "Press kits", "recordable_type" => "PressKit" }
+    }
+  end
+
   def handle_for(root)
     RecordingStudioStripe::LimitHandle.new(root_recording: root, name: :storage_bytes)
+  end
+
+  def count_handle
+    RecordingStudioStripe::LimitHandle.new(root_recording: nil, name: :press_kits)
+  end
+
+  def assert_rejected_quantities(handle)
+    [0, -1, 1.5, "100", nil].each do |quantity|
+      error = assert_raises(ArgumentError) { handle.available?(quantity) }
+
+      assert_match(/positive integer/, error.message)
+    end
   end
 end

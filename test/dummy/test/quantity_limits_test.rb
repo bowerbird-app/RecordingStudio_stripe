@@ -37,6 +37,26 @@ class QuantityLimitsTest < ActiveSupport::TestCase
     RecordingStudioStripe.configuration.limit_usages.replace(@previous_usages)
   end
 
+  test "available requires a positive integer and defaults to one" do
+    storage = @workspace.billing.limit(:storage_bytes)
+    kits = @workspace.billing.limit(:press_kits)
+
+    assert_equal true, storage.available?
+    assert_equal true, storage.available?(1)
+    assert_equal true, storage.available?(500_000)
+    assert_equal true, kits.available?
+    assert_equal true, kits.available?(1)
+    assert_equal false, kits.available?(500_000)
+
+    [storage, kits].each do |limit|
+      [0, -1, 1.5, "100", nil].each do |quantity|
+        error = assert_raises(ArgumentError) { limit.available?(quantity) }
+
+        assert_match(/positive integer/, error.message)
+      end
+    end
+  end
+
   test "quantity limit math uses the provider and the product metadata" do
     storage = @workspace.billing.limit(:storage_bytes)
 
