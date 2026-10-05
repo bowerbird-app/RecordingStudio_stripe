@@ -4,6 +4,8 @@ This Rails app proves Recording Studio Stripe in a host.
 
 Sign in with `admin@admin.com` / `Password`.
 
+Dummy credentials (`config/credentials.yml.enc`) use the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY`, or write that key to `config/master.key` (gitignored). Do not mint a per-repo dummy key. Confirm decrypt with `bin/rails credentials:show`. Stripe keys stay in environment variables.
+
 ## Routes
 
 - `/` — current workspace on Flatpack’s sidebar shell. Pricing, billing, and usage live on their own pages
