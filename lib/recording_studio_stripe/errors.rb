@@ -18,21 +18,27 @@ module RecordingStudioStripe
 
     def user_message
       label = handle.label.downcase
-      return "Pick a plan to add #{label}." if handle.included <= 0
+      return Copy.t("errors.pick_plan_to_add", label: label) if handle.included <= 0
 
-      "#{plan_label} includes #{handle.included} #{label}. #{relief}"
+      Copy.t(
+        "errors.plan_includes",
+        plan: plan_label,
+        count: handle.included,
+        label: label,
+        relief: relief
+      )
     end
 
     private
 
     def plan_label
-      handle.product&.name.presence || "This plan"
+      handle.product&.name.presence || Copy.t("errors.this_plan")
     end
 
     def relief
-      return "Upgrade, or free some up." if handle.respond_to?(:quantity?) && handle.quantity?
+      return Copy.t("errors.relief_quantity") if handle.respond_to?(:quantity?) && handle.quantity?
 
-      "Upgrade, or archive one."
+      Copy.t("errors.relief_count")
     end
   end
 
@@ -45,8 +51,7 @@ module RecordingStudioStripe
     end
 
     def user_message
-      label = handle.meter.label.downcase
-      "This period's #{label} are spent. Buy a pack, or wait for renewal."
+      Copy.t("errors.meter_spent", label: handle.meter.label.downcase)
     end
   end
 

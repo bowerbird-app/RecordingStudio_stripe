@@ -2,14 +2,13 @@
 
 module RecordingStudioStripe
   module ApplicationHelper
-    INTERVAL_LABELS = { "year" => "year", "week" => "week" }.freeze
-
     def stripe_quantity_label(quantity)
       PlanFeatures.quantity_label(quantity)
     end
 
     def stripe_interval_label(interval)
-      INTERVAL_LABELS.fetch(interval.to_s, "month")
+      key = { "year" => "year", "week" => "week" }.fetch(interval.to_s, "month")
+      Copy.t("intervals.names.#{key}")
     end
 
     def stripe_plan_intervals(products, intervals: nil)
@@ -30,11 +29,11 @@ module RecordingStudioStripe
 
     def billing_subtitle(lines)
       active = Array(lines).select(&:subscribed?)
-      return "Nothing to charge yet." if active.empty?
+      return Copy.t("billing.nothing_to_charge") if active.empty?
       return single_line_subtitle(active.first.subscription) if active.size == 1
 
       names = active.map { |line| line.subscription.price&.product&.name }.compact
-      "You’re on #{names.to_sentence}."
+      Copy.t("billing.on_plans", names: names.to_sentence)
     end
 
     def single_line_subtitle(subscription)
@@ -43,40 +42,45 @@ module RecordingStudioStripe
       return trial_subtitle(subscription) if subscription.trialing?
       return scheduled_subtitle(subscription) if subscription.scheduled_downgrade?
 
-      "You’re on #{subscription.price&.product&.name}."
+      Copy.t("billing.on_plan", name: subscription.price&.product&.name)
     end
 
     def canceling_subtitle(subscription)
-      "This plan runs until #{subscription.current_period_end.to_date.to_fs(:long)}."
+      Copy.t("billing.canceling", date: Copy.long_date(subscription.current_period_end))
     end
 
     def past_due_subtitle(subscription)
-      "The card for #{subscription.price&.product&.name} did not go through."
+      Copy.t("billing.past_due", name: subscription.price&.product&.name)
     end
 
     def trial_subtitle(subscription)
       date = subscription.current_period_end
-      return "You’re on #{subscription.price&.product&.name}." unless date
+      return Copy.t("billing.on_plan", name: subscription.price&.product&.name) unless date
 
       price = subscription.price
-      return "Trial until #{date.to_date.to_fs(:long)}." unless price
+      labeled_date = Copy.long_date(date)
+      return Copy.t("billing.trial_until", date: labeled_date) unless price
 
-      amount = "#{price.formatted_amount}/#{stripe_interval_label(price.interval)}"
-      "Trial until #{date.to_date.to_fs(:long)}. Then #{amount}."
+      amount = Copy.t(
+        "intervals.amount",
+        amount: price.formatted_amount,
+        interval: stripe_interval_label(price.interval)
+      )
+      Copy.t("billing.trial_until_then", date: labeled_date, amount: amount)
     end
 
     def scheduled_subtitle(subscription)
-      "Next period switches to #{subscription.scheduled_price.product.name}."
+      Copy.t("billing.scheduled", name: subscription.scheduled_price.product.name)
     end
 
     def usage_subtitle(lines)
       active = Array(lines).select(&:subscribed?)
-      return "Usage resets when a paid period starts." if active.empty?
+      return Copy.t("usage.resets_when_paid") if active.empty?
 
       ends = active.filter_map { |line| line.subscription&.current_period_end }.uniq
-      return "Included amounts reset with each paid period." unless ends.size == 1 && ends.first
+      return Copy.t("usage.resets_each_period") unless ends.size == 1 && ends.first
 
-      "Resets on #{ends.first.to_date.to_fs(:long)}."
+      Copy.t("usage.resets_on", date: Copy.long_date(ends.first))
     end
 
     def billing_line_meters(line)

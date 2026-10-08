@@ -39,15 +39,15 @@ module RecordingStudioStripe
 
     def breakdown
       render FlatPack::Button::Dropdown::Component.new(
-        text: "Breakdown",
+        text: Copy.t("usage.breakdown"),
         style: :default,
         size: :md,
         placement: :bottom_right
       ) do |dropdown|
-        dropdown.menu_item(text: "On this plan", badge: stripe_quantity_label(@handle.included))
-        dropdown.menu_item(text: "Extra packs", badge: stripe_quantity_label(@handle.purchased))
+        dropdown.menu_item(text: Copy.t("usage.on_this_plan"), badge: stripe_quantity_label(@handle.included))
+        dropdown.menu_item(text: Copy.t("usage.extra_packs"), badge: stripe_quantity_label(@handle.purchased))
         dropdown.menu_divider
-        dropdown.menu_item(text: "Total this period", badge: stripe_quantity_label(period_total))
+        dropdown.menu_item(text: Copy.t("usage.total_this_period"), badge: stripe_quantity_label(period_total))
       end
     end
 

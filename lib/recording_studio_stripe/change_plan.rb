@@ -15,10 +15,10 @@ module RecordingStudioStripe
     end
 
     def call
-      raise InvalidPrice, "Choose a live Price" unless live_plan_price?
+      raise InvalidPrice, Copy.t("alerts.choose_live_price") unless live_plan_price?
 
       subscription = current_subscription
-      raise NoSubscription, "Start a subscription first" unless subscription
+      raise NoSubscription, Copy.t("alerts.start_subscription") unless subscription
 
       apply_comparison(subscription)
     end
@@ -114,7 +114,7 @@ module RecordingStudioStripe
       stripe_subscription = Client.current.v1.subscriptions.retrieve(subscription.stripe_id)
       item = matching_item(stripe_subscription, subscription.price&.stripe_id)
       item_id = stripe_get(item, :id)
-      raise NoSubscription, "Stripe has no item on this subscription" if item_id.blank?
+      raise NoSubscription, Copy.t("alerts.stripe_no_item") if item_id.blank?
 
       subscription.update!(metadata: subscription.metadata.merge("stripe_item_id" => item_id))
       item_id

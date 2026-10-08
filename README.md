@@ -258,8 +258,34 @@ Hosts that do not use `current_user` should set `config.current_actor`. Hosts th
 
 Recording Studio core still swallows `before_record` errors. Standing caps gate on `Recording` `before_create`, restore, and move until core can deny `record!` itself.
 
+## Translating customer screens
+
+Customer billing copy lives under `recording_studio.stripe.*`. This gem ships English only, in `config/locales/en.yml`. The host lists languages and supplies the translations. Put a host file at `config/locales/fr.yml` (or Japanese, or whatever you offer) with the same nested keys. Host files load after the engine, so they override English too.
+
+```erb
+<%= t("recording_studio.stripe.plans.title") %>
+```
+
+```yaml
+fr:
+  recording_studio:
+    stripe:
+      plans:
+        title: "Tarifs"
+```
+
+Do not translate Stripe catalog data: Product names, Price amounts, staff-written card subtitles, `plan_line` templates, paywall labels, and extra card lines stay as stored. Buttons, titles, flashes, empty states, and other chrome follow I18n.
+
+`PlansComponent` and `UsageComponent` still take `title:` and `subtitle:`. A passed string (including `nil`) wins over the translation. Leave those props unset to follow the locale.
+
+Add [Recording Studio Internationalization](https://github.com/bowerbird-app/RecordingStudio_Internationalization) on the host when you want a language selector. This gem does not declare the host's languages.
+
+Staff Admin screens (Products, Prices, Meters, Paywalls) stay English for now.
+
 ## Dummy
 
 `test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` and `/pricing` for the centered plan cards. Dummy seeds Studio (Starter, Pro, Team) and Inbox (Inbox, Inbox Plus, Inbox Pro) so one workspace can hold two live plans. Pro offers a $1, 14-day trial. Cards sort cheapest first and list caps, included usage, and ticked features. Home is the workspace. `/billing` is the plan and Stripe portal. See usage appears after a live plan has recorded cap or meter use. `/billing/usage` shows the press kit cap with meters as full-width rows. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.
+
+Dummy offers English and French. The language selector is in the top nav. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key. Stripe keys stay in `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`, not Rails credentials.

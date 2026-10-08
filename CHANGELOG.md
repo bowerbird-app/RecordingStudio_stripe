@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-10-08
+
+### Added
+- Customer billing copy resolves through `recording_studio.stripe.*` I18n keys
+- Engine ships English only in `config/locales/en.yml`
+- Dummy hosts English and French, with a language selector in the top nav
+
+### Upgrade notes
+- Bump to **0.9.0** (minor: hosts can translate customer billing screens). No migration
+- English screens stay the same. Leave `PlansComponent` / `UsageComponent` `title:` and `subtitle:` unset to follow the locale. A passed string, including `nil`, still wins
+- To offer another language, copy `recording_studio.stripe.*` from `config/locales/en.yml` into the host (`config/locales/fr.yml` is the dummy starting point) and list that locale on the host. Add Recording Studio Internationalization when you want the language selector
+- Do not expect a French file from this gem. Product names, prices, and other stored catalog copy are not translated
+- Staff Admin screens stay English
+
 ## [0.8.9] - 2026-09-30
 
 ### Added

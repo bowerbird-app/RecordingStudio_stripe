@@ -31,6 +31,7 @@ module ApplicationHelper
     )
 
     recording_studio_page_nav_right do
+      concat dummy_language_selector
       concat recording_studio_root_switch_dropdown(style: :ghost, size: :md)
       concat render(
         FlatPack::Button::Component.new(
@@ -97,6 +98,18 @@ module ApplicationHelper
     return [] unless recordable.respond_to?(:billing)
 
     recordable.billing.active_lines.filter_map { |line| line.subscription.price&.product&.name }
+  end
+
+  def dummy_language_selector
+    return unless respond_to?(:recording_studio_language_selector)
+
+    recording_studio_language_selector
+  end
+
+  def dummy_locale_attributes
+    return {} unless respond_to?(:recording_studio_locale_attributes)
+
+    recording_studio_locale_attributes
   end
 
   def dummy_home_subtitle

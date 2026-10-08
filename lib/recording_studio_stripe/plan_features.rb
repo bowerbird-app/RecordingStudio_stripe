@@ -4,8 +4,6 @@ module RecordingStudioStripe
   class PlanFeatures
     Line = Data.define(:key, :text, :icon)
 
-    FALLBACK_NO_PRICE = "This plan is a seat. Usage limits show up once a Price is attached."
-    FALLBACK_EMPTY = "A seat. Standing caps show on billing."
     DEFAULT_ICON = "check"
 
     def self.for(product, price)
@@ -30,10 +28,10 @@ module RecordingStudioStripe
     end
 
     def lines
-      return [fallback(FALLBACK_NO_PRICE)] unless @price
+      return [fallback(Copy.t("plans.features.no_price"))] unless @price
 
       visible = ordered(candidates.reject { |line| hidden?(line.key) })
-      visible.presence || [fallback(FALLBACK_EMPTY)]
+      visible.presence || [fallback(Copy.t("plans.features.empty"))]
     end
 
     private

@@ -28,12 +28,12 @@ module RecordingStudioStripe
 
     def require_root_recording!
       unless current_actor
-        redirect_to recording_studio_stripe_sign_in_url, alert: "Sign in to pick a plan."
+        redirect_to recording_studio_stripe_sign_in_url, alert: Copy.t("alerts.sign_in")
         return
       end
       return if current_billing_root
 
-      render plain: "Pick a workspace first.", status: :not_found
+      render plain: Copy.t("alerts.pick_workspace"), status: :not_found
     end
 
     def billing
@@ -61,7 +61,7 @@ module RecordingStudioStripe
           role: role
         )
 
-        render plain: "You don’t have access to billing for this workspace.", status: :forbidden
+        render plain: Copy.t("alerts.no_access"), status: :forbidden
         return
       end
 
@@ -69,11 +69,11 @@ module RecordingStudioStripe
       if authenticator
         return if instance_exec(&authenticator)
 
-        render plain: "You don’t have access to billing for this workspace.", status: :forbidden
+        render plain: Copy.t("alerts.no_access"), status: :forbidden
         return
       end
 
-      render plain: "You don’t have access to billing for this workspace.", status: :forbidden
+      render plain: Copy.t("alerts.no_access"), status: :forbidden
     end
 
     def after_checkout_url

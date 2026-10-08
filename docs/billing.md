@@ -52,6 +52,8 @@ A workspace that already has a live plan in that group still upgrades or downgra
 
 ## Plan cards
 
+Customer chrome on `/plans`, `/billing`, `/billing/usage`, change, and cancel is `recording_studio.stripe.*` I18n. The gem ships English. Hosts add other languages. Product names, prices, card subtitles, and `plan_line` text stay as stored. Staff Admin stays English.
+
 `/plans` and `/pricing` cards are generated from those connections. They are not a handwritten bullet list.
 
 1. Standing caps on the Product (`limit_press_kits`)

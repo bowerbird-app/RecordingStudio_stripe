@@ -10,8 +10,8 @@ module RecordingStudioStripe
     ALIGNS = %i[left center].freeze
 
     def initialize(interval: "month", weekly_href: nil, monthly_href: nil, yearly_href: nil, intervals: nil,
-                   products: [], subscription: nil, groups: nil, align: :center, title: "Pricing",
-                   subtitle: "Monthly or yearly. You can switch later.")
+                   products: [], subscription: nil, groups: nil, align: :center, title: Copy::UNSET,
+                   subtitle: Copy::UNSET)
       super()
       @interval = interval
       @align = align.to_sym
@@ -39,8 +39,8 @@ module RecordingStudioStripe
 
     def heading
       title = render FlatPack::PageTitle::Component.new(
-        title: @title,
-        subtitle: @subtitle,
+        title: Copy.value(@title, "plans.title"),
+        subtitle: Copy.value(@subtitle, "plans.subtitle"),
         variant: :h1,
         class: (@align == :center ? "mb-0 pb-0 w-full text-center" : "mb-0 pb-0"),
         data: { plans_heading: true }
@@ -151,8 +151,8 @@ module RecordingStudioStripe
 
       helpers.tag.div(class: "w-full") do
         render FlatPack::EmptyState::Component.new(
-          title: "No prices yet",
-          description: "Staff add Products and Prices in admin. Come back when the shop is stocked.",
+          title: Copy.t("plans.empty_title"),
+          description: Copy.t("plans.empty_description"),
           icon: :inbox
         )
       end

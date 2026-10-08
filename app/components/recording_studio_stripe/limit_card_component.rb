@@ -30,9 +30,9 @@ module RecordingStudioStripe
     end
 
     def amount_text
-      return "None on this plan." if @handle.included <= 0
+      return Copy.t("usage.none_on_plan") if @handle.included <= 0
 
-      "#{@handle.used}/#{@handle.included}"
+      Copy.t("usage.used_of_included", used: @handle.used, included: @handle.included)
     end
 
     def details
@@ -49,7 +49,7 @@ module RecordingStudioStripe
     def over_hint
       return unless @handle.over?
 
-      helpers.tag.p("Archive some, or upgrade.", class: "text-sm leading-6")
+      helpers.tag.p(Copy.t("usage.over_hint"), class: "text-sm leading-6")
     end
 
     def progress_max

@@ -71,7 +71,7 @@ module RecordingStudioStripe
       if definition.plan_line.present?
         interpolate(definition.plan_line, quantity: qty, label: definition.label)
       else
-        "#{qty} #{definition.label.downcase}"
+        Copy.t("plans.features.quantity_with_label", quantity: qty, label: definition.label.downcase)
       end
     end
 
@@ -81,7 +81,7 @@ module RecordingStudioStripe
       if attrs["plan_line"].present?
         interpolate(attrs["plan_line"], quantity: qty, label: label)
       else
-        "#{qty} #{label.downcase}"
+        Copy.t("plans.features.quantity_with_label", quantity: qty, label: label.downcase)
       end
     end
 

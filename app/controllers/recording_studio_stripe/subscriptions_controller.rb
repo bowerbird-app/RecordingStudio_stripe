@@ -11,7 +11,7 @@ module RecordingStudioStripe
       )
       return if @change
 
-      redirect_to recording_studio_stripe.engine_plans_path, alert: "Pick a plan from the list."
+      redirect_to recording_studio_stripe.engine_plans_path, alert: Copy.t("alerts.pick_plan")
     end
 
     def confirm_cancel
@@ -21,7 +21,7 @@ module RecordingStudioStripe
       )
       return if @cancel
 
-      redirect_to recording_studio_stripe.root_path, alert: "Nothing to cancel."
+      redirect_to recording_studio_stripe.root_path, alert: Copy.t("alerts.nothing_to_cancel")
     rescue NoSubscription => e
       redirect_to recording_studio_stripe.root_path, alert: e.message
     end
@@ -29,7 +29,7 @@ module RecordingStudioStripe
     def update
       price = Price.active.includes(:product).find_by(id: params[:price_id])
       unless price&.product&.plan? && price.recurring?
-        redirect_to recording_studio_stripe.engine_plans_path, alert: "Pick a plan from the list."
+        redirect_to recording_studio_stripe.engine_plans_path, alert: Copy.t("alerts.pick_plan")
         return
       end
 
@@ -44,7 +44,7 @@ module RecordingStudioStripe
         root_recording: current_billing_root,
         subscription_type: params[:subscription_type]
       )
-      redirect_to recording_studio_stripe.root_path, notice: "This plan stays on until the period ends."
+      redirect_to recording_studio_stripe.root_path, notice: Copy.t("notices.plan_stays_until_end")
     rescue NoSubscription => e
       redirect_to recording_studio_stripe.root_path, alert: e.message
     end
@@ -54,7 +54,7 @@ module RecordingStudioStripe
         root_recording: current_billing_root,
         subscription_type: params[:subscription_type]
       )
-      redirect_to recording_studio_stripe.root_path, notice: "Nice. Billing keeps going."
+      redirect_to recording_studio_stripe.root_path, notice: Copy.t("notices.billing_keeps_going")
     rescue NoSubscription => e
       redirect_to recording_studio_stripe.root_path, alert: e.message
     end
@@ -64,7 +64,7 @@ module RecordingStudioStripe
         root_recording: current_billing_root,
         subscription_type: params[:subscription_type]
       )
-      redirect_to recording_studio_stripe.root_path, notice: "You’ll stay on this plan."
+      redirect_to recording_studio_stripe.root_path, notice: Copy.t("notices.stay_on_plan")
     rescue NoSubscription => e
       redirect_to recording_studio_stripe.root_path, alert: e.message
     end
@@ -75,11 +75,11 @@ module RecordingStudioStripe
       type = SubscriptionTypes.normalize(price.product&.subscription_type)
       subscription = billing.line(type).subscription
       if subscription&.scheduled_price_id == price.id
-        "We’ll switch you at the next renewal."
+        Copy.t("notices.switch_at_renewal")
       elsif subscription&.price_id == price.id
-        "You’re on the new plan."
+        Copy.t("notices.on_new_plan")
       else
-        "Stripe is confirming this plan. Refresh in a moment."
+        Copy.t("notices.stripe_confirming")
       end
     end
   end

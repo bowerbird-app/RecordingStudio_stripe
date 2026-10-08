@@ -40,7 +40,7 @@ module RecordingStudioStripe
 
     def keep_button
       render FlatPack::Button::Component.new(
-        text: "Never mind",
+        text: Copy.t("change.never_mind"),
         style: :ghost,
         size: :md,
         href: helpers.main_app.plans_path

@@ -13,7 +13,7 @@ module RecordingStudioStripe
 
     def call
       subscription = live_subscription
-      raise NoSubscription, "Nothing to resume" unless subscription
+      raise NoSubscription, Copy.t("alerts.nothing_to_resume") unless subscription
 
       unless RecordingStudioStripe.configuration.local_mode?
         Client.current.v1.subscriptions.update(
@@ -32,7 +32,7 @@ module RecordingStudioStripe
       LiveSubscription.find(
         root_recording: @root_recording,
         subscription_type: @subscription_type,
-        missing_type_message: "Pick which plan to resume."
+        missing_type_message: Copy.t("alerts.pick_which_resume")
       )
     end
   end

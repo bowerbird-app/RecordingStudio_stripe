@@ -15,7 +15,7 @@ module RecordingStudioStripe
 
     def call
       subscription = live_subscription
-      raise NoSubscription, "Nothing is scheduled" unless subscription&.scheduled_downgrade?
+      raise NoSubscription, Copy.t("alerts.nothing_scheduled") unless subscription&.scheduled_downgrade?
 
       release_schedule(subscription) unless RecordingStudioStripe.configuration.local_mode?
       subscription.update!(scheduled_price: nil)
@@ -28,7 +28,7 @@ module RecordingStudioStripe
       LiveSubscription.find(
         root_recording: @root_recording,
         subscription_type: @subscription_type,
-        missing_type_message: "Pick which plan to keep."
+        missing_type_message: Copy.t("alerts.pick_which_keep")
       )
     end
 

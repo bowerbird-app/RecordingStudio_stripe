@@ -29,16 +29,16 @@ module RecordingStudioStripe
     end
 
     def checkout_label
-      offered? ? "Try now" : "Choose plan"
+      offered? ? Copy.t("plans.try_now") : Copy.t("plans.choose_plan")
     end
 
     def duration_label
       return unless offered?
 
       months, extra_days = days.divmod(30)
-      return "#{months} month trial" if extra_days.zero?
+      return Copy.t("trial.duration_months", count: months) if extra_days.zero?
 
-      "#{days} day trial"
+      Copy.t("trial.duration_days", count: days)
     end
 
     def amount_label

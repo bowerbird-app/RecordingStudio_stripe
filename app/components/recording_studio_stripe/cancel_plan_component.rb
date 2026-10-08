@@ -34,7 +34,7 @@ module RecordingStudioStripe
                         params: { subscription_type: @cancel.subscription_type },
                         class: "inline-flex" do
         render FlatPack::Button::Component.new(
-          text: "Cancel at period end",
+          text: Copy.t("cancel.confirm"),
           style: :primary,
           size: :md,
           type: "submit"
@@ -44,7 +44,7 @@ module RecordingStudioStripe
 
     def keep_button
       render FlatPack::Button::Component.new(
-        text: "Keep this plan",
+        text: Copy.t("cancel.keep"),
         style: :ghost,
         size: :md,
         href: recording_studio_stripe.root_path

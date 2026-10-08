@@ -1,24 +1,24 @@
 <% content_for :head do %>
   <%= stylesheet_link_tag "recording_studio_stripe/button", "data-turbo-track": "reload" %>
 <% end %>
-<% recording_studio_page_nav(title: "Billing", page_nav_anchor_url: main_app.root_path) %>
+<% recording_studio_page_nav(title: t("recording_studio.stripe.billing.title"), page_nav_anchor_url: main_app.root_path) %>
 
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
-    title: "Billing",
+    title: t("recording_studio.stripe.billing.title"),
     subtitle: billing_subtitle(@lines),
     variant: :h1
   ) %>
 
   <% if @waiting_on_stripe %>
     <%= render FlatPack::Alert::Component.new(
-      description: "Stripe is confirming this plan. Refresh in a moment.",
+      description: t("recording_studio.stripe.billing.confirming_plan"),
       style: :info,
       class: "mb-4"
     ) %>
   <% elsif @confirming_allowance %>
     <%= render FlatPack::Alert::Component.new(
-      description: "Stripe is confirming that pack. Refresh in a moment.",
+      description: t("recording_studio.stripe.billing.confirming_pack"),
       style: :info,
       class: "mb-4"
     ) %>
@@ -29,7 +29,7 @@
       <% if @show_manage_billing %>
         <%= button_to recording_studio_stripe.portal_path, class: "inline-flex", form: { data: { turbo: false } } do %>
           <%= render FlatPack::Button::Component.new(
-            text: "Manage billing on Stripe",
+            text: t("recording_studio.stripe.billing.manage"),
             icon: "credit-card",
             style: :stripe,
             size: :md,
@@ -39,7 +39,7 @@
       <% end %>
       <% if @show_see_usage %>
         <%= render FlatPack::Button::Component.new(
-          text: "See usage",
+          text: t("recording_studio.stripe.billing.see_usage"),
           style: :secondary,
           size: :md,
           href: recording_studio_stripe.usage_path
@@ -59,12 +59,17 @@
     <% end %>
   <% else %>
     <%= render FlatPack::EmptyState::Component.new(
-      title: "No plan yet",
-      description: "Pick a plan when you’re ready.",
+      title: t("recording_studio.stripe.billing.empty_title"),
+      description: t("recording_studio.stripe.billing.empty_description"),
       icon: :inbox
     ) do |empty| %>
       <% empty.slot do %>
-        <%= render FlatPack::Button::Component.new(text: "See pricing", style: :primary, size: :md, href: main_app.plans_path) %>
+        <%= render FlatPack::Button::Component.new(
+          text: t("recording_studio.stripe.billing.see_pricing"),
+          style: :primary,
+          size: :md,
+          href: main_app.plans_path
+        ) %>
       <% end %>
     <% end %>
   <% end %>

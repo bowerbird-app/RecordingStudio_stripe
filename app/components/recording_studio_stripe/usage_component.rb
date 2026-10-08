@@ -4,12 +4,12 @@ module RecordingStudioStripe
   class UsageComponent < ViewComponent::Base
     include RecordingStudioStripe::ApplicationHelper
 
-    def initialize(billing:, lines: nil, title: "Usage", subtitle: nil)
+    def initialize(billing:, lines: nil, title: Copy::UNSET, subtitle: nil)
       super()
       @billing = billing
       @lines = Array(lines.nil? ? billing.active_lines : lines)
       @title = title
-      @subtitle = subtitle || usage_subtitle(@lines)
+      @subtitle = subtitle
     end
 
     def call
@@ -22,8 +22,8 @@ module RecordingStudioStripe
 
     def heading
       render FlatPack::PageTitle::Component.new(
-        title: @title,
-        subtitle: @subtitle,
+        title: Copy.value(@title, "usage.title"),
+        subtitle: @subtitle || usage_subtitle(@lines),
         variant: :h1
       )
     end
@@ -68,8 +68,8 @@ module RecordingStudioStripe
 
     def empty_state
       render FlatPack::EmptyState::Component.new(
-        title: "Nothing to count yet",
-        description: "Meters show up once staff add them.",
+        title: Copy.t("usage.empty_title"),
+        description: Copy.t("usage.empty_description"),
         icon: :inbox
       )
     end

@@ -11,16 +11,16 @@ module RecordingStudioStripe
       )
       if result[:unavailable]
         redirect_to recording_studio_stripe.root_path,
-                    alert: "Invoices and cards live in Stripe. Add keys to open them."
+                    alert: Copy.t("alerts.portal_needs_keys")
       else
         redirect_to result[:url], allow_other_host: true
       end
     rescue NoCustomer
       redirect_to recording_studio_stripe.root_path,
-                  alert: "Pay once first, then invoices and cards show up here."
+                  alert: Copy.t("alerts.portal_needs_pay")
     rescue Stripe::StripeError
       redirect_to recording_studio_stripe.root_path,
-                  alert: "Stripe could not open billing. Try again."
+                  alert: Copy.t("alerts.portal_failed")
     end
   end
 end

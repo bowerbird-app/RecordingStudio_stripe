@@ -7,7 +7,7 @@ module RecordingStudioStripe
     def create
       price = Price.active.includes(:product).find_by(id: params[:price_id])
       unless price&.product&.allowance?
-        redirect_to recording_studio_stripe.root_path, alert: "Pick an extra pack from billing."
+        redirect_to recording_studio_stripe.root_path, alert: Copy.t("alerts.pick_pack")
         return
       end
 
