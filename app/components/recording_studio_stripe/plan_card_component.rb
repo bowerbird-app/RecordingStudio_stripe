@@ -34,7 +34,7 @@ module RecordingStudioStripe
     end
 
     def title_subtitle
-      return "No #{stripe_interval_label(@interval)} Price yet" unless price
+      return Copy.t("plans.no_price_yet", interval: stripe_interval_label(@interval)) unless price
 
       @product.card_subtitle
     end
@@ -83,7 +83,7 @@ module RecordingStudioStripe
 
     def current_button
       render FlatPack::Button::Component.new(
-        text: "Current plan",
+        text: Copy.t("plans.current_plan"),
         style: :secondary,
         size: :md,
         type: "button",
@@ -107,7 +107,7 @@ module RecordingStudioStripe
     end
 
     def checkout_label
-      trial_offer? ? "Try now" : "Choose plan"
+      trial_offer? ? Copy.t("plans.try_now") : Copy.t("plans.choose_plan")
     end
 
     def change_button
@@ -121,9 +121,13 @@ module RecordingStudioStripe
     end
 
     def change_label
-      return "Switch now" unless @subscription&.price
+      return Copy.t("plans.switch_now") unless @subscription&.price
 
-      ComparePrices.upgrade?(from: @subscription.price, to: price) ? "Upgrade" : "Downgrade"
+      if ComparePrices.upgrade?(from: @subscription.price, to: price)
+        Copy.t("plans.upgrade")
+      else
+        Copy.t("plans.downgrade")
+      end
     end
 
     def recording_studio_stripe

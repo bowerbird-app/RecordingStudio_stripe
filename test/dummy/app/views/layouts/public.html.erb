@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-theme="rounded">
+<html data-theme="rounded" <%= tag.attributes(dummy_locale_attributes) %>>
   <head>
     <title><%= content_for(:title) || "Dummy" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -24,6 +24,9 @@
   </head>
 
   <body class="m-0 min-h-screen bg-[var(--surface-page-background-color)] text-[var(--surface-content-color)]">
+    <div class="mx-auto flex w-full max-w-6xl justify-end p-6 pb-0">
+      <%= dummy_language_selector %>
+    </div>
     <main class="mx-auto min-h-screen w-full max-w-6xl p-6">
       <%= yield %>
     </main>

@@ -29,13 +29,22 @@ module RecordingStudioStripe
     def pack_title
       meter = Meter.find_by(name: @price.allowance_meter_name)
       label = meter&.label || @price.allowance_meter_name.to_s.tr("_", " ")
-      "+#{stripe_quantity_label(@price.allowance_quantity)} #{label.downcase}"
+      Copy.t(
+        "allowances.pack_title",
+        quantity: stripe_quantity_label(@price.allowance_quantity),
+        label: label.downcase
+      )
     end
 
     def buy_button
       helpers.button_to recording_studio_stripe.allowances_path, params: { price_id: @price.id },
                                                                  class: "inline-flex" do
-        render FlatPack::Button::Component.new(text: "Add this pack", style: :secondary, size: :md, type: "submit")
+        render FlatPack::Button::Component.new(
+          text: Copy.t("allowances.add_this_pack"),
+          style: :secondary,
+          size: :md,
+          type: "submit"
+        )
       end
     end
 

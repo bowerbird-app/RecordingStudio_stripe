@@ -8,7 +8,7 @@ module RecordingStudioStripe
       subscription = LiveSubscription.find(
         root_recording: root_recording,
         subscription_type: subscription_type,
-        missing_type_message: "Pick which plan to cancel."
+        missing_type_message: Copy.t("alerts.pick_which_cancel")
       )
       return unless subscription
 
@@ -20,17 +20,17 @@ module RecordingStudioStripe
     end
 
     def title
-      "Cancel #{name}?"
+      Copy.t("cancel.heading", name: name)
     end
 
     def subtitle
-      return "You keep it until #{period_end.to_fs(:long)}." if period_end
+      return Copy.t("cancel.subtitle_until", date: Copy.long_date(period_end)) if period_end
 
-      "You keep it until this period ends."
+      Copy.t("cancel.subtitle_period")
     end
 
     def name
-      subscription.price&.product&.name || "this plan"
+      subscription.price&.product&.name || Copy.t("cancel.this_plan")
     end
 
     def subscription_type

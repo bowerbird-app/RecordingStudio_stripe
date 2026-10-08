@@ -3,9 +3,9 @@
 module RecordingStudioStripe
   class PlanIntervalPills
     ROWS = [
-      %w[week Weekly weekly],
-      %w[month Monthly monthly],
-      %w[year Yearly yearly]
+      %w[week weekly],
+      %w[month monthly],
+      %w[year yearly]
     ].freeze
 
     def self.items(interval:, products:, weekly_href:, monthly_href:, yearly_href:, label: nil, intervals: nil)
@@ -30,11 +30,11 @@ module RecordingStudioStripe
 
     def items
       offered = PlanIntervals.offered(@products, intervals: @intervals)
-      ROWS.filter_map do |interval, text, cadence|
+      ROWS.filter_map do |interval, cadence|
         href = @hrefs[interval]
         next unless offered.include?(interval) && href.present?
 
-        item(text, href, cadence)
+        item(Copy.t("intervals.pills.#{interval}"), href, cadence)
       end
     end
 
@@ -42,7 +42,10 @@ module RecordingStudioStripe
 
     def item(text, href, cadence)
       row = { text: text, href: href, active: @interval == cadence_interval(cadence) }
-      row[:aria] = { label: "#{@label} #{cadence}" } if @label.present?
+      if @label.present?
+        cadence_word = Copy.t("intervals.adjectives.#{cadence}")
+        row[:aria] = { label: Copy.t("intervals.aria", label: @label, cadence: cadence_word) }
+      end
       row
     end
 

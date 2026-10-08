@@ -1,0 +1,148 @@
+en:
+  recording_studio:
+    stripe:
+      intervals:
+        names:
+          week: week
+          month: month
+          year: year
+        adjectives:
+          weekly: weekly
+          monthly: monthly
+          yearly: yearly
+        pills:
+          week: Weekly
+          month: Monthly
+          year: Yearly
+        abbrev:
+          week: wk
+          month: mo
+          year: yr
+        aria: "%{label} %{cadence}"
+        price_unit: "/%{abbrev}"
+        amount: "%{amount}/%{interval}"
+      plans:
+        title: Pricing
+        subtitle: Monthly or yearly. You can switch later.
+        empty_title: No prices yet
+        empty_description: Staff add Products and Prices in admin. Come back when the shop is stocked.
+        no_price_yet: "No %{interval} Price yet"
+        current_plan: Current plan
+        try_now: Try now
+        choose_plan: Choose plan
+        switch_now: Switch now
+        upgrade: Upgrade
+        downgrade: Downgrade
+        features:
+          no_price: This plan is a seat. Usage limits show up once a Price is attached.
+          empty: A seat. Standing caps show on billing.
+          quantity_with_label: "%{quantity} %{label}"
+      trial:
+        word: trial
+        duration_days:
+          one: "%{count} day trial"
+          other: "%{count} day trial"
+        duration_months:
+          one: "%{count} month trial"
+          other: "%{count} month trial"
+      billing:
+        title: Billing
+        manage: Manage billing on Stripe
+        see_usage: See usage
+        see_pricing: See pricing
+        empty_title: No plan yet
+        empty_description: Pick a plan when you’re ready.
+        confirming_plan: Stripe is confirming this plan. Refresh in a moment.
+        confirming_pack: Stripe is confirming that pack. Refresh in a moment.
+        catching_up: Stripe is catching up.
+        nothing_to_charge: Nothing to charge yet.
+        on_plan: "You’re on %{name}."
+        on_plans: "You’re on %{names}."
+        canceling: "This plan runs until %{date}."
+        past_due: "The card for %{name} did not go through."
+        trial_until: "Trial until %{date}."
+        trial_until_then: "Trial until %{date}. Then %{amount}."
+        scheduled: "Next period switches to %{name}."
+        current: Current
+        past_due_badge: Past due
+        trial_badge: Trial
+        ends_this_period: Ends this period
+        change_scheduled: Change scheduled
+        change_plan: Change plan
+        update_card: Update card
+        stay_on_named: "Stay on %{name}"
+        stay_on_this: Stay on this plan
+        keep_this_plan: Keep this plan
+        cancel: Cancel
+      usage:
+        title: Usage
+        resets_when_paid: Usage resets when a paid period starts.
+        resets_each_period: Included amounts reset with each paid period.
+        resets_on: "Resets on %{date}."
+        empty_title: Nothing to count yet
+        empty_description: Meters show up once staff add them.
+        none_on_plan: None on this plan.
+        over_hint: Archive some, or upgrade.
+        used_of_included: "%{used}/%{included}"
+        breakdown: Breakdown
+        on_this_plan: On this plan
+        extra_packs: Extra packs
+        total_this_period: Total this period
+      allowances:
+        pack_title: "+%{quantity} %{label}"
+        add_this_pack: Add this pack
+      change:
+        title: Change plan
+        back: Pricing
+        never_mind: Never mind
+        title_upgrade: "Upgrade to %{name}?"
+        title_downgrade: "Downgrade to %{name}?"
+        title_switch: "Switch %{name} to %{interval}?"
+        subtitle: "%{to_amount}, %{direction} from %{from_amount}. %{timing}"
+        up: up
+        down: down
+        pay_difference: You pay the difference today.
+        starts_on: "Starts on %{date}."
+        starts_next: Starts at the next renewal.
+      cancel:
+        title: Cancel plan
+        back: Billing
+        heading: "Cancel %{name}?"
+        this_plan: this plan
+        subtitle_until: "You keep it until %{date}."
+        subtitle_period: You keep it until this period ends.
+        confirm: Cancel at period end
+        keep: Keep this plan
+      notices:
+        plan_stays_until_end: This plan stays on until the period ends.
+        billing_keeps_going: Nice. Billing keeps going.
+        stay_on_plan: You’ll stay on this plan.
+        switch_at_renewal: We’ll switch you at the next renewal.
+        on_new_plan: You’re on the new plan.
+        stripe_confirming: Stripe is confirming this plan. Refresh in a moment.
+      alerts:
+        pick_plan: Pick a plan from the list.
+        pick_pack: Pick an extra pack from billing.
+        nothing_to_cancel: Nothing to cancel.
+        sign_in: Sign in to pick a plan.
+        pick_workspace: Pick a workspace first.
+        no_access: You don’t have access to billing for this workspace.
+        portal_needs_keys: Invoices and cards live in Stripe. Add keys to open them.
+        portal_needs_pay: Pay once first, then invoices and cards show up here.
+        portal_failed: Stripe could not open billing. Try again.
+        nothing_to_resume: Nothing to resume.
+        nothing_scheduled: Nothing is scheduled.
+        pick_which_cancel: Pick which plan to cancel.
+        pick_which_resume: Pick which plan to resume.
+        pick_which_keep: Pick which plan to keep.
+        price_not_for_sale: Price is not for sale
+        choose_live_price: Choose a live Price
+        start_subscription: Start a subscription first
+        stripe_no_item: Stripe has no item on this subscription
+      errors:
+        pick_plan_to_add: "Pick a plan to add %{label}."
+        plan_includes: "%{plan} includes %{count} %{label}. %{relief}"
+        this_plan: This plan
+        relief_quantity: Upgrade, or free some up.
+        relief_count: Upgrade, or archive one.
+        meter_spent: "This period's %{label} are spent. Buy a pack, or wait for renewal."

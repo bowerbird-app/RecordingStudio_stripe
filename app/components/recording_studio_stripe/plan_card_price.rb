@@ -2,7 +2,6 @@
 
 module RecordingStudioStripe
   class PlanCardPrice
-    ABBREV = { "year" => "yr", "week" => "wk" }.freeze
     PRICE_SIZE = "font-size: var(--page-title-h2-size); line-height: 1;"
     UNIT_SIZE = "font-size: var(--text-lg); line-height: 1;"
 
@@ -71,15 +70,16 @@ module RecordingStudioStripe
     end
 
     def unit
-      @view.content_tag(:span, "/#{interval_abbrev}", style: UNIT_SIZE)
+      @view.content_tag(:span, Copy.t("intervals.price_unit", abbrev: interval_abbrev), style: UNIT_SIZE)
     end
 
     def trial_word
-      @view.content_tag(:span, "trial", style: "#{UNIT_SIZE} margin-left: 0.25em;")
+      @view.content_tag(:span, Copy.t("trial.word"), style: "#{UNIT_SIZE} margin-left: 0.25em;")
     end
 
     def interval_abbrev
-      ABBREV.fetch(@price.interval, "mo")
+      key = { "year" => "year", "week" => "week" }.fetch(@price.interval, "month")
+      Copy.t("intervals.abbrev.#{key}")
     end
   end
 end

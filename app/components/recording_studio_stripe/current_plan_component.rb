@@ -20,7 +20,7 @@ module RecordingStudioStripe
 
     def title
       render FlatPack::PageTitle::Component.new(
-        title: @subscription.price&.product&.name || "Current plan",
+        title: @subscription.price&.product&.name || Copy.t("plans.current_plan"),
         subtitle: period_copy,
         variant: :h3,
         class: "mb-0 pb-0"
@@ -29,9 +29,9 @@ module RecordingStudioStripe
 
     def period_copy
       price = @subscription.price
-      return "Stripe is catching up." unless price
+      return Copy.t("billing.catching_up") unless price
 
-      "#{price.formatted_amount}/#{stripe_interval_label(price.interval)}"
+      Copy.t("intervals.amount", amount: price.formatted_amount, interval: stripe_interval_label(price.interval))
     end
 
     def badges
@@ -50,14 +50,14 @@ module RecordingStudioStripe
 
     def status_badges
       parts = []
-      parts << badge("Past due", :danger) if @subscription.past_due?
-      parts << badge("Trial", :info) if @subscription.trialing?
+      parts << badge(Copy.t("billing.past_due_badge"), :danger) if @subscription.past_due?
+      parts << badge(Copy.t("billing.trial_badge"), :info) if @subscription.trialing?
       if @subscription.canceling?
-        parts << badge("Ends this period", :warning)
+        parts << badge(Copy.t("billing.ends_this_period"), :warning)
       elsif @subscription.scheduled_downgrade?
-        parts << badge("Change scheduled", :info)
+        parts << badge(Copy.t("billing.change_scheduled"), :info)
       elsif !@subscription.past_due? && !@subscription.trialing?
-        parts << badge("Current", :success)
+        parts << badge(Copy.t("billing.current"), :success)
       end
       parts
     end
@@ -81,7 +81,7 @@ module RecordingStudioStripe
     end
 
     def change_plan_button
-      render FlatPack::Button::Component.new(text: "Change plan", style: :secondary, size: :md,
+      render FlatPack::Button::Component.new(text: Copy.t("billing.change_plan"), style: :secondary, size: :md,
                                              href: main_app.plans_path)
     end
 
@@ -91,7 +91,12 @@ module RecordingStudioStripe
       helpers.button_to recording_studio_stripe.portal_path,
                         class: "inline-flex",
                         form: { data: { turbo: false } } do
-        render FlatPack::Button::Component.new(text: "Update card", style: :primary, size: :md, type: "submit")
+        render FlatPack::Button::Component.new(
+          text: Copy.t("billing.update_card"),
+          style: :primary,
+          size: :md,
+          type: "submit"
+        )
       end
     end
 
@@ -107,7 +112,7 @@ module RecordingStudioStripe
 
     def stay_label
       name = @subscription.price&.product&.name
-      name.present? ? "Stay on #{name}" : "Stay on this plan"
+      name.present? ? Copy.t("billing.stay_on_named", name: name) : Copy.t("billing.stay_on_this")
     end
 
     def keep_plan_button
@@ -116,7 +121,12 @@ module RecordingStudioStripe
       helpers.button_to recording_studio_stripe.subscription_resume_path,
                         params: { subscription_type: @subscription.subscription_type },
                         class: "inline-flex" do
-        render FlatPack::Button::Component.new(text: "Keep this plan", style: :primary, size: :md, type: "submit")
+        render FlatPack::Button::Component.new(
+          text: Copy.t("billing.keep_this_plan"),
+          style: :primary,
+          size: :md,
+          type: "submit"
+        )
       end
     end
 
@@ -124,7 +134,7 @@ module RecordingStudioStripe
       return unless @can_manage && !@subscription.canceling?
 
       render FlatPack::Button::Component.new(
-        text: "Cancel",
+        text: Copy.t("billing.cancel"),
         style: :ghost,
         size: :md,
         href: recording_studio_stripe.subscription_cancel_confirm_path(

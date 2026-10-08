@@ -2,9 +2,6 @@
 
 module RecordingStudioStripe
   class PlanChange
-    CADENCE = { "year" => "year", "week" => "week" }.freeze
-    INTERVAL_WORD = { "year" => "yearly", "week" => "weekly" }.freeze
-
     attr_reader :subscription, :from_price, :to_price
 
     def self.build(root_recording:, price_id:)
@@ -41,18 +38,24 @@ module RecordingStudioStripe
     end
 
     def title
-      return "Switch #{to_name} to #{interval_word(@to_price)}?" if same_product?
-      return "Upgrade to #{to_name}?" if upgrade?
+      return Copy.t("change.title_switch", name: to_name, interval: interval_word(@to_price)) if same_product?
+      return Copy.t("change.title_upgrade", name: to_name) if upgrade?
 
-      "Downgrade to #{to_name}?"
+      Copy.t("change.title_downgrade", name: to_name)
     end
 
     def subtitle
-      "#{amount(@to_price)}, #{change_word} from #{amount(@from_price)}. #{timing}"
+      Copy.t(
+        "change.subtitle",
+        to_amount: amount(@to_price),
+        direction: change_word,
+        from_amount: amount(@from_price),
+        timing: timing
+      )
     end
 
     def confirm_label
-      upgrade? ? "Upgrade" : "Downgrade"
+      upgrade? ? Copy.t("plans.upgrade") : Copy.t("plans.downgrade")
     end
 
     private
@@ -62,30 +65,32 @@ module RecordingStudioStripe
     end
 
     def amount(price)
-      "#{price.formatted_amount}/#{CADENCE.fetch(price.interval, 'month')}"
+      Copy.t("intervals.amount", amount: price.formatted_amount, interval: interval_name(price.interval))
     end
 
     def change_word
-      upgrade? ? "up" : "down"
+      upgrade? ? Copy.t("change.up") : Copy.t("change.down")
     end
 
     def timing
-      return "You pay the difference today." if upgrade?
-      return "Starts on #{renewal_label}." if renewal_date
+      return Copy.t("change.pay_difference") if upgrade?
+      return Copy.t("change.starts_on", date: Copy.long_date(renewal_date)) if renewal_date
 
-      "Starts at the next renewal."
+      Copy.t("change.starts_next")
     end
 
     def interval_word(price)
-      INTERVAL_WORD.fetch(price.interval, "monthly")
+      adjective_key = { "year" => "yearly", "week" => "weekly" }.fetch(price.interval, "monthly")
+      Copy.t("intervals.adjectives.#{adjective_key}")
+    end
+
+    def interval_name(interval)
+      name_key = { "year" => "year", "week" => "week" }.fetch(interval, "month")
+      Copy.t("intervals.names.#{name_key}")
     end
 
     def renewal_date
       @subscription.current_period_end&.to_date
-    end
-
-    def renewal_label
-      renewal_date.to_fs(:long)
     end
   end
 end

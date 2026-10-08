@@ -4,6 +4,7 @@ require "recording_studio"
 require "stripe"
 
 require "recording_studio_stripe/version"
+require "recording_studio_stripe/copy"
 require "recording_studio_stripe/errors"
 require "recording_studio_stripe/stripe_request"
 require "recording_studio_stripe/engine"

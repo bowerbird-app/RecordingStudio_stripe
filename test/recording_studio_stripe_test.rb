@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.8.9", ::RecordingStudioStripe::VERSION
+    assert_equal "0.9.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -50,6 +50,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.0.2"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.5.0"'
     assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.189"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.1.2"'
   end
 
   def test_template_does_not_ship_copied_core_hooks_or_base_service
@@ -71,18 +72,26 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_dummy_home_uses_sidebar_layout
     home_controller = File.read(File.expand_path("dummy/app/controllers/home_controller.rb", __dir__))
     layout = File.read(File.expand_path("dummy/app/views/layouts/sidebar.html.erb", __dir__))
+    top_nav = File.read(File.expand_path("dummy/app/views/layouts/_sidebar_top_nav.html.erb", __dir__))
 
     assert_includes home_controller, 'layout "sidebar"'
     assert_includes layout, "FlatPack::SidebarLayout::Component"
     assert_includes layout, 'data-theme="rounded"'
     assert_includes layout, 'data-dummy-sidebar-layout="true"'
     refute_includes layout, "data-recording-studio-default-layout"
+    assert_includes top_nav, "dummy_language_selector"
+    assert_includes top_nav, "recording_studio_root_switch_dropdown"
+    language_at = top_nav.index("dummy_language_selector")
+    theme_at = top_nav.index("recording_studio_root_switch_dropdown")
+    assert language_at < theme_at, "language selector should sit left of the root switcher"
   end
 
   def test_dummy_default_layout_sets_rounded_theme_on_html
     layout = File.read(File.expand_path("dummy/app/views/layouts/recording_studio/default_layout.html.erb", __dir__))
 
-    assert_includes layout, '<html data-theme="rounded">'
+    assert_includes layout, 'data-theme="rounded"'
+    assert_includes layout, "dummy_locale_attributes"
+    assert_includes layout, "dummy_language_selector"
     assert_includes layout, 'data-recording-studio-default-layout="true"'
     assert_includes layout, "page_nav_options[:anchor_href]"
     refute_includes layout, "page_nav_options[:anchor_url]"
@@ -107,7 +116,8 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_dummy_login_layout_keeps_flatpack_assets_without_tight_main_offset
     application_layout = File.read(File.expand_path("dummy/app/views/layouts/application.html.erb", __dir__))
 
-    assert_includes application_layout, '<html data-theme="rounded">'
+    assert_includes application_layout, 'data-theme="rounded"'
+    assert_includes application_layout, "dummy_locale_attributes"
     assert_includes application_layout, 'stylesheet_link_tag "flat_pack/variables"'
     assert_includes application_layout, 'stylesheet_link_tag "flat_pack/application"'
     assert_includes application_layout, "javascript_importmap_tags"
@@ -157,6 +167,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, ":stripe"
     assert_includes readme, "/billing/usage"
     assert_includes readme, "UsageComponent"
+    assert_includes readme, "recording_studio.stripe"
     refute_includes readme, "ExampleService"
   end
 
@@ -248,7 +259,7 @@ class RecordingStudioStripeTest < Minitest::Test
       File.expand_path("../app/controllers/recording_studio_stripe/billing_controller.rb", __dir__)
     )
 
-    assert_includes view_source, "Manage billing on Stripe"
+    assert_includes view_source, "recording_studio.stripe.billing.manage"
     assert_includes view_source, 'icon: "credit-card"'
     assert_includes view_source, "style: :stripe"
     assert_includes view_source, 'stylesheet_link_tag "recording_studio_stripe/button"'
@@ -257,7 +268,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes view_source, "@waiting_on_stripe"
     assert_includes view_source, "@confirming_allowance"
     assert_includes view_source, "can_manage: @show_manage_billing"
-    assert_includes view_source, "See usage"
+    assert_includes view_source, "recording_studio.stripe.billing.see_usage"
     assert_includes view_source, "@show_see_usage"
     assert_includes view_source, "usage_path"
     refute_includes view_source, "SectionTitle"
@@ -311,14 +322,14 @@ class RecordingStudioStripeTest < Minitest::Test
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/current_plan_component.rb", __dir__))
 
     assert_includes source, "stripe_card_stack(badges, title, actions)"
-    assert_includes source, "badge(\"Current\", :success)"
+    assert_includes source, 'Copy.t("billing.current")'
     assert_includes source, "show_type_badge?"
     assert_includes source, "SubscriptionTypes.keys.size > 1"
     refute_includes source, "badge(\"Active\", :primary)"
-    assert_includes source, "Past due"
-    assert_includes source, "Trial"
-    assert_includes source, "Update card"
-    assert_includes source, "Stay on"
+    assert_includes source, 'Copy.t("billing.past_due_badge")'
+    assert_includes source, 'Copy.t("billing.trial_badge")'
+    assert_includes source, 'Copy.t("billing.update_card")'
+    assert_includes source, "stay_on_named"
     assert_includes source, "subscription_cancel_confirm_path"
     refute_includes source, "subscription_cancel_path"
   end
@@ -335,11 +346,11 @@ class RecordingStudioStripeTest < Minitest::Test
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/meter_card_component.rb", __dir__))
 
     assert_includes source, "combined?"
-    assert_includes source, "text: \"Breakdown\""
+    assert_includes source, 'Copy.t("usage.breakdown")'
     assert_includes source, "style: :default"
-    assert_includes source, "On this plan"
-    assert_includes source, "Extra packs"
-    assert_includes source, "Total this period"
+    assert_includes source, 'Copy.t("usage.on_this_plan")'
+    assert_includes source, 'Copy.t("usage.extra_packs")'
+    assert_includes source, 'Copy.t("usage.total_this_period")'
   end
 
   def test_limit_card_shows_used_of_included_when_over
@@ -347,9 +358,9 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes source, "amount_text"
     assert_includes source, "stripe_card_stack(title, amount, details, over_hint)"
-    assert_includes source, "\#{@handle.used}/\#{@handle.included}"
+    assert_includes source, 'Copy.t("usage.used_of_included"'
     assert_includes source, "over?"
-    assert_includes source, "Archive some, or upgrade."
+    assert_includes source, 'Copy.t("usage.over_hint")'
     refute_includes source, " of "
   end
 
@@ -392,7 +403,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes card, "footer(divider: false)"
     assert_includes card, "class: \"w-full\""
     assert_includes card, "subscription_change_path"
-    assert_includes card, "\"Downgrade\""
+    assert_includes card, 'Copy.t("plans.downgrade")'
     refute_includes card, "Switch at renewal"
     assert_includes features, "PlanFeatureCandidates"
     assert_includes candidates, "paywall:"
@@ -415,8 +426,8 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes component, "ALIGNS = %i[left center]"
     assert_includes component, "align: :center"
-    assert_includes component, "title: \"Pricing\""
-    assert_includes component, "No prices yet"
+    assert_includes component, "title: Copy::UNSET"
+    assert_includes component, 'Copy.t("plans.empty_title")'
     assert_includes component, "Grid::Component"
     assert_includes component, "align: :stretch"
     assert_includes component, "h-full"
@@ -427,7 +438,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes component, "intervals:"
     assert_includes component, "Catalog.sorted_plans"
     assert_includes plans_view, "align: :center"
-    assert_includes plans_view, "Pricing"
+    assert_includes plans_view, "recording_studio.stripe.plans.title"
     refute_includes plans_view, "title: \"Plans\""
     assert_includes pricing_view, "align: :center"
   end

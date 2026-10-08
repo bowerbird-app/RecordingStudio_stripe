@@ -7,7 +7,7 @@ module RecordingStudioStripe
     def create
       price = saleable_price
       unless price&.product&.plan? && price.recurring?
-        redirect_to recording_studio_stripe.engine_plans_path, alert: "Pick a plan from the list."
+        redirect_to recording_studio_stripe.engine_plans_path, alert: Copy.t("alerts.pick_plan")
         return
       end
 

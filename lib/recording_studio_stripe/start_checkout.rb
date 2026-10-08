@@ -40,12 +40,12 @@ module RecordingStudioStripe
     private
 
     def validate_price!
-      raise InvalidPrice, "Price is not for sale" unless @price.active? && @price.product&.active?
+      raise InvalidPrice, Copy.t("alerts.price_not_for_sale") unless @price.active? && @price.product&.active?
 
       if @price.recurring?
-        raise InvalidPrice, "Pick a plan from the list." unless @price.product.plan?
+        raise InvalidPrice, Copy.t("alerts.pick_plan") unless @price.product.plan?
       else
-        raise InvalidPrice, "Pick an extra pack from billing." unless @price.product.allowance?
+        raise InvalidPrice, Copy.t("alerts.pick_pack") unless @price.product.allowance?
       end
     end
 

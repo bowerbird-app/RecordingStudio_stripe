@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-theme="rounded">
+<html data-theme="rounded" <%= tag.attributes(dummy_locale_attributes) %>>
   <head>
     <% rs_config = RecordingStudio.configuration %>
     <% app_name = (rs_config.respond_to?(:app_name) ? rs_config.app_name : nil) || "Dummy" %>

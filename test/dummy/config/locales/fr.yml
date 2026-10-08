@@ -1,0 +1,174 @@
+fr:
+  date:
+    formats:
+      long: "%d %B %Y"
+    month_names:
+      - ~
+      - janvier
+      - février
+      - mars
+      - avril
+      - mai
+      - juin
+      - juillet
+      - août
+      - septembre
+      - octobre
+      - novembre
+      - décembre
+  support:
+    array:
+      words_connector: ", "
+      two_words_connector: " et "
+      last_word_connector: " et "
+  recording_studio:
+    internationalization:
+      selector:
+        label: Langue
+        submit: Changer de langue
+    stripe:
+      intervals:
+        names:
+          week: semaine
+          month: mois
+          year: an
+        adjectives:
+          weekly: hebdomadaire
+          monthly: mensuel
+          yearly: annuel
+        pills:
+          week: Hebdomadaire
+          month: Mensuel
+          year: Annuel
+        abbrev:
+          week: sem
+          month: mois
+          year: an
+        aria: "%{label} %{cadence}"
+        price_unit: "/%{abbrev}"
+        amount: "%{amount}/%{interval}"
+      plans:
+        title: Tarifs
+        subtitle: Mensuel ou annuel. Vous pourrez changer plus tard.
+        empty_title: Pas encore de tarifs
+        empty_description: L’équipe ajoute les offres dans l’admin. Revenez quand le magasin est garni.
+        no_price_yet: "Pas encore de tarif %{interval}"
+        current_plan: Offre actuelle
+        try_now: Essayer
+        choose_plan: Choisir
+        switch_now: Changer maintenant
+        upgrade: Passer au-dessus
+        downgrade: Passer en dessous
+        features:
+          no_price: Cette offre est une place. Les plafonds apparaissent une fois un tarif attaché.
+          empty: Une place. Les plafonds se voient sur la facturation.
+          quantity_with_label: "%{quantity} %{label}"
+      trial:
+        word: essai
+        duration_days:
+          one: "essai de %{count} jour"
+          other: "essai de %{count} jours"
+        duration_months:
+          one: "essai de %{count} mois"
+          other: "essai de %{count} mois"
+      billing:
+        title: Facturation
+        manage: Gérer la facturation sur Stripe
+        see_usage: Voir la conso
+        see_pricing: Voir les tarifs
+        empty_title: Pas encore d’offre
+        empty_description: Choisissez une offre quand vous voudrez.
+        confirming_plan: Stripe confirme cette offre. Actualisez dans un instant.
+        confirming_pack: Stripe confirme ce pack. Actualisez dans un instant.
+        catching_up: Stripe est en train de rattraper.
+        nothing_to_charge: Rien à facturer pour l’instant.
+        on_plan: "Vous êtes sur %{name}."
+        on_plans: "Vous êtes sur %{names}."
+        canceling: "Cette offre court jusqu’au %{date}."
+        past_due: "La carte pour %{name} n’est pas passée."
+        trial_until: "Essai jusqu’au %{date}."
+        trial_until_then: "Essai jusqu’au %{date}. Ensuite %{amount}."
+        scheduled: "La période suivante passe à %{name}."
+        current: Actuelle
+        past_due_badge: Impayée
+        trial_badge: Essai
+        ends_this_period: Finit cette période
+        change_scheduled: Changement prévu
+        change_plan: Changer d’offre
+        update_card: Mettre à jour la carte
+        stay_on_named: "Rester sur %{name}"
+        stay_on_this: Rester sur cette offre
+        keep_this_plan: Garder cette offre
+        cancel: Résilier
+      usage:
+        title: Conso
+        resets_when_paid: La conso se réinitialise au début d’une période payante.
+        resets_each_period: Les volumes inclus se réinitialisent à chaque période payante.
+        resets_on: "Réinitialisation le %{date}."
+        empty_title: Rien à compter pour l’instant
+        empty_description: Les compteurs apparaissent une fois que l’équipe les a ajoutés.
+        none_on_plan: Aucun sur cette offre.
+        over_hint: Archivez-en, ou passez à l’offre au-dessus.
+        used_of_included: "%{used}/%{included}"
+        breakdown: Détail
+        on_this_plan: Sur cette offre
+        extra_packs: Packs extra
+        total_this_period: Total cette période
+      allowances:
+        pack_title: "+%{quantity} %{label}"
+        add_this_pack: Ajouter ce pack
+      change:
+        title: Changer d’offre
+        back: Tarifs
+        never_mind: Tant pis
+        title_upgrade: "Passer à %{name} ?"
+        title_downgrade: "Descendre à %{name} ?"
+        title_switch: "Passer %{name} en %{interval} ?"
+        subtitle: "%{to_amount}, %{direction} depuis %{from_amount}. %{timing}"
+        up: au-dessus
+        down: en dessous
+        pay_difference: Vous réglez la différence aujourd’hui.
+        starts_on: "À partir du %{date}."
+        starts_next: Au prochain renouvellement.
+      cancel:
+        title: Résilier
+        back: Facturation
+        heading: "Résilier %{name} ?"
+        this_plan: cette offre
+        subtitle_until: "Vous la gardez jusqu’au %{date}."
+        subtitle_period: Vous la gardez jusqu’à la fin de cette période.
+        confirm: Résilier en fin de période
+        keep: Garder cette offre
+      notices:
+        plan_stays_until_end: Cette offre reste jusqu’à la fin de la période.
+        billing_keeps_going: Nickel. La facturation continue.
+        stay_on_plan: Vous restez sur cette offre.
+        switch_at_renewal: On bascule au prochain renouvellement.
+        on_new_plan: Vous êtes sur la nouvelle offre.
+        stripe_confirming: Stripe confirme cette offre. Actualisez dans un instant.
+      alerts:
+        pick_plan: Choisissez une offre dans la liste.
+        pick_pack: Choisissez un pack extra depuis la facturation.
+        nothing_to_cancel: Rien à résilier.
+        sign_in: Connectez-vous pour choisir une offre.
+        pick_workspace: Choisissez d’abord un espace.
+        no_access: Vous n’avez pas accès à la facturation de cet espace.
+        portal_needs_keys: Factures et cartes vivent chez Stripe. Ajoutez les clés pour les ouvrir.
+        portal_needs_pay: Payez une fois, puis factures et cartes apparaissent ici.
+        portal_failed: Stripe n’a pas pu ouvrir la facturation. Réessayez.
+        nothing_to_resume: Rien à reprendre.
+        nothing_scheduled: Rien n’est prévu.
+        pick_which_cancel: Choisissez quelle offre résilier.
+        pick_which_resume: Choisissez quelle offre reprendre.
+        pick_which_keep: Choisissez quelle offre garder.
+        price_not_for_sale: Ce tarif n’est pas en vente
+        choose_live_price: Choisissez un tarif en vigueur
+        start_subscription: Commencez d’abord une offre
+        stripe_no_item: Stripe n’a pas d’élément sur cet abonnement
+      errors:
+        pick_plan_to_add: "Choisissez une offre pour ajouter %{label}."
+        plan_includes: "%{plan} inclut %{count} %{label}. %{relief}"
+        this_plan: Cette offre
+        relief_quantity: Passez au-dessus, ou libérez de la place.
+        relief_count: Passez au-dessus, ou archivez-en un.
+        meter_spent: "Les %{label} de cette période sont épuisés. Achetez un pack, ou attendez le renouvellement."

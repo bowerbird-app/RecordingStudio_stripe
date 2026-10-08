@@ -21,6 +21,12 @@
 @source "../../../../../../home/*/.rbenv/**/bundler/gems/flatpack-*/app/components/**/*.rb";
 @source "../../../../../../home/*/.rbenv/**/bundler/gems/flatpack-*/app/components/**/*.erb";
 
+/* Recording Studio Internationalization language selector */
+@source "../../../vendor/bundle/**/bundler/gems/recording_studio_internationalization-*/app/views/**/*.erb";
+@source "../../../../../vendor/bundle/**/bundler/gems/recording_studio_internationalization-*/app/views/**/*.erb";
+@source "../../../../../../usr/local/bundle/**/bundler/gems/recording_studio_internationalization-*/app/views/**/*.erb";
+@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/recording_studio_internationalization-*/app/views/**/*.erb";
+
 /* Recording Studio and addons */
 @source "../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
 @source "../../../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
