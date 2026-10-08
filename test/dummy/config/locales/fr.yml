@@ -22,6 +22,10 @@ fr:
       two_words_connector: " et "
       last_word_connector: " et "
   recording_studio:
+    internationalization:
+      selector:
+        label: Langue
+        submit: Changer de langue
     stripe:
       intervals:
         names:
