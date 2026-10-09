@@ -6,18 +6,36 @@ require_relative "../config/environment"
 require "rails/test_help"
 
 module StripeBillingTestHelpers
-  def grant_owner_access!(recording:, actor:, role: :admin)
+  def grant_owner_access!(recording:, actor:, role: :admin, manager_actor: nil)
     return if RecordingStudioAccessible.authorized?(actor: actor, recording: recording, role: role)
 
-    RecordingStudioAccessible::AccessCreationContext.allow do
-      RecordingStudio.root_recording_or_self(recording).record(
-        RecordingStudio::Access,
-        parent_recording: recording
-      ) do |access|
-        access.actor = actor
-        access.role = role
-      end
+    if role.to_s == "admin"
+      result = RecordingStudioAccessible.bootstrap_owner_access!(recording: recording, actor: actor)
+      return if result.success?
     end
+
+    manager = manager_actor || admin_actor_for(recording) || actor
+    result = RecordingStudioAccessible.grant_access(
+      recording: recording,
+      actor: actor,
+      role: role,
+      manager_actor: manager
+    )
+    raise(result.error || "Failed to grant #{role} access") if result.failure?
+  end
+
+  def admin_actor_for(recording)
+    target = RecordingStudio.root_recording_or_self(recording)
+    RecordingStudio::Recording.unscoped
+      .where(recordable_type: "RecordingStudio::Access", trashed_at: nil)
+      .where(root_recording_id: target.id)
+      .find_each do |access_recording|
+        access = access_recording.recordable
+        next unless access&.role.to_s == "admin"
+
+        return access.actor
+      end
+    nil
   end
 end
 
