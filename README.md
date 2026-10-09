@@ -258,9 +258,9 @@ Hosts that do not use `current_user` should set `config.current_actor`. Hosts th
 
 Recording Studio core still swallows `before_record` errors. Standing caps gate on `Recording` `before_create`, restore, and move until core can deny `record!` itself.
 
-## Translating customer screens
+## Translating interface text
 
-Customer billing copy lives under `recording_studio.stripe.*`. This gem ships English only, in `config/locales/en.yml`. The host lists languages and supplies the translations. Put a host file at `config/locales/fr.yml` (or Japanese, or whatever you offer) with the same nested keys. Host files load after the engine, so they override English too.
+Customer billing and staff Admin form copy live under `recording_studio.stripe.*` (Admin forms under `admin`). This gem ships English only, in `config/locales/en.yml`. The host lists languages and supplies the translations. Put a host file at `config/locales/fr.yml` (or Japanese, or whatever you offer) with the same nested keys. Host files load after the engine, so they override English too. This gem never shipped a top-level `recording_studio_stripe.*` locale namespace.
 
 ```erb
 <%= t("recording_studio.stripe.plans.title") %>
@@ -280,7 +280,7 @@ Do not translate Stripe catalog data: Product names, Price amounts, staff-writte
 
 Add [Recording Studio Internationalization](https://github.com/bowerbird-app/RecordingStudio_Internationalization) on the host when you want a language selector. This gem does not declare the host's languages.
 
-Staff Admin screens (Products, Prices, Meters, Paywalls) stay English for now.
+Staff Admin form views under the engine use `recording_studio.stripe.admin.*`. Admin list chrome from `RecordingStudioStripe::Admin::Definitions` stays English hard-coded.
 
 ## Dummy
 

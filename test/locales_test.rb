@@ -5,10 +5,38 @@ require "yaml"
 
 class LocalesTest < Minitest::Test
   Copy = RecordingStudioStripe::Copy
+
+  ADMIN_SAMPLE_KEYS = {
+    "admin.products.new_title" => "New plan",
+    "admin.products.edit_title" => "Edit %{name}",
+    "admin.products.this_plan" => "This plan",
+    "admin.products.what_they_get" => "What they get",
+    "admin.common.save" => "Save",
+    "admin.common.create" => "Create",
+    "admin.prices.new_title" => "New Price",
+    "admin.prices.edit_title" => "Edit Price",
+    "admin.prices.edit_subtitle" => "Stripe keeps the amount. You can change included usage.",
+    "admin.prices.included" => "Included %{label}",
+    "admin.meters.new_title" => "New meter",
+    "admin.paywalls.new_title" => "New paywall",
+    "admin.trial.title" => "Paid trial",
+    "admin.trial.help" => "They pay this now. The plan price starts when the trial ends.",
+    "admin.limits.help" => "Blank means none. Monthly and yearly share this number.",
+    "admin.plan_card.title" => "Pricing card",
+    "admin.plan_card.extra_line" => "Extra line",
+    "admin.plan_card.what_it_says" => "What it says"
+  }.freeze
+
   def test_engine_ships_only_english_locale_files
     files = Dir[File.join(engine_locales_dir, "*")].map { |path| File.basename(path) }
 
     assert_equal ["en.yml"], files.sort
+  end
+
+  def test_rails_i18n_load_path_includes_the_gem_english_locale_file
+    locale_path = File.join(engine_locales_dir, "en.yml")
+
+    assert_includes I18n.load_path.map { |path| File.expand_path(path) }, File.expand_path(locale_path)
   end
 
   def test_dummy_french_covers_every_engine_english_key
@@ -29,6 +57,49 @@ class LocalesTest < Minitest::Test
       assert_equal "You keep it until October 12, 2026.",
                    Copy.t("cancel.subtitle_until", date: Copy.long_date(Date.new(2026, 10, 12)))
     end
+  end
+
+  def test_english_admin_keys_resolve_without_missing_translations
+    I18n.with_locale(:en) do
+      ADMIN_SAMPLE_KEYS.each do |key, english|
+        full_key = "recording_studio.stripe.#{key}"
+        translation = I18n.t(full_key, default: nil)
+
+        assert_equal english, translation, "#{full_key} should resolve to #{english.inspect}"
+        assert_equal english, I18n.t(full_key, raise: true)
+      end
+
+      assert_equal "Edit Pro", I18n.t("recording_studio.stripe.admin.products.edit_title", name: "Pro")
+      assert_equal "For Pro.", I18n.t("recording_studio.stripe.admin.prices.new_subtitle_for", name: "Pro")
+      assert_equal "Included ai tokens",
+                   I18n.t("recording_studio.stripe.admin.prices.included", label: "ai tokens")
+    end
+  end
+
+  def test_en_yml_nests_keys_under_recording_studio_stripe
+    tree = YAML.safe_load_file(File.join(engine_locales_dir, "en.yml"), aliases: true)
+               .fetch("en")
+               .fetch("recording_studio")
+               .fetch("stripe")
+
+    assert tree.key?("admin")
+    assert tree.fetch("admin").key?("products")
+    refute tree.key?("recording_studio_stripe")
+  end
+
+  def test_no_legacy_top_level_recording_studio_stripe_locale_namespace
+    tree = YAML.safe_load_file(File.join(engine_locales_dir, "en.yml"), aliases: true).fetch("en")
+
+    refute tree.key?("recording_studio_stripe")
+    assert_nil I18n.t("recording_studio_stripe.admin.products.new_title", default: nil)
+  end
+
+  def test_host_nested_override_wins_without_legacy_key
+    I18n.backend.store_translations(:en, recording_studio: { stripe: { admin: { products: { new_title: "Acme plan" } } } })
+
+    assert_equal "Acme plan", I18n.t("recording_studio.stripe.admin.products.new_title")
+  ensure
+    I18n.backend.store_translations(:en, recording_studio: { stripe: { admin: { products: { new_title: "New plan" } } } })
   end
 
   def test_component_text_overrides_win_including_nil

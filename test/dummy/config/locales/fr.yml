@@ -172,3 +172,82 @@ fr:
         relief_quantity: Passez au-dessus, ou libérez de la place.
         relief_count: Passez au-dessus, ou archivez-en un.
         meter_spent: "Les %{label} de cette période sont épuisés. Achetez un pack, ou attendez le renouvellement."
+      admin:
+        nav:
+          products: Produits
+          prices: Tarifs
+          meters: Compteurs
+          paywalls: Accès payants
+        common:
+          name: Nom
+          label: Libellé
+          subtitle: Sous-titre
+          description: Description
+          group: Groupe
+          save: Enregistrer
+          create: Créer
+          meter: Compteur
+          icon: Icône
+        products:
+          new_title: Nouvelle offre
+          new_subtitle: Une offre, ou un pack extra.
+          edit_title: "Modifier %{name}"
+          edit_subtitle_plan: Ce que cette offre inclut, et ce que la carte tarifaire affiche.
+          edit_subtitle_pack: Ce pack n’ouvre pas de fonctionnalités.
+          kind_label: Offre ou pack extra
+          kind_plan: Offre
+          kind_pack: Pack extra
+          this_plan: Cette offre
+          what_they_get: Ce qu’ils ont
+          subtitle_placeholder: Pour les petites équipes
+          subtitle_help: S’affiche sous le nom sur la carte tarifaire.
+          name_placeholder: Pro
+          description_placeholder: Pour les équipes qui livrent
+        prices:
+          new_title: Nouveau tarif
+          new_subtitle_for: "Pour %{name}."
+          new_subtitle_attach: Attachez ce tarif à un produit.
+          edit_title: Modifier le tarif
+          edit_subtitle: Stripe garde le montant. Vous pouvez changer l’usage inclus.
+          amount_cents: Montant en cents
+          currency: Devise
+          interval: Intervalle
+          interval_one_time: Une fois
+          interval_week: Semaine
+          interval_month: Mois
+          interval_year: Année
+          included: "%{label} inclus"
+          allowance_quantity: Quantité du pack
+          create: Créer le tarif
+          save: Enregistrer le tarif
+        meters:
+          new_title: Nouveau compteur
+          new_subtitle: Un compteur nommé. L’app y enregistre l’usage.
+          name_help: "En minuscules, comme ai_tokens."
+          label_placeholder: Jetons IA
+          create: Créer le compteur
+        paywalls:
+          new_title: Nouvel accès payant
+          new_subtitle: Une chose nommée qu’une offre peut ouvrir. Cochez-la sur le produit.
+          name_help: "En minuscules, comme generate_image."
+          label_placeholder: Générer une image
+          create: Créer l’accès payant
+        trial:
+          title: Essai payant
+          days: Jours d’essai
+          amount_cents: Montant d’essai en cents
+          help: Ils paient ça maintenant. Le tarif de l’offre commence à la fin de l’essai.
+        limits:
+          help: Vide veut dire aucun. Mensuel et annuel partagent ce chiffre.
+        plan_card:
+          title: Carte tarifaire
+          hide_heading: Masquer sur la carte
+          hide_tooltip: Masquez une ligne sur la carte. L’offre l’inclut toujours.
+          hide_aria: À propos du masquage des lignes
+          custom_order: Ordre personnalisé
+          custom_order_help: Une ligne par rangée. Laissez vide pour l’ordre par défaut.
+          extra_line: Ligne en plus
+          extra_line_help: Quelque chose que la carte doit mentionner même sans débloquer une fonctionnalité.
+          what_it_says: Ce que ça dit
+          what_it_says_placeholder: On vous rappelle aujourd’hui
+          icon_help: Un nom d’icône Flatpack. Vide = une coche.

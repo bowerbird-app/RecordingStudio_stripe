@@ -146,3 +146,82 @@ en:
         relief_quantity: Upgrade, or free some up.
         relief_count: Upgrade, or archive one.
         meter_spent: "This period's %{label} are spent. Buy a pack, or wait for renewal."
+      admin:
+        nav:
+          products: Products
+          prices: Prices
+          meters: Meters
+          paywalls: Paywalls
+        common:
+          name: Name
+          label: Label
+          subtitle: Subtitle
+          description: Description
+          group: Group
+          save: Save
+          create: Create
+          meter: Meter
+          icon: Icon
+        products:
+          new_title: New plan
+          new_subtitle: A plan, or an extra pack.
+          edit_title: "Edit %{name}"
+          edit_subtitle_plan: What this plan includes, and what the pricing card says.
+          edit_subtitle_pack: This pack does not open features.
+          kind_label: Plan or extra pack
+          kind_plan: Plan
+          kind_pack: Extra pack
+          this_plan: This plan
+          what_they_get: What they get
+          subtitle_placeholder: For small teams
+          subtitle_help: Shows under the name on the pricing card.
+          name_placeholder: Pro
+          description_placeholder: For teams that ship
+        prices:
+          new_title: New Price
+          new_subtitle_for: "For %{name}."
+          new_subtitle_attach: Attach this Price to a Product.
+          edit_title: Edit Price
+          edit_subtitle: Stripe keeps the amount. You can change included usage.
+          amount_cents: Amount in cents
+          currency: Currency
+          interval: Interval
+          interval_one_time: One-time
+          interval_week: Week
+          interval_month: Month
+          interval_year: Year
+          included: "Included %{label}"
+          allowance_quantity: Allowance quantity
+          create: Create Price
+          save: Save Price
+        meters:
+          new_title: New meter
+          new_subtitle: A named counter. The app records usage against it.
+          name_help: "Lowercase, like ai_tokens."
+          label_placeholder: AI tokens
+          create: Create meter
+        paywalls:
+          new_title: New paywall
+          new_subtitle: A named thing a plan can open. Tick it on the Product.
+          name_help: "Lowercase, like generate_image."
+          label_placeholder: Generate an image
+          create: Create paywall
+        trial:
+          title: Paid trial
+          days: Trial days
+          amount_cents: Trial amount in cents
+          help: They pay this now. The plan price starts when the trial ends.
+        limits:
+          help: Blank means none. Monthly and yearly share this number.
+        plan_card:
+          title: Pricing card
+          hide_heading: Hide on the card
+          hide_tooltip: Hide a line on the card. The plan still includes it.
+          hide_aria: About hiding lines
+          custom_order: Custom order
+          custom_order_help: One line per row. Leave blank for the default order.
+          extra_line: Extra line
+          extra_line_help: Something the card should mention even if it does not unlock a feature.
+          what_it_says: What it says
+          what_it_says_placeholder: We'll call you back today
+          icon_help: A Flatpack icon name. Blank is a check.

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-10-09
+
+### Added
+- Staff Admin form copy (Products, Prices, Meters, Paywalls under the engine) resolves through `recording_studio.stripe.admin.*` I18n keys
+- English keys ship in `config/locales/en.yml` under `en.recording_studio.stripe.admin`
+
+### Changed
+- Admin form views under `app/views/recording_studio_stripe/admin` use `t("recording_studio.stripe.admin...")` (English output unchanged)
+
+### Upgrade notes
+- Bump to **0.10.0** (minor: hosts can translate staff Admin forms). No migration
+- English Admin forms stay the same. Catalog data (Product names, Price amounts, paywall/meter labels, card extras) is still not translated
+- Admin section/screen chrome from `RecordingStudioStripe::Admin::Definitions` (list titles, table column headers, “New Product” buttons) stays English hard-coded; only the gem’s own form views moved
+- This gem never shipped a top-level `recording_studio_stripe.*` locale namespace. Host overrides use `recording_studio.stripe.*` (including the new `admin` branch)
+- To translate Admin forms, copy `recording_studio.stripe.admin.*` from `config/locales/en.yml` into the host locale file
+- Public helpers and `RecordingStudioStripe::Copy` are unchanged
+
 ## [0.9.0] - 2026-10-08
 
 ### Added

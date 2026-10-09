@@ -1,15 +1,35 @@
-<% recording_studio_page_nav(title: "New meter", page_nav_back_url: admin_screen_url("meters"), page_nav_back_label: "Meters") %>
+<% recording_studio_page_nav(
+  title: t("recording_studio.stripe.admin.meters.new_title"),
+  page_nav_back_url: admin_screen_url("meters"),
+  page_nav_back_label: t("recording_studio.stripe.admin.nav.meters")
+) %>
 
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
-    title: "New meter",
-    subtitle: "A named counter. The app records usage against it.",
+    title: t("recording_studio.stripe.admin.meters.new_title"),
+    subtitle: t("recording_studio.stripe.admin.meters.new_subtitle"),
     variant: :h1
   ) %>
 
   <%= form_with url: recording_studio_stripe.admin_meters_path, method: :post, local: true, class: "flex max-w-xl flex-col gap-4" do %>
-    <%= render FlatPack::TextInput::Component.new(name: "name", label: "Name", required: true, placeholder: "ai_tokens", help_text: "Lowercase, like ai_tokens.") %>
-    <%= render FlatPack::TextInput::Component.new(name: "label", label: "Label", required: true, placeholder: "AI tokens") %>
-    <%= render FlatPack::Button::Component.new(text: "Create meter", style: :primary, size: :md, type: "submit") %>
+    <%= render FlatPack::TextInput::Component.new(
+      name: "name",
+      label: t("recording_studio.stripe.admin.common.name"),
+      required: true,
+      placeholder: "ai_tokens",
+      help_text: t("recording_studio.stripe.admin.meters.name_help")
+    ) %>
+    <%= render FlatPack::TextInput::Component.new(
+      name: "label",
+      label: t("recording_studio.stripe.admin.common.label"),
+      required: true,
+      placeholder: t("recording_studio.stripe.admin.meters.label_placeholder")
+    ) %>
+    <%= render FlatPack::Button::Component.new(
+      text: t("recording_studio.stripe.admin.meters.create"),
+      style: :primary,
+      size: :md,
+      type: "submit"
+    ) %>
   <% end %>
 </div>

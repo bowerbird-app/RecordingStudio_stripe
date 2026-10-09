@@ -5,17 +5,17 @@
   <% extras = stripe_plan_card_extra_rows(settings) %>
   <%= render FlatPack::Collapse::Component.new(
     id: "pricing-card",
-    title: "Pricing card",
+    title: t("recording_studio.stripe.admin.plan_card.title"),
     open: stripe_plan_card_open?(@product)
   ) do %>
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-2">
-        <p class="text-sm font-medium text-[var(--surface-content-color)]">Hide on the card</p>
+        <p class="text-sm font-medium text-[var(--surface-content-color)]"><%= t("recording_studio.stripe.admin.plan_card.hide_heading") %></p>
         <%= render FlatPack::Tooltip::Component.new(
-          text: "Hide a line on the card. The plan still includes it.",
+          text: t("recording_studio.stripe.admin.plan_card.hide_tooltip"),
           placement: :top
         ) do %>
-          <button type="button" class="inline-flex items-center text-[var(--surface-muted-content-color)]" aria-label="About hiding lines">
+          <button type="button" class="inline-flex items-center text-[var(--surface-muted-content-color)]" aria-label="<%= t("recording_studio.stripe.admin.plan_card.hide_aria") %>">
             <%= render FlatPack::Shared::IconComponent.new(name: :question, size: :sm) %>
           </button>
         <% end %>
@@ -30,28 +30,28 @@
       <% end %>
       <%= render FlatPack::TextArea::Component.new(
         name: "plan_card[order]",
-        label: "Custom order",
+        label: t("recording_studio.stripe.admin.plan_card.custom_order"),
         value: Array(settings["order"]).join("\n"),
         rows: 4,
         placeholder: "limit:press_kits\nmeter:ai_tokens\npaywall:generate_image",
-        help_text: "One line per row. Leave blank for the default order."
+        help_text: t("recording_studio.stripe.admin.plan_card.custom_order_help")
       ) %>
-      <p class="text-sm font-medium text-[var(--surface-content-color)]">Extra line</p>
-      <p class="text-sm text-[var(--surface-muted-content-color)]">Something the card should mention even if it does not unlock a feature.</p>
+      <p class="text-sm font-medium text-[var(--surface-content-color)]"><%= t("recording_studio.stripe.admin.plan_card.extra_line") %></p>
+      <p class="text-sm text-[var(--surface-muted-content-color)]"><%= t("recording_studio.stripe.admin.plan_card.extra_line_help") %></p>
       <% extras.each_with_index do |extra, index| %>
         <%= hidden_field_tag "plan_card[extras][#{index}][key]", extra["key"] if extra["key"].present? %>
         <%= render FlatPack::TextInput::Component.new(
           name: "plan_card[extras][#{index}][text]",
-          label: "What it says",
+          label: t("recording_studio.stripe.admin.plan_card.what_it_says"),
           value: extra["text"],
-          placeholder: "We'll call you back today"
+          placeholder: t("recording_studio.stripe.admin.plan_card.what_it_says_placeholder")
         ) %>
         <%= render FlatPack::TextInput::Component.new(
           name: "plan_card[extras][#{index}][icon]",
-          label: "Icon",
+          label: t("recording_studio.stripe.admin.common.icon"),
           value: extra["icon"],
           placeholder: "star",
-          help_text: "A Flatpack icon name. Blank is a check."
+          help_text: t("recording_studio.stripe.admin.plan_card.icon_help")
         ) %>
       <% end %>
     </div>

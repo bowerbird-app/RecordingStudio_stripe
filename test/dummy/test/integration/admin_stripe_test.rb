@@ -69,6 +69,9 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "New paywall"
+    assert_includes response.body, "A named thing a plan can open. Tick it on the Product."
+    assert_includes response.body, "Lowercase, like generate_image."
+    assert_includes response.body, "Create paywall"
 
     assert_difference -> { RecordingStudioStripe::Paywall.count }, 1 do
       post RecordingStudioStripe.configuration.mount_path + "/admin/paywalls", params: {
@@ -85,17 +88,23 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
 
     assert_response :success
+    assert_includes response.body, "New plan"
+    assert_includes response.body, "A plan, or an extra pack."
+    assert_includes response.body, "Plan or extra pack"
     assert_includes response.body, "Generate an image"
     assert_includes response.body, "Group"
+    assert_includes response.body, "This plan"
     assert_includes response.body, "What they get"
     assert_includes response.body, "Press kits"
     assert_includes response.body, "Pricing card"
     assert_includes response.body, "Hide on the card"
     assert_includes response.body, "Extra line"
+    assert_includes response.body, "What it says"
     assert_includes response.body, "Paid trial"
     assert_includes response.body, "Trial days"
     assert_includes response.body, "Trial amount in cents"
     assert_includes response.body, "They pay this now. The plan price starts when the trial ends."
+    assert_includes response.body, "Blank means none. Monthly and yearly share this number."
     assert_includes response.body, "Create"
     assert_select "input[name='plan_card[subtitle]']"
     assert_includes response.body, "Shows under the name on the pricing card."
@@ -266,7 +275,10 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     get RecordingStudioStripe.configuration.mount_path + "/admin/prices/#{price.id}/edit"
 
     assert_response :success
+    assert_includes response.body, "Edit Price"
+    assert_includes response.body, "Stripe keeps the amount. You can change included usage."
     assert_includes response.body, "Included ai tokens"
+    assert_includes response.body, "Save Price"
 
     patch RecordingStudioStripe.configuration.mount_path + "/admin/prices/#{price.id}", params: {
       included: { ai_tokens: "2500000", api_calls: "20000" }
@@ -283,8 +295,12 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     get RecordingStudioStripe.configuration.mount_path + "/admin/prices/new", params: { product_id: product.id }
 
     assert_response :success
+    assert_includes response.body, "New Price"
+    assert_includes response.body, "For Starter."
     assert_includes response.body, "Amount in cents"
+    assert_includes response.body, "One-time"
     assert_includes response.body, "Week"
+    assert_includes response.body, "Create Price"
 
     assert_difference -> { RecordingStudioStripe::Price.count }, 1 do
       post RecordingStudioStripe.configuration.mount_path + "/admin/prices", params: {
@@ -330,11 +346,38 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "700"
   end
 
+  test "new Price for an allowance Product shows meter and pack quantity" do
+    pack = RecordingStudioStripe::Product.find_by!(name: "AI token packs")
+    get RecordingStudioStripe.configuration.mount_path + "/admin/prices/new", params: { product_id: pack.id }
+
+    assert_response :success
+    assert_includes response.body, "New Price"
+    assert_includes response.body, "For AI token packs."
+    assert_includes response.body, "Meter"
+    assert_includes response.body, "Allowance quantity"
+    refute_includes response.body, "Included ai tokens"
+  end
+
+  test "edit Price for an allowance Product shows meter and pack quantity" do
+    pack = RecordingStudioStripe::Product.find_by!(name: "AI token packs")
+    price = pack.prices.first
+    get RecordingStudioStripe.configuration.mount_path + "/admin/prices/#{price.id}/edit"
+
+    assert_response :success
+    assert_includes response.body, "Edit Price"
+    assert_includes response.body, "Meter"
+    assert_includes response.body, "Allowance quantity"
+    assert_includes response.body, "Save Price"
+  end
+
   test "staff can create a meter from the engine form" do
     get RecordingStudioStripe.configuration.mount_path + "/admin/meters/new"
 
     assert_response :success
     assert_includes response.body, "New meter"
+    assert_includes response.body, "A named counter. The app records usage against it."
+    assert_includes response.body, "Lowercase, like ai_tokens."
+    assert_includes response.body, "Create meter"
 
     assert_difference -> { RecordingStudioStripe::Meter.count }, 1 do
       post RecordingStudioStripe.configuration.mount_path + "/admin/meters", params: {

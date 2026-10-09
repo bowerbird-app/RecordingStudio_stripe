@@ -1,38 +1,65 @@
-<% recording_studio_page_nav(title: "New Price", page_nav_back_url: admin_screen_url("prices"), page_nav_back_label: "Prices") %>
+<% recording_studio_page_nav(
+  title: t("recording_studio.stripe.admin.prices.new_title"),
+  page_nav_back_url: admin_screen_url("prices"),
+  page_nav_back_label: t("recording_studio.stripe.admin.nav.prices")
+) %>
 
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
-    title: "New Price",
-    subtitle: @product ? "For #{@product.name}." : "Attach this Price to a Product.",
+    title: t("recording_studio.stripe.admin.prices.new_title"),
+    subtitle: @product ? t("recording_studio.stripe.admin.prices.new_subtitle_for", name: @product.name) : t("recording_studio.stripe.admin.prices.new_subtitle_attach"),
     variant: :h1
   ) %>
 
   <%= form_with url: recording_studio_stripe.admin_prices_path, method: :post, local: true, class: "flex max-w-xl flex-col gap-4" do %>
     <%= hidden_field_tag :product_id, @product&.id || params[:product_id] %>
-    <%= render FlatPack::TextInput::Component.new(name: "unit_amount", label: "Amount in cents", required: true, placeholder: "2900") %>
-    <%= render FlatPack::TextInput::Component.new(name: "currency", label: "Currency", value: "usd") %>
+    <%= render FlatPack::TextInput::Component.new(
+      name: "unit_amount",
+      label: t("recording_studio.stripe.admin.prices.amount_cents"),
+      required: true,
+      placeholder: "2900"
+    ) %>
+    <%= render FlatPack::TextInput::Component.new(
+      name: "currency",
+      label: t("recording_studio.stripe.admin.prices.currency"),
+      value: "usd"
+    ) %>
     <%= render FlatPack::Select::Component.new(
       name: "interval",
-      label: "Interval",
-      options: [["One-time", ""], ["Week", "week"], ["Month", "month"], ["Year", "year"]],
+      label: t("recording_studio.stripe.admin.prices.interval"),
+      options: [
+        [t("recording_studio.stripe.admin.prices.interval_one_time"), ""],
+        [t("recording_studio.stripe.admin.prices.interval_week"), "week"],
+        [t("recording_studio.stripe.admin.prices.interval_month"), "month"],
+        [t("recording_studio.stripe.admin.prices.interval_year"), "year"]
+      ],
       value: @product&.plan? ? "month" : ""
     ) %>
     <% if @product&.plan? %>
       <% RecordingStudioStripe::Meter.order(:name).each do |meter| %>
         <%= render FlatPack::TextInput::Component.new(
           name: "included[#{meter.name}]",
-          label: "Included #{meter.label.downcase}",
+          label: t("recording_studio.stripe.admin.prices.included", label: meter.label.downcase),
           placeholder: "10000000"
         ) %>
       <% end %>
     <% else %>
       <%= render FlatPack::Select::Component.new(
         name: "meter",
-        label: "Meter",
+        label: t("recording_studio.stripe.admin.common.meter"),
         options: RecordingStudioStripe::Meter.order(:name).map { |meter| [meter.label, meter.name] }
       ) %>
-      <%= render FlatPack::TextInput::Component.new(name: "allowance", label: "Allowance quantity", placeholder: "5000000") %>
+      <%= render FlatPack::TextInput::Component.new(
+        name: "allowance",
+        label: t("recording_studio.stripe.admin.prices.allowance_quantity"),
+        placeholder: "5000000"
+      ) %>
     <% end %>
-    <%= render FlatPack::Button::Component.new(text: "Create Price", style: :primary, size: :md, type: "submit") %>
+    <%= render FlatPack::Button::Component.new(
+      text: t("recording_studio.stripe.admin.prices.create"),
+      style: :primary,
+      size: :md,
+      type: "submit"
+    ) %>
   <% end %>
 </div>
