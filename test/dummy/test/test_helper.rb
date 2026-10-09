@@ -15,7 +15,7 @@ module StripeBillingTestHelpers
         parent_recording: recording
       ) do |access|
         access.actor = actor
-        access.role = role
+        access.role = role.to_s
       end
     end
   end

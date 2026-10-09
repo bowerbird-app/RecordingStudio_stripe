@@ -59,7 +59,7 @@ begin
         parent_recording: recording
       ) do |access|
         access.actor = user
-        access.role = :admin
+        access.role = "admin"
       end
     end
   end

@@ -119,6 +119,10 @@ module RecordingStudioStripe
       end
     end
 
+    initializer "recording_studio_stripe.metrics" do
+      config.to_prepare { RecordingStudioStripe::Metrics.register! }
+    end
+
     initializer "recording_studio_stripe.sync_meters" do
       config.to_prepare do
         next unless defined?(ActiveRecord::Base)

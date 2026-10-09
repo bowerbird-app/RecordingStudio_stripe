@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-10-09
+
+### Added
+- Operations metrics for `stripe_subscriptions` (`active`, `by_status`, `by_plan`, `new`) and `stripe_usage` (`total`, `over_time`)
+- `RecordingStudioStripe::Metrics.register!` from the engine initializer, exposed on the operations API
+- `RecordingStudioStripe::Api::Access.can_view?` authorizes those metrics with Accessible `:view` on the AdminRoot recording
+
+### Upgrade notes
+- Bump to **0.10.0**. Hosts that expose metrics should add RecordingStudio_metrics `v0.2.0` and RecordingStudio_api `v0.6.11`, then call `RecordingStudioMetrics::Api.register!(api: :operations)`
+- No migration
+
 ## [0.9.0] - 2026-10-08
 
 ### Added
