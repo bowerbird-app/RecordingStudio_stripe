@@ -6,6 +6,8 @@ require "yaml"
 class LocalesTest < Minitest::Test
   Copy = RecordingStudioStripe::Copy
 
+  # I18n templates use %{name}-style tokens; keep them identical to en.yml.
+  # rubocop:disable Style/FormatStringToken
   ADMIN_SAMPLE_KEYS = {
     "admin.products.new_title" => "New plan",
     "admin.products.edit_title" => "Edit %{name}",
@@ -26,6 +28,7 @@ class LocalesTest < Minitest::Test
     "admin.plan_card.extra_line" => "Extra line",
     "admin.plan_card.what_it_says" => "What it says"
   }.freeze
+  # rubocop:enable Style/FormatStringToken
 
   def test_engine_ships_only_english_locale_files
     files = Dir[File.join(engine_locales_dir, "*")].map { |path| File.basename(path) }
@@ -95,11 +98,17 @@ class LocalesTest < Minitest::Test
   end
 
   def test_host_nested_override_wins_without_legacy_key
-    I18n.backend.store_translations(:en, recording_studio: { stripe: { admin: { products: { new_title: "Acme plan" } } } })
+    I18n.backend.store_translations(
+      :en,
+      recording_studio: { stripe: { admin: { products: { new_title: "Acme plan" } } } }
+    )
 
     assert_equal "Acme plan", I18n.t("recording_studio.stripe.admin.products.new_title")
   ensure
-    I18n.backend.store_translations(:en, recording_studio: { stripe: { admin: { products: { new_title: "New plan" } } } })
+    I18n.backend.store_translations(
+      :en,
+      recording_studio: { stripe: { admin: { products: { new_title: "New plan" } } } }
+    )
   end
 
   def test_component_text_overrides_win_including_nil
