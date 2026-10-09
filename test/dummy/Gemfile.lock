@@ -79,7 +79,7 @@ GIT
 PATH
   remote: ../..
   specs:
-    recording_studio_stripe (0.10.0)
+    recording_studio_stripe (0.11.0)
       rails (~> 8.1.0)
       recording_studio (~> 4.1)
       recording_studio_metrics (~> 0.2)
@@ -651,7 +651,7 @@ CHECKSUMS
   recording_studio_internationalization (0.1.2)
   recording_studio_metrics (0.2.0)
   recording_studio_root_switchable (0.5.0)
-  recording_studio_stripe (0.10.0)
+  recording_studio_stripe (0.11.0)
   redis (5.4.1) sha256=b5e675b57ad22b15c9bcc765d5ac26f60b675408af916d31527af9bd5a81faae
   redis-client (0.31.0) sha256=6820cb2a21e6795a823141f50fd25e655de2b8dc8ff833b43509a27b0263fd75
   regexp_parser (2.11.3) sha256=ca13f381a173b7a93450e53459075c9b76a10433caadcb2f1180f2c741fc55a4
