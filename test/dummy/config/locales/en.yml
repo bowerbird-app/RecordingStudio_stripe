@@ -29,9 +29,3 @@
 
 en:
   hello: "Hello world"
-  recording_studio:
-    stripe:
-      admin:
-        plan_card:
-          # Host override — must win over the gem's English for this key.
-          icon_help: "Host icon tip wins"

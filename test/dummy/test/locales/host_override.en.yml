@@ -1,0 +1,7 @@
+en:
+  recording_studio:
+    stripe:
+      admin:
+        plan_card:
+          # Test-only host override for HostLocaleOverrideTest.
+          icon_help: "Host icon tip wins"

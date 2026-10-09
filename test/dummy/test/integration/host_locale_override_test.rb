@@ -6,6 +6,8 @@ require "devise/test/integration_helpers"
 class HostLocaleOverrideTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
 
+  HOST_OVERRIDE_LOCALE = File.expand_path("../locales/host_override.en.yml", __dir__).freeze
+
   setup do
     RecordingStudioStripe::SeedDemoCatalog.call
     @user = User.find_or_create_by!(email: "admin@admin.com") do |user|
@@ -19,7 +21,11 @@ class HostLocaleOverrideTest < ActionDispatch::IntegrationTest
     switch_to_root!(@admin_recording)
   end
 
-  test "host en.yml override wins over gem english on admin form" do
+  test "host locale file override wins over gem english on admin form" do
+    previous_load_path = I18n.load_path.dup
+    I18n.load_path << HOST_OVERRIDE_LOCALE
+    I18n.reload!
+
     get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
 
     assert_response :success
@@ -27,5 +33,19 @@ class HostLocaleOverrideTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "A Flatpack icon name. Blank is a check."
     assert_equal "Host icon tip wins",
                  I18n.t("recording_studio.stripe.admin.plan_card.icon_help")
+  ensure
+    I18n.load_path.replace(previous_load_path)
+    I18n.reload!
+  end
+
+  test "default english returns after host override is removed" do
+    assert_equal "A Flatpack icon name. Blank is a check.",
+                 I18n.t("recording_studio.stripe.admin.plan_card.icon_help")
+
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
+
+    assert_response :success
+    assert_includes response.body, "A Flatpack icon name. Blank is a check."
+    refute_includes response.body, "Host icon tip wins"
   end
 end
