@@ -169,14 +169,10 @@ class DocsControllerTest < ActionDispatch::IntegrationTest
   def grant_admin_access!(recording)
     return if RecordingStudioAccessible.authorized?(actor: @user, recording: recording, role: :admin)
 
-    RecordingStudioAccessible::AccessCreationContext.allow do
-      RecordingStudio.root_recording_or_self(recording).record(
-        RecordingStudio::Access,
-        parent_recording: recording
-      ) do |access|
-        access.actor = @user
-        access.role = :admin
-      end
-    end
+    result = RecordingStudioAccessible.bootstrap_owner_access!(
+      recording: recording,
+      actor: @user
+    )
+    raise(result.error || "Failed to bootstrap admin access") if result.failure?
   end
 end
