@@ -1,39 +1,52 @@
-<% recording_studio_page_nav(title: "Edit #{@product.name}", page_nav_back_url: admin_screen_url("products"), page_nav_back_label: "Products") %>
+<% recording_studio_page_nav(
+  title: t("recording_studio.stripe.admin.products.edit_title", name: @product.name),
+  page_nav_back_url: admin_screen_url("products"),
+  page_nav_back_label: t("recording_studio.stripe.admin.nav.products")
+) %>
 
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
-    title: "Edit #{@product.name}",
-    subtitle: @product.plan? ? "What this plan includes, and what the pricing card says." : "This pack does not open features.",
+    title: t("recording_studio.stripe.admin.products.edit_title", name: @product.name),
+    subtitle: @product.plan? ? t("recording_studio.stripe.admin.products.edit_subtitle_plan") : t("recording_studio.stripe.admin.products.edit_subtitle_pack"),
     variant: :h1
   ) %>
 
   <%= form_with url: recording_studio_stripe.admin_product_path(@product), method: :patch, local: true, class: "flex max-w-xl flex-col gap-6" do %>
-    <%= render FlatPack::SectionTitle::Component.new(title: "This plan", class: "my-0") %>
+    <%= render FlatPack::SectionTitle::Component.new(title: t("recording_studio.stripe.admin.products.this_plan"), class: "my-0") %>
     <div class="flex flex-col gap-4">
-      <%= render FlatPack::TextInput::Component.new(name: "name", label: "Name", required: true, value: @product.name) %>
+      <%= render FlatPack::TextInput::Component.new(
+        name: "name",
+        label: t("recording_studio.stripe.admin.common.name"),
+        required: true,
+        value: @product.name
+      ) %>
       <% if @product.plan? %>
         <%= render FlatPack::TextInput::Component.new(
           name: "plan_card[subtitle]",
-          label: "Subtitle",
+          label: t("recording_studio.stripe.admin.common.subtitle"),
           value: @product.card_subtitle,
-          placeholder: "For small teams",
-          help_text: "Shows under the name on the pricing card."
+          placeholder: t("recording_studio.stripe.admin.products.subtitle_placeholder"),
+          help_text: t("recording_studio.stripe.admin.products.subtitle_help")
         ) %>
       <% end %>
       <% if RecordingStudioStripe::SubscriptionTypes.configured? && @product.plan? %>
         <%= render FlatPack::Select::Component.new(
           name: "subscription_type",
-          label: "Group",
+          label: t("recording_studio.stripe.admin.common.group"),
           required: true,
           value: @product.subscription_type,
           options: RecordingStudioStripe::SubscriptionTypes.select_options
         ) %>
       <% end %>
-      <%= render FlatPack::TextInput::Component.new(name: "description", label: "Description", value: @product.description) %>
+      <%= render FlatPack::TextInput::Component.new(
+        name: "description",
+        label: t("recording_studio.stripe.admin.common.description"),
+        value: @product.description
+      ) %>
     </div>
 
     <% if @product.plan? %>
-      <%= render FlatPack::SectionTitle::Component.new(title: "What they get", class: "my-0") %>
+      <%= render FlatPack::SectionTitle::Component.new(title: t("recording_studio.stripe.admin.products.what_they_get"), class: "my-0") %>
       <div class="flex flex-col gap-4">
         <%= render "paywalls" %>
         <%= render "limits" %>
@@ -41,6 +54,11 @@
       <%= render "trial" %>
       <%= render "plan_card" %>
     <% end %>
-    <%= render FlatPack::Button::Component.new(text: "Save", style: :primary, size: :md, type: "submit") %>
+    <%= render FlatPack::Button::Component.new(
+      text: t("recording_studio.stripe.admin.common.save"),
+      style: :primary,
+      size: :md,
+      type: "submit"
+    ) %>
   <% end %>
 </div>

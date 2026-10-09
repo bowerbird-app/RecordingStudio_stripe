@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.9.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.10.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -459,16 +459,16 @@ class RecordingStudioStripeTest < Minitest::Test
     )
     helper = File.read(File.expand_path("../app/helpers/recording_studio_stripe/application_helper.rb", __dir__))
 
-    assert_includes edit, "Edit \#{@product.name}"
-    assert_includes edit, "This plan"
-    assert_includes edit, "What they get"
-    assert_includes edit, "text: \"Save\""
-    assert_includes new_view, "New plan"
-    assert_includes new_view, "Plan or extra pack"
+    assert_includes edit, 't("recording_studio.stripe.admin.products.edit_title"'
+    assert_includes edit, 't("recording_studio.stripe.admin.products.this_plan")'
+    assert_includes edit, 't("recording_studio.stripe.admin.products.what_they_get")'
+    assert_includes edit, 't("recording_studio.stripe.admin.common.save")'
+    assert_includes new_view, 't("recording_studio.stripe.admin.products.new_title")'
+    assert_includes new_view, 't("recording_studio.stripe.admin.products.kind_label")'
     assert_includes card, "Collapse::Component"
-    assert_includes card, "Pricing card"
-    assert_includes card, "Extra line"
-    assert_includes card, "What it says"
+    assert_includes card, 't("recording_studio.stripe.admin.plan_card.title")'
+    assert_includes card, 't("recording_studio.stripe.admin.plan_card.extra_line")'
+    assert_includes card, 't("recording_studio.stripe.admin.plan_card.what_it_says")'
     refute_includes card, "Also show"
     refute_includes card, "label: \"Key\""
     assert_includes helper, "stripe_plan_card_open?"
