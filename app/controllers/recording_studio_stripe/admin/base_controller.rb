@@ -26,7 +26,7 @@ module RecordingStudioStripe
       def require_admin_access!
         return if admin_authorized?
 
-        render plain: "Staff only.", status: :forbidden
+        render plain: Copy.t("admin.staff_only", default: "Staff only."), status: :forbidden
       end
 
       def admin_authorized?

@@ -10,7 +10,12 @@ module RecordingStudioStripe
           name: params.require(:name).to_s.parameterize(separator: "_"),
           label: params.require(:label)
         )
-        redirect_to admin_screen_url("meters"), notice: "#{meter.label} is ready to count."
+        # rubocop:disable Style/FormatStringToken -- I18n %{label} token
+        redirect_to admin_screen_url("meters"),
+                    notice: Copy.t("admin.notices.meter_ready",
+                                   label: meter.label,
+                                   default: "%{label} is ready to count.")
+        # rubocop:enable Style/FormatStringToken
       rescue ActiveRecord::RecordInvalid => e
         flash.now[:alert] = e.message
         render :new, status: :unprocessable_entity

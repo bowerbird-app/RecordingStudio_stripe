@@ -14,7 +14,12 @@ module RecordingStudioStripe
           kind: params.require(:kind),
           **product_attrs
         )
-        redirect_to admin_screen_url("products"), notice: "#{product.name} is on the catalogue."
+        # rubocop:disable Style/FormatStringToken -- I18n %{name} token
+        redirect_to admin_screen_url("products"),
+                    notice: Copy.t("admin.notices.product_on_catalogue",
+                                   name: product.name,
+                                   default: "%{name} is on the catalogue.")
+        # rubocop:enable Style/FormatStringToken
       rescue InvalidPrice, ActiveRecord::RecordInvalid => e
         flash.now[:alert] = e.message
         @kind = params[:kind]
@@ -34,7 +39,12 @@ module RecordingStudioStripe
           name: params.require(:name),
           **product_attrs
         )
-        redirect_to admin_screen_url("products"), notice: "#{@product.name} is saved."
+        # rubocop:disable Style/FormatStringToken -- I18n %{name} token
+        redirect_to admin_screen_url("products"),
+                    notice: Copy.t("admin.notices.product_saved",
+                                   name: @product.name,
+                                   default: "%{name} is saved.")
+        # rubocop:enable Style/FormatStringToken
       rescue InvalidPrice, ActiveRecord::RecordInvalid => e
         flash.now[:alert] = e.message
         @selected_paywall_names = Array(params[:paywall_names])

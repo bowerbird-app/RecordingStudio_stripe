@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.11.0] - 2026-10-12
+
+### Added
+- Staff Admin flashes, “Staff only.”, and Admin Definitions chrome that the Admin gem resolves at render (section/screen titles, nav link text, screen buttons, row actions, widget titles/info) resolve through `recording_studio.stripe.admin.*` with English `default:`
+- Regression test scans every `lib/**/*.rb` and refutes `i18n.load_path` / `I18n.load_path`
+- Dummy always-loaded host override on rarely shown `admin.plan_card.hide_aria` (boot-order guard), plus render-level flash/staff-only/definition assertions
+
+### Changed
+- Admin controller notices and forbidden plain text use `Copy.t(..., default:)` (English output unchanged)
+
+### Upgrade notes
+- Bump to **0.11.0** (minor: hosts can translate Admin flashes and resolvable Definitions chrome). No migration
+- English output stays the same. Admin screen/section **subtitles** stay English literals (Admin search reads subtitle raw). Admin column headers remain untranslated. **Cell values** stay English literals
+- Model validation messages and lib/service raised messages stay main’s English; translate only at controller/view render sites
+- Hosts override with the same nested keys under `recording_studio.stripe.*`. No engine `i18n.load_path` initializer
+- Public helpers and `RecordingStudioStripe::Copy` are unchanged
+
 ## [0.10.0] - 2026-10-09
 
 ### Added
@@ -424,6 +443,12 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.10.0...v0.11.0
+[0.10.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.9...v0.9.0
+[0.8.9]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.8...v0.8.9
+[0.8.8]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.7...v0.8.8
 [0.8.7]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.6...v0.8.7
 [0.8.6]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.5...v0.8.6
 [0.8.5]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.4...v0.8.5

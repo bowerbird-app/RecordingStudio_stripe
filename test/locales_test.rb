@@ -9,6 +9,17 @@ class LocalesTest < Minitest::Test
   # I18n templates use %{name}-style tokens; keep them identical to en.yml.
   # rubocop:disable Style/FormatStringToken
   ADMIN_SAMPLE_KEYS = {
+    "admin.staff_only" => "Staff only.",
+    "admin.notices.price_live" => "Price is live.",
+    "admin.notices.included_amounts_saved" => "Included amounts are saved.",
+    "admin.notices.product_on_catalogue" => "%{name} is on the catalogue.",
+    "admin.notices.product_saved" => "%{name} is saved.",
+    "admin.notices.meter_ready" => "%{label} is ready to count.",
+    "admin.notices.paywall_ready" => "%{label} is ready to tick on a plan.",
+    "admin.definitions.section.title" => "Stripe",
+    "admin.definitions.products.title" => "Products",
+    "admin.definitions.products.new_button" => "New Product",
+    "admin.definitions.widgets.past_due_title" => "Past due",
     "admin.products.new_title" => "New plan",
     "admin.products.edit_title" => "Edit %{name}",
     "admin.products.this_plan" => "This plan",
@@ -26,7 +37,8 @@ class LocalesTest < Minitest::Test
     "admin.limits.help" => "Blank means none. Monthly and yearly share this number.",
     "admin.plan_card.title" => "Pricing card",
     "admin.plan_card.extra_line" => "Extra line",
-    "admin.plan_card.what_it_says" => "What it says"
+    "admin.plan_card.what_it_says" => "What it says",
+    "admin.plan_card.hide_aria" => "About hiding lines"
   }.freeze
   # rubocop:enable Style/FormatStringToken
 
@@ -40,6 +52,35 @@ class LocalesTest < Minitest::Test
     locale_path = File.join(engine_locales_dir, "en.yml")
 
     assert_includes I18n.load_path.map { |path| File.expand_path(path) }, File.expand_path(locale_path)
+  end
+
+  def test_lib_sources_do_not_append_i18n_load_path
+    lib_dir = File.expand_path("../lib", __dir__)
+    ruby_files = Dir[File.join(lib_dir, "**", "*.rb")]
+
+    refute_empty ruby_files, "expected lib/**/*.rb files to scan"
+
+    ruby_files.each do |path|
+      source = File.read(path)
+
+      refute_includes source, "i18n.load_path", "#{path} must not touch i18n.load_path"
+      refute_includes source, "I18n.load_path", "#{path} must not touch I18n.load_path"
+    end
+  end
+
+  def test_copy_t_defaults_match_main_english_for_wave2_keys
+    I18n.with_locale(:en) do
+      assert_equal "Staff only.", Copy.t("admin.staff_only", default: "Staff only.")
+      assert_equal "Price is live.", Copy.t("admin.notices.price_live", default: "Price is live.")
+      # rubocop:disable Style/FormatStringToken -- I18n %{name} token
+      assert_equal "Pro is on the catalogue.",
+                   Copy.t("admin.notices.product_on_catalogue",
+                          name: "Pro",
+                          default: "%{name} is on the catalogue.")
+      # rubocop:enable Style/FormatStringToken
+      assert_equal "New Product",
+                   Copy.t("admin.definitions.products.new_button", default: "New Product")
+    end
   end
 
   def test_dummy_french_covers_every_engine_english_key

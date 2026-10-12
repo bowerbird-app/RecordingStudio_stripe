@@ -147,6 +147,46 @@ en:
         relief_count: Upgrade, or archive one.
         meter_spent: "This period's %{label} are spent. Buy a pack, or wait for renewal."
       admin:
+        staff_only: Staff only.
+        notices:
+          price_live: Price is live.
+          included_amounts_saved: Included amounts are saved.
+          product_on_catalogue: "%{name} is on the catalogue."
+          product_saved: "%{name} is saved."
+          meter_ready: "%{label} is ready to count."
+          paywall_ready: "%{label} is ready to tick on a plan."
+        definitions:
+          section:
+            title: Stripe
+            link_products: Products
+            link_prices: Prices
+            link_meters: Meters
+            link_paywalls: Paywalls
+            link_customers: Customers
+            link_subscriptions: Subscriptions
+          products:
+            title: Products
+            new_button: New Product
+            edit: Edit
+            add_price: Add Price
+          prices:
+            title: Prices
+            edit: Edit
+          meters:
+            title: Meters
+            new_button: New Meter
+          paywalls:
+            title: Paywalls
+            new_button: New paywall
+          customers:
+            title: Customers
+          subscriptions:
+            title: Subscriptions
+          widgets:
+            past_due_title: Past due
+            past_due_info: Subscriptions Stripe marked past_due. Someone probably needs a card update.
+            active_title: Active subscriptions
+            active_info: active and trialing. Past due is a separate card.
         nav:
           products: Products
           prices: Prices

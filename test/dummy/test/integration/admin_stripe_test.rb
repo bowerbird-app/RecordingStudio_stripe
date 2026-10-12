@@ -28,6 +28,9 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Past due"
     assert_includes response.body, "Active subscriptions"
     assert_includes response.body, "Paywalls"
+    assert_includes response.body, "Products, Prices, meters, paywalls, and who is paying"
+    assert_equal "Stripe", I18n.t("recording_studio.stripe.admin.definitions.section.title")
+    assert_equal "New Product", I18n.t("recording_studio.stripe.admin.definitions.products.new_button")
   end
 
   test "products screen lists the demo catalogue" do
@@ -36,6 +39,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Products"
     assert_includes response.body, "New Product"
+    assert_includes response.body, "One Product per plan. Extra packs are Products too."
 
     get "/admin/screens/products/table"
 
@@ -81,6 +85,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     end
 
     follow_redirect!
+    assert_includes response.body, "Share a link is ready to tick on a plan."
     assert RecordingStudioStripe::Paywall.exists?(name: "share_link")
   end
 
@@ -132,6 +137,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
 
     follow_redirect!
     assert_includes response.body, "Studio"
+    assert_includes response.body, "Studio is on the catalogue."
     product = RecordingStudioStripe::Product.find_by!(name: "Studio")
     assert_equal "studio", product.subscription_type
     assert_equal %w[export_csv generate_image], product.paywalls.order(:name).pluck(:name)
@@ -142,6 +148,20 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_equal %w[limit:press_kits meter:ai_tokens paywall:generate_image extra:priority], card["order"]
     assert_equal "Someone picks up the phone", card["extras"].first["text"]
     assert_equal "phone", card["extras"].first["icon"]
+  end
+
+  test "staff without admin access sees Staff only on engine admin forms" do
+    outsider = User.find_or_create_by!(email: "outsider@example.com") do |user|
+      user.password = "Password"
+      user.password_confirmation = "Password"
+    end
+    sign_out @user
+    sign_in outsider
+
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
+
+    assert_response :forbidden
+    assert_equal "Staff only.", response.body
   end
 
   test "staff can save a paid trial on a new plan" do
@@ -210,6 +230,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     }
 
     follow_redirect!
+    assert_includes response.body, "Starter is saved."
     assert_equal %w[export_csv], starter.reload.paywalls.order(:name).pluck(:name)
     assert_equal 5, starter.limit_quantity("press_kits")
     assert_nil starter.card_subtitle
@@ -285,6 +306,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     }
 
     follow_redirect!
+    assert_includes response.body, "Included amounts are saved."
     price.reload
     assert_equal 2_500_000, price.included_quantity("ai_tokens")
     assert_equal 20_000, price.included_quantity("api_calls")
@@ -312,6 +334,8 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
       }
     end
 
+    follow_redirect!
+    assert_includes response.body, "Price is live."
     price = RecordingStudioStripe::Price.order(:created_at).last
     assert_equal 1500, price.unit_amount
     assert_equal "month", price.interval
@@ -386,6 +410,8 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
       }
     end
 
+    follow_redirect!
+    assert_includes response.body, "Seats is ready to count."
     assert RecordingStudioStripe::Meter.exists?(name: "seats")
   end
 
