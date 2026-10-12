@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Upgrade notes
 - Bump to **0.11.0** (minor: hosts can translate Admin flashes and resolvable Definitions chrome). No migration
-- English output stays the same. Admin screen/section **subtitles**, table **column headers**, and **cell values** stay English literals (Admin search reads subtitle raw; Marco accepted column headers)
+- English output stays the same. Admin screen/section **subtitles** stay English literals (Admin search reads subtitle raw). Admin column headers remain untranslated. **Cell values** stay English literals
 - Model validation messages and lib/service raised messages stay main’s English; translate only at controller/view render sites
 - Hosts override with the same nested keys under `recording_studio.stripe.*`. No engine `i18n.load_path` initializer
 - Public helpers and `RecordingStudioStripe::Copy` are unchanged
