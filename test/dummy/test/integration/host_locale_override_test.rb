@@ -48,4 +48,14 @@ class HostLocaleOverrideTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "A Flatpack icon name. Blank is a check."
     refute_includes response.body, "Host icon tip wins"
   end
+
+  test "boot-loaded host override wins on rarely shown hide_aria" do
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
+
+    assert_response :success
+    assert_includes response.body, "HOST hide aria boot guard"
+    refute_includes response.body, 'aria-label="About hiding lines"'
+    assert_equal "HOST hide aria boot guard",
+                 I18n.t("recording_studio.stripe.admin.plan_card.hide_aria")
+  end
 end

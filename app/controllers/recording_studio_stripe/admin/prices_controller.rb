@@ -16,7 +16,8 @@ module RecordingStudioStripe
           interval: params[:interval],
           metadata: price_metadata
         )
-        redirect_to admin_screen_url("prices"), notice: "Price is live."
+        redirect_to admin_screen_url("prices"),
+                    notice: Copy.t("admin.notices.price_live", default: "Price is live.")
       rescue InvalidPrice, ActiveRecord::RecordInvalid => e
         @product = Product.find_by(id: params[:product_id])
         flash.now[:alert] = e.message
@@ -32,7 +33,9 @@ module RecordingStudioStripe
         @price = Price.find(params[:id])
         @product = @price.product
         UpdatePrice.call(price: @price, metadata: price_metadata)
-        redirect_to admin_screen_url("prices"), notice: "Included amounts are saved."
+        redirect_to admin_screen_url("prices"),
+                    notice: Copy.t("admin.notices.included_amounts_saved",
+                                   default: "Included amounts are saved.")
       rescue InvalidPrice, ActiveRecord::RecordInvalid => e
         flash.now[:alert] = e.message
         render :edit, status: :unprocessable_entity

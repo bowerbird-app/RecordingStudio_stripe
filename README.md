@@ -280,7 +280,7 @@ Do not translate Stripe catalog data: Product names, Price amounts, staff-writte
 
 Add [Recording Studio Internationalization](https://github.com/bowerbird-app/RecordingStudio_Internationalization) on the host when you want a language selector. This gem does not declare the host's languages.
 
-Staff Admin form views under the engine use `recording_studio.stripe.admin.*`. Admin list chrome from `RecordingStudioStripe::Admin::Definitions` stays English hard-coded.
+Staff Admin form views, flashes, and resolvable Admin Definitions chrome (titles, buttons, link text, widget titles/info) use `recording_studio.stripe.admin.*`. Admin screen/section subtitles, table column headers, and cell values stay English literals (Admin search reads subtitle raw).
 
 ## Dummy
 

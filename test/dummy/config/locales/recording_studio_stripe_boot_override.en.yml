@@ -1,0 +1,9 @@
+# Always-loaded host override for a rarely shown Admin form key.
+# Real boot-order guard: host config/locales wins over the gem English file.
+# Does not change default dummy list chrome (/admin, product lists).
+en:
+  recording_studio:
+    stripe:
+      admin:
+        plan_card:
+          hide_aria: "HOST hide aria boot guard"

@@ -173,6 +173,46 @@ fr:
         relief_count: Passez au-dessus, ou archivez-en un.
         meter_spent: "Les %{label} de cette période sont épuisés. Achetez un pack, ou attendez le renouvellement."
       admin:
+        staff_only: Réservé au personnel.
+        notices:
+          price_live: Le tarif est en ligne.
+          included_amounts_saved: Les montants inclus sont enregistrés.
+          product_on_catalogue: "%{name} est au catalogue."
+          product_saved: "%{name} est enregistré."
+          meter_ready: "%{label} est prêt à compter."
+          paywall_ready: "%{label} est prêt à cocher sur une offre."
+        definitions:
+          section:
+            title: Stripe
+            link_products: Produits
+            link_prices: Tarifs
+            link_meters: Compteurs
+            link_paywalls: Accès payants
+            link_customers: Clients
+            link_subscriptions: Abonnements
+          products:
+            title: Produits
+            new_button: Nouveau produit
+            edit: Modifier
+            add_price: Ajouter un tarif
+          prices:
+            title: Tarifs
+            edit: Modifier
+          meters:
+            title: Compteurs
+            new_button: Nouveau compteur
+          paywalls:
+            title: Accès payants
+            new_button: Nouvel accès payant
+          customers:
+            title: Clients
+          subscriptions:
+            title: Abonnements
+          widgets:
+            past_due_title: En retard
+            past_due_info: Abonnements marqués past_due par Stripe. Quelqu’un doit probablement mettre à jour la carte.
+            active_title: Abonnements actifs
+            active_info: active et trialing. Le retard est une carte à part.
         nav:
           products: Produits
           prices: Tarifs
