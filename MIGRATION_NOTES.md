@@ -7,7 +7,7 @@
 - Recording Studio 4.x (`~> 4.1` in the gemspec; dummy GitHub tag `v4.5.0`)
 - Accessible dummy tag `v0.15.0` and Root Switchable dummy tag `v0.8.0`
 - Metrics dummy tag `v0.2.0` (required by Root Switchable `>= 0.7.0`)
-- Admin dummy tag `v2.1.0` and FlatPack dummy tag `v0.1.207`
+- Admin dummy tag `v2.2.0` and FlatPack dummy tag `v0.1.207`
 - Public RubyGems and GitHub access for dependency installation
 
 ## Verification
