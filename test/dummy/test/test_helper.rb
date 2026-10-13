@@ -27,7 +27,8 @@ module StripeBillingTestHelpers
   def admin_actor_for(recording)
     target = RecordingStudio.root_recording_or_self(recording)
     RecordingStudio::Recording.unscoped
-      .where(recordable_type: "RecordingStudio::Access", trashed_at: nil)
+      .where(RecordingStudio::Recording.recording_studio_trashable_kept_sql)
+      .where(recordable_type: "RecordingStudio::Access")
       .where(root_recording_id: target.id)
       .find_each do |access_recording|
         access = access_recording.recordable
