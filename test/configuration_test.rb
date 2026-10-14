@@ -120,9 +120,10 @@ class ConfigurationTest < Minitest::Test
     assert_equal "/usage", @configuration.usage_path
   end
 
-  def test_authenticate_config_removed_now_that_accessible_is_required
-    refute_respond_to @configuration, :authenticate
-    refute_respond_to @configuration, :authenticate=
+  def test_authenticate_config_defaults_to_nil
+    assert_nil @configuration.authenticate
+    @configuration.authenticate = -> { true }
+    assert_equal true, @configuration.authenticate.call
   end
 
   def test_local_mode_when_no_secret

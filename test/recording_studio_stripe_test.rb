@@ -64,7 +64,11 @@ class RecordingStudioStripeTest < Minitest::Test
   end
 
   def test_billing_application_controller_uses_controller_auth
-    source = File.read(File.expand_path("../app/controllers/recording_studio_stripe/application_controller.rb", __dir__))
+    path = File.expand_path(
+      "../app/controllers/recording_studio_stripe/application_controller.rb",
+      __dir__
+    )
+    source = File.read(path)
 
     assert_includes source, "include RecordingStudioAccessible::ControllerAuth"
     assert_includes source, "recording_studio_auth("
@@ -73,9 +77,9 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes source, "actor_method: :current_actor"
     assert_includes source, "root_method: :current_billing_root"
     assert_includes source, "def require_root_recording!"
-    assert_includes source, "authorize_recording!(current_billing_root, role: :view)"
-    refute_includes source, "configuration.authenticate"
-    refute_includes source, "authorize_role!"
+    assert_includes source, "def authorize_role!(role)"
+    assert_includes source, "configuration.authenticate"
+    assert_includes source, "RecordingStudioAccessible.authorized?"
   end
 
   def test_template_does_not_ship_copied_core_hooks_or_base_service

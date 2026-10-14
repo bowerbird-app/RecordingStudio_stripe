@@ -255,7 +255,7 @@ Point Stripe at `POST /webhooks/stripe`. Set `STRIPE_WEBHOOK_SECRET` whenever St
 
 Set `config.automatic_tax = true` only after Stripe Tax is on in the Dashboard. Checkout then also sends `customer_update: { address: "auto" }`. Promotion codes are on by default.
 
-Hosts that do not use `current_user` should set `config.current_actor`. Hosts that do not use `current_root_recording` should set `config.current_root_recording`. `draw_recording_studio_stripe at:` overwrites `config.mount_path`. Billing screens use Accessible `ControllerAuth` for actor, root, and role checks; grant `:view` / `:admin` on the workspace root.
+Hosts that do not use `current_user` should set `config.current_actor`. Hosts that do not use `current_root_recording` should set `config.current_root_recording`. `draw_recording_studio_stripe at:` overwrites `config.mount_path`. Billing screens use Accessible `ControllerAuth` for actor and root; grant `:view` / `:admin` on the workspace root. If Accessible is not loaded, set `config.authenticate` or money actions stay forbidden.
 
 Recording Studio core still swallows `before_record` errors. Standing caps gate on `Recording` `before_create`, restore, and move until core can deny `record!` itself.
 

@@ -10,16 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.12.0] - 2026-10-14
 
 ### Changed
-- Billing `ApplicationController` uses `RecordingStudioAccessible::ControllerAuth` for actor, root, require-root, and Accessible authorize helpers (stripe-shaped options: no authenticate before_action, `require_actor`, resolvers, plain responses)
+- Billing `ApplicationController` uses `RecordingStudioAccessible::ControllerAuth` for actor, root, and require-root (stripe-shaped options: no authenticate before_action, `require_actor`, resolvers, plain responses)
 - Depends on `recording_studio_accessible` `>= 0.18.0` (was optional via the host/dummy only)
-
-### Removed
-- `config.authenticate` fallback when Accessible was not loaded. Accessible is required; money actions authorize through Accessible grants only
+- `authorize_role!` stays on the gem: Accessible when loaded, otherwise `config.authenticate`, otherwise fail closed (same as main). ControllerAuth has no authenticate fallback
 
 ### Upgrade notes
 - Bump to **0.12.0** and install Accessible **0.18.0** or newer (pin by tag in the host Gemfile when the gem is not on RubyGems)
-- Remove any `config.authenticate = ...` from the Stripe initializer. Grant Accessible `:view` / `:admin` on the billing root instead
-- Public helpers stay the same: `current_actor`, `current_billing_root`, `require_root_recording!`, `authorize_view!` / `authorize_edit!` / `authorize_admin!`
+- Public helpers stay the same: `current_actor`, `current_billing_root`, `require_root_recording!`, `authorize_view!` / `authorize_edit!` / `authorize_admin!`, `config.authenticate`
 - `config.current_actor` and `config.current_root_recording` still override host helpers. No migration
 
 ## [0.11.0] - 2026-10-12

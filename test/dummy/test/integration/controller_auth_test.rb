@@ -112,5 +112,52 @@ class ControllerAuthTest < ActionDispatch::IntegrationTest
     RecordingStudioStripe.configuration.current_actor = previous_actor
     RecordingStudioStripe.configuration.current_root_recording = previous_root
   end
+
+  test "config.authenticate is ignored when Accessible is loaded" do
+    sign_in @user
+    switch_to_root!(@root)
+    previous = RecordingStudioStripe.configuration.authenticate
+    called = false
+    RecordingStudioStripe.configuration.authenticate = lambda {
+      called = true
+      false
+    }
+
+    get "/plans"
+
+    assert_response :success
+    refute called, "Accessible path must win; authenticate must not run"
+  ensure
+    RecordingStudioStripe.configuration.authenticate = previous
+  end
+
+  test "config.authenticate allows and denies when Accessible is absent" do
+    sign_in @user
+    switch_to_root!(@root)
+    accessible = ::RecordingStudioAccessible
+    Object.send(:remove_const, :RecordingStudioAccessible)
+    previous = RecordingStudioStripe.configuration.authenticate
+    no_access = RecordingStudioStripe::Copy.t("alerts.no_access")
+
+    RecordingStudioStripe.configuration.authenticate = -> { true }
+    get "/plans"
+    assert_response :success
+
+    RecordingStudioStripe.configuration.authenticate = -> { false }
+    get "/billing"
+    assert_response :forbidden
+    assert_equal no_access, response.body
+
+    RecordingStudioStripe.configuration.authenticate = nil
+    get "/billing"
+    assert_response :forbidden
+    assert_equal no_access, response.body
+  ensure
+    unless defined?(::RecordingStudioAccessible)
+      Object.const_set(:RecordingStudioAccessible, accessible)
+    end
+    RecordingStudioStripe.configuration.authenticate = previous
+  end
 end
+
 
