@@ -51,6 +51,12 @@ module RecordingStudioStripe
       }
     )
 
+    # ControllerAuth exposes the root method as a helper; main did not.
+    self._helper_methods = _helper_methods - [:current_billing_root]
+    _helpers_for_modification.class_eval do
+      undef_method :current_billing_root if method_defined?(:current_billing_root)
+    end
+
     before_action :require_root_recording!
 
     private

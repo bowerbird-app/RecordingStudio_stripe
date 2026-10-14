@@ -33,6 +33,42 @@ class ControllerAuthTest < ActionDispatch::IntegrationTest
     assert controller.private_method_defined?(:require_root_recording!)
     refute_includes controller.action_methods, "current_actor"
     refute_includes controller.action_methods, "current_billing_root"
+    refute_includes controller._helper_methods, :current_billing_root
+    assert_includes controller._helper_methods, :billing
+  end
+
+  test "current_actor falls back to Current.actor when config is unset and current_user is undefined" do
+    previous = RecordingStudioStripe.configuration.current_actor
+    RecordingStudioStripe.configuration.current_actor = nil
+    Current.actor = @user
+
+    controller = RecordingStudioStripe::ApplicationController.new
+    def controller.respond_to?(method_name, include_all = false)
+      return false if method_name.to_sym == :current_user
+
+      super
+    end
+
+    assert_equal @user, controller.send(:current_actor)
+
+    Current.actor = nil
+    assert_nil controller.send(:current_actor)
+  ensure
+    RecordingStudioStripe.configuration.current_actor = previous
+    Current.actor = nil
+  end
+
+  test "plans succeed with unset config.current_actor via current_user then Accessible" do
+    previous = RecordingStudioStripe.configuration.current_actor
+    RecordingStudioStripe.configuration.current_actor = nil
+    sign_in @user
+    switch_to_root!(@root)
+
+    get "/plans"
+
+    assert_response :success
+  ensure
+    RecordingStudioStripe.configuration.current_actor = previous
   end
 
   test "verify_authenticity_token runs before ControllerAuth and require-root filters" do

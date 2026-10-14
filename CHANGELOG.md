@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Upgrade notes
 - Bump to **0.12.0** and install Accessible **0.18.x** (pin GitHub tag `v0.18.0` until a newer 0.18.x tag ships)
-- Public helpers stay the same: `current_actor`, `current_billing_root`, `require_root_recording!`, `authorize_view!` / `authorize_edit!` / `authorize_admin!`, `config.authenticate`
+- Public controller methods stay the same: `current_actor`, `current_billing_root`, `require_root_recording!`, `authorize_view!` / `authorize_edit!` / `authorize_admin!`, `config.authenticate`. `current_billing_root` is not a view helper (same as main; only `billing` is)
 - `config.current_actor` and `config.current_root_recording` still override host helpers. No migration
 
 ## [0.11.0] - 2026-10-12
