@@ -17,7 +17,6 @@ module RecordingStudioStripe
                   :allow_promotion_codes,
                   :automatic_tax,
                   :mount_path,
-                  :authenticate,
                   :current_actor,
                   :current_root_recording
     attr_reader :hooks, :usage_costs, :limit_usages
@@ -42,7 +41,6 @@ module RecordingStudioStripe
       @allow_promotion_codes = true
       @automatic_tax = false
       @mount_path = "/billing"
-      @authenticate = nil
       @current_actor = nil
       @current_root_recording = nil
       @hooks = RecordingStudio::Hooks.new

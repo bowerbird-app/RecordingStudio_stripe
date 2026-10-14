@@ -4,17 +4,18 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.11.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.12.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
     assert_kind_of Class, ::RecordingStudioStripe::Engine
   end
 
-  def test_gemspec_pins_recording_studio_and_stripe
+  def test_gemspec_pins_recording_studio_accessible_and_stripe
     gemspec = File.read(File.expand_path("../recording_studio_stripe.gemspec", __dir__))
 
     assert_includes gemspec, 'spec.add_dependency "recording_studio", "~> 4.1"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", ">= 0.18.0"'
     assert_includes gemspec, 'spec.add_dependency "stripe"'
   end
 
@@ -54,6 +55,27 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.5.0"'
     assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.207"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.1.2"'
+  end
+
+  def test_root_gemfile_pins_accessible_controller_auth_tag
+    gemfile = File.read(File.expand_path("../Gemfile", __dir__))
+
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.18.0"'
+  end
+
+  def test_billing_application_controller_uses_controller_auth
+    source = File.read(File.expand_path("../app/controllers/recording_studio_stripe/application_controller.rb", __dir__))
+
+    assert_includes source, "include RecordingStudioAccessible::ControllerAuth"
+    assert_includes source, "recording_studio_auth("
+    assert_includes source, "authenticate: false"
+    assert_includes source, "require_actor: true"
+    assert_includes source, "actor_method: :current_actor"
+    assert_includes source, "root_method: :current_billing_root"
+    assert_includes source, "def require_root_recording!"
+    assert_includes source, "authorize_recording!(current_billing_root, role: :view)"
+    refute_includes source, "configuration.authenticate"
+    refute_includes source, "authorize_role!"
   end
 
   def test_template_does_not_ship_copied_core_hooks_or_base_service

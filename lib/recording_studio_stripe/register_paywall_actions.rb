@@ -8,6 +8,7 @@ module RecordingStudioStripe
 
     def call
       return unless defined?(RecordingStudioAccessible)
+      return unless defined?(ActiveRecord)
       return unless Paywall.table_exists?
 
       Paywall.find_each do |paywall|

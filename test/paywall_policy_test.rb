@@ -3,14 +3,6 @@
 require "test_helper"
 
 class PaywallPolicyTest < Minitest::Test
-  def test_fails_closed_without_accessible
-    refute RecordingStudioStripe::PaywallPolicy.allowed?(
-      actor: Object.new,
-      recording: Object.new,
-      paywall_name: "generate_image"
-    )
-  end
-
   def test_fails_closed_when_actor_or_recording_is_blank
     refute RecordingStudioStripe::PaywallPolicy.allowed?(
       actor: nil,
@@ -29,7 +21,11 @@ class PaywallPolicyTest < Minitest::Test
     )
   end
 
-  def test_register_paywall_actions_is_a_noop_without_accessible
+  def test_register_paywall_actions_is_a_noop_without_active_record_tables
     assert_nil RecordingStudioStripe::RegisterPaywallActions.call
+  end
+
+  def test_accessible_is_loaded_with_the_gem
+    assert defined?(RecordingStudioAccessible)
   end
 end

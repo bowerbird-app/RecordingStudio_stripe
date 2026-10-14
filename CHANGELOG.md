@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-14
+
+### Changed
+- Billing `ApplicationController` uses `RecordingStudioAccessible::ControllerAuth` for actor, root, require-root, and Accessible authorize helpers (stripe-shaped options: no authenticate before_action, `require_actor`, resolvers, plain responses)
+- Depends on `recording_studio_accessible` `>= 0.18.0` (was optional via the host/dummy only)
+
+### Removed
+- `config.authenticate` fallback when Accessible was not loaded. Accessible is required; money actions authorize through Accessible grants only
+
+### Upgrade notes
+- Bump to **0.12.0** and install Accessible **0.18.0** or newer (pin by tag in the host Gemfile when the gem is not on RubyGems)
+- Remove any `config.authenticate = ...` from the Stripe initializer. Grant Accessible `:view` / `:admin` on the billing root instead
+- Public helpers stay the same: `current_actor`, `current_billing_root`, `require_root_recording!`, `authorize_view!` / `authorize_edit!` / `authorize_admin!`
+- `config.current_actor` and `config.current_root_recording` still override host helpers. No migration
+
 ## [0.11.0] - 2026-10-12
 
 ### Added
@@ -443,7 +458,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.9...v0.9.0

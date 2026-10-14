@@ -120,6 +120,11 @@ class ConfigurationTest < Minitest::Test
     assert_equal "/usage", @configuration.usage_path
   end
 
+  def test_authenticate_config_removed_now_that_accessible_is_required
+    refute_respond_to @configuration, :authenticate
+    refute_respond_to @configuration, :authenticate=
+  end
+
   def test_local_mode_when_no_secret
     ENV["STRIPE_SECRET_KEY"] = nil
     configuration = RecordingStudioStripe::Configuration.new

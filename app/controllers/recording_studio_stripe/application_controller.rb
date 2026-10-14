@@ -3,37 +3,55 @@
 module RecordingStudioStripe
   class ApplicationController < ::ApplicationController
     include RecordingStudio::UsesDefaultLayout
+    include RecordingStudioAccessible::ControllerAuth
 
     layout "recording_studio/default_layout"
+
+    recording_studio_auth(
+      config: -> { RecordingStudioStripe.configuration },
+      prefix: :stripe,
+      authenticate: false,
+      set_current_actor: false,
+      require_actor: true,
+      actor_method: :current_actor,
+      root_method: :current_billing_root,
+      actor_resolver: lambda {
+        resolver = RecordingStudioStripe.configuration.current_actor
+        next instance_exec(&resolver) if resolver
+        next current_user if respond_to?(:current_user)
+
+        Current.actor if defined?(Current)
+      },
+      root_resolver: lambda {
+        resolver = RecordingStudioStripe.configuration.current_root_recording
+        next instance_exec(&resolver) if resolver
+        next current_root_recording if defined?(current_root_recording)
+
+        nil
+      },
+      on_missing_actor_for_root: lambda {
+        redirect_to recording_studio_stripe_sign_in_url, alert: Copy.t("alerts.sign_in")
+      },
+      missing_root_status: :not_found,
+      missing_actor_status: :forbidden,
+      response_style: lambda { |status, reason|
+        body =
+          case reason
+          when :missing_root then Copy.t("alerts.pick_workspace")
+          when :forbidden, :missing_actor then Copy.t("alerts.no_access")
+          else
+            status.to_s.tr("_", " ")
+          end
+        render plain: body, status: status
+      }
+    )
 
     before_action :require_root_recording!
 
     private
 
-    def current_actor
-      resolver = RecordingStudioStripe.configuration.current_actor
-      return instance_exec(&resolver) if resolver
-      return current_user if respond_to?(:current_user)
-
-      Current.actor if defined?(Current)
-    end
-
-    def current_billing_root
-      resolver = RecordingStudioStripe.configuration.current_root_recording
-      return instance_exec(&resolver) if resolver
-      return current_root_recording if defined?(current_root_recording)
-
-      nil
-    end
-
     def require_root_recording!
-      unless current_actor
-        redirect_to recording_studio_stripe_sign_in_url, alert: Copy.t("alerts.sign_in")
-        return
-      end
-      return if current_billing_root
-
-      render plain: Copy.t("alerts.pick_workspace"), status: :not_found
+      require_root!
     end
 
     def billing
@@ -42,38 +60,15 @@ module RecordingStudioStripe
     helper_method :billing
 
     def authorize_view!
-      authorize_role!(:view)
+      authorize_recording!(current_billing_root, role: :view)
     end
 
     def authorize_edit!
-      authorize_role!(:edit)
+      authorize_recording!(current_billing_root, role: :edit)
     end
 
     def authorize_admin!
-      authorize_role!(:admin)
-    end
-
-    def authorize_role!(role)
-      if defined?(RecordingStudioAccessible)
-        return if RecordingStudioAccessible.authorized?(
-          actor: current_actor,
-          recording: current_billing_root,
-          role: role
-        )
-
-        render plain: Copy.t("alerts.no_access"), status: :forbidden
-        return
-      end
-
-      authenticator = RecordingStudioStripe.configuration.authenticate
-      if authenticator
-        return if instance_exec(&authenticator)
-
-        render plain: Copy.t("alerts.no_access"), status: :forbidden
-        return
-      end
-
-      render plain: Copy.t("alerts.no_access"), status: :forbidden
+      authorize_recording!(current_billing_root, role: :admin)
     end
 
     def after_checkout_url
