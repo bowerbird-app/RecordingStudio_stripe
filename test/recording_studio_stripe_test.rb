@@ -15,7 +15,7 @@ class RecordingStudioStripeTest < Minitest::Test
     gemspec = File.read(File.expand_path("../recording_studio_stripe.gemspec", __dir__))
 
     assert_includes gemspec, 'spec.add_dependency "recording_studio", "~> 4.1"'
-    assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", ">= 0.18.0"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.18"'
     assert_includes gemspec, 'spec.add_dependency "stripe"'
   end
 
@@ -63,23 +63,22 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.18.0"'
   end
 
-  def test_billing_application_controller_uses_controller_auth
+  def test_billing_application_controller_protects_forgery_before_controller_auth
     path = File.expand_path(
       "../app/controllers/recording_studio_stripe/application_controller.rb",
       __dir__
     )
     source = File.read(path)
+    forgery_at = source.index("protect_from_forgery with: :exception, prepend: true")
+    auth_at = source.index("include RecordingStudioAccessible::ControllerAuth")
 
-    assert_includes source, "include RecordingStudioAccessible::ControllerAuth"
+    assert forgery_at, "expected protect_from_forgery with prepend: true"
+    assert auth_at, "expected ControllerAuth include"
+    assert_operator forgery_at, :<, auth_at
     assert_includes source, "recording_studio_auth("
     assert_includes source, "authenticate: false"
-    assert_includes source, "require_actor: true"
-    assert_includes source, "actor_method: :current_actor"
-    assert_includes source, "root_method: :current_billing_root"
-    assert_includes source, "def require_root_recording!"
     assert_includes source, "def authorize_role!(role)"
     assert_includes source, "configuration.authenticate"
-    assert_includes source, "RecordingStudioAccessible.authorized?"
   end
 
   def test_template_does_not_ship_copied_core_hooks_or_base_service

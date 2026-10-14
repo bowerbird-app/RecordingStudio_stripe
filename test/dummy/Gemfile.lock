@@ -95,7 +95,7 @@ PATH
     recording_studio_stripe (0.12.0)
       rails (~> 8.1.0)
       recording_studio (~> 4.1)
-      recording_studio_accessible (>= 0.18.0)
+      recording_studio_accessible (~> 0.18)
       stripe (>= 13.0, < 20)
 
 GEM

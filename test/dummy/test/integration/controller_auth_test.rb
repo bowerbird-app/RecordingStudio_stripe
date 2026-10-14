@@ -35,6 +35,37 @@ class ControllerAuthTest < ActionDispatch::IntegrationTest
     refute_includes controller.action_methods, "current_billing_root"
   end
 
+  test "verify_authenticity_token runs before ControllerAuth and require-root filters" do
+    filters = RecordingStudioStripe::ApplicationController
+              ._process_action_callbacks
+              .select { |callback| callback.kind == :before }
+              .map(&:filter)
+    csrf_at = filters.index(:verify_authenticity_token)
+
+    assert csrf_at, "expected :verify_authenticity_token in before filters"
+    assert_operator csrf_at, :<, filters.index(:require_root_recording!)
+
+    %i[authenticate_stripe_actor! set_stripe_current_actor].each do |auth_filter|
+      next unless filters.include?(auth_filter)
+
+      assert_operator csrf_at, :<, filters.index(auth_filter),
+                      "#{auth_filter} must run after CSRF"
+    end
+  end
+
+  test "signed-out POST with a bad CSRF token returns 422 not a sign-in redirect" do
+    previous = ActionController::Base.allow_forgery_protection
+    ActionController::Base.allow_forgery_protection = true
+
+    post recording_studio_stripe.checkout_path,
+         params: { price_id: "unused", authenticity_token: "invalid-token" }
+
+    assert_response :unprocessable_entity
+    refute response.redirect?
+  ensure
+    ActionController::Base.allow_forgery_protection = previous
+  end
+
   test "signed-out plans visit redirects to sign in" do
     get "/plans"
 
