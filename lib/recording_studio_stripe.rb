@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "recording_studio"
+require "recording_studio_accessible"
 require "stripe"
 
 require "recording_studio_stripe/version"

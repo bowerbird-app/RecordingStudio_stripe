@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-14
+
+### Changed
+- Billing `ApplicationController` uses `RecordingStudioAccessible::ControllerAuth` for actor, root, and require-root (stripe-shaped options: no authenticate before_action, `require_actor`, resolvers, plain responses)
+- Depends on `recording_studio_accessible` `~> 0.18` (was optional via the host/dummy only)
+- `authorize_role!` stays on the gem: Accessible when loaded, otherwise `config.authenticate`, otherwise fail closed (same as main). ControllerAuth has no authenticate fallback
+- `protect_from_forgery with: :exception, prepend: true` is declared before `ControllerAuth` so `:verify_authenticity_token` runs ahead of host auth and require-root filters
+
+### Upgrade notes
+- Bump to **0.12.0** and install Accessible **0.18.x** (pin GitHub tag `v0.18.0` until a newer 0.18.x tag ships)
+- Public controller methods stay the same: `current_actor`, `current_billing_root`, `require_root_recording!`, `authorize_view!` / `authorize_edit!` / `authorize_admin!`, `config.authenticate`. `current_billing_root` is not a view helper (same as main; only `billing` is)
+- `config.current_actor` and `config.current_root_recording` still override host helpers. No migration
+
 ## [0.11.0] - 2026-10-12
 
 ### Added
@@ -443,7 +456,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.8.9...v0.9.0

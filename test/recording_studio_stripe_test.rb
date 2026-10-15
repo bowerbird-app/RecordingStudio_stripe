@@ -4,17 +4,18 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.11.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.12.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
     assert_kind_of Class, ::RecordingStudioStripe::Engine
   end
 
-  def test_gemspec_pins_recording_studio_and_stripe
+  def test_gemspec_pins_recording_studio_accessible_and_stripe
     gemspec = File.read(File.expand_path("../recording_studio_stripe.gemspec", __dir__))
 
     assert_includes gemspec, 'spec.add_dependency "recording_studio", "~> 4.1"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.18"'
     assert_includes gemspec, 'spec.add_dependency "stripe"'
   end
 
@@ -54,6 +55,30 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.5.0"'
     assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.207"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.1.2"'
+  end
+
+  def test_root_gemfile_pins_accessible_controller_auth_tag
+    gemfile = File.read(File.expand_path("../Gemfile", __dir__))
+
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.18.0"'
+  end
+
+  def test_billing_application_controller_protects_forgery_before_controller_auth
+    path = File.expand_path(
+      "../app/controllers/recording_studio_stripe/application_controller.rb",
+      __dir__
+    )
+    source = File.read(path)
+    forgery_at = source.index("protect_from_forgery with: :exception, prepend: true")
+    auth_at = source.index("include RecordingStudioAccessible::ControllerAuth")
+
+    assert forgery_at, "expected protect_from_forgery with prepend: true"
+    assert auth_at, "expected ControllerAuth include"
+    assert_operator forgery_at, :<, auth_at
+    assert_includes source, "recording_studio_auth("
+    assert_includes source, "authenticate: false"
+    assert_includes source, "def authorize_role!(role)"
+    assert_includes source, "configuration.authenticate"
   end
 
   def test_template_does_not_ship_copied_core_hooks_or_base_service

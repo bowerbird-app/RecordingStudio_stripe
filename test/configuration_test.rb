@@ -120,6 +120,12 @@ class ConfigurationTest < Minitest::Test
     assert_equal "/usage", @configuration.usage_path
   end
 
+  def test_authenticate_config_defaults_to_nil
+    assert_nil @configuration.authenticate
+    @configuration.authenticate = -> { true }
+    assert_equal true, @configuration.authenticate.call
+  end
+
   def test_local_mode_when_no_secret
     ENV["STRIPE_SECRET_KEY"] = nil
     configuration = RecordingStudioStripe::Configuration.new

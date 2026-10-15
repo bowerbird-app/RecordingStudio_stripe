@@ -4,36 +4,65 @@ module RecordingStudioStripe
   class ApplicationController < ::ApplicationController
     include RecordingStudio::UsesDefaultLayout
 
+    # CSRF must run before host auth and ControllerAuth filters. Use prepend
+    # so a local protect_from_forgery does not fall behind authenticate_user!.
+    protect_from_forgery with: :exception, prepend: true
+
+    include RecordingStudioAccessible::ControllerAuth
+
     layout "recording_studio/default_layout"
+
+    recording_studio_auth(
+      config: -> { RecordingStudioStripe.configuration },
+      prefix: :stripe,
+      authenticate: false,
+      set_current_actor: false,
+      require_actor: true,
+      actor_method: :current_actor,
+      root_method: :current_billing_root,
+      actor_resolver: lambda {
+        resolver = RecordingStudioStripe.configuration.current_actor
+        next instance_exec(&resolver) if resolver
+        next current_user if respond_to?(:current_user)
+
+        Current.actor if defined?(Current)
+      },
+      root_resolver: lambda {
+        resolver = RecordingStudioStripe.configuration.current_root_recording
+        next instance_exec(&resolver) if resolver
+        next current_root_recording if defined?(current_root_recording)
+
+        nil
+      },
+      on_missing_actor_for_root: lambda {
+        redirect_to recording_studio_stripe_sign_in_url, alert: Copy.t("alerts.sign_in")
+      },
+      missing_root_status: :not_found,
+      missing_actor_status: :forbidden,
+      response_style: lambda { |status, reason|
+        body =
+          case reason
+          when :missing_root then Copy.t("alerts.pick_workspace")
+          when :forbidden, :missing_actor then Copy.t("alerts.no_access")
+          else
+            status.to_s.tr("_", " ")
+          end
+        render plain: body, status: status
+      }
+    )
+
+    # ControllerAuth exposes the root method as a helper; main did not.
+    self._helper_methods = _helper_methods - [:current_billing_root]
+    _helpers_for_modification.class_eval do
+      undef_method :current_billing_root if method_defined?(:current_billing_root)
+    end
 
     before_action :require_root_recording!
 
     private
 
-    def current_actor
-      resolver = RecordingStudioStripe.configuration.current_actor
-      return instance_exec(&resolver) if resolver
-      return current_user if respond_to?(:current_user)
-
-      Current.actor if defined?(Current)
-    end
-
-    def current_billing_root
-      resolver = RecordingStudioStripe.configuration.current_root_recording
-      return instance_exec(&resolver) if resolver
-      return current_root_recording if defined?(current_root_recording)
-
-      nil
-    end
-
     def require_root_recording!
-      unless current_actor
-        redirect_to recording_studio_stripe_sign_in_url, alert: Copy.t("alerts.sign_in")
-        return
-      end
-      return if current_billing_root
-
-      render plain: Copy.t("alerts.pick_workspace"), status: :not_found
+      require_root!
     end
 
     def billing
@@ -53,6 +82,8 @@ module RecordingStudioStripe
       authorize_role!(:admin)
     end
 
+    # Same as main: Accessible when loaded; otherwise config.authenticate; else fail closed.
+    # ControllerAuth has no authenticate fallback, so this stays on the gem.
     def authorize_role!(role)
       if defined?(RecordingStudioAccessible)
         return if RecordingStudioAccessible.authorized?(
