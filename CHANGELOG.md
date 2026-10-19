@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-19
+
+### Added
+- `trial_started.recording_studio_stripe` after commit, once per local Subscription, when it is first saved as `trialing` or first changes to `trialing`
+- `invoice_paid.recording_studio_stripe` after commit for `invoice.paid`, with `amount` (Stripe `amount_paid`), `currency`, `invoice_id`, local `subscription_id`, `customer_id`, and `root_recording_id`, and `first_payment`
+- A trial-fee invoice (a `kind=trial_fee` Price line, and no other positive line) does not emit `invoice_paid` and does not count as the first payment
+- `RecordingStudioStripe::ProcessWebhook.replay` republishes an unpublished domain event from the stored webhook. The webhook row keeps the invoice snapshot and subscription status used to rebuild. Replay does not call Stripe
+- Table `recording_studio_stripe_domain_events`
+
+### Upgrade notes
+- Bump to **0.13.0**. Copy migrations with `bin/rails generate recording_studio_stripe:migrations`, then `bin/rails db:migrate`
+- Subscribe to `RecordingStudioStripe::DomainEvents::TRIAL_STARTED` and `INVOICE_PAID` if you want these events. Payload `schema_version` is `1`. Local UUIDs on an existing event row are not rewritten
+- `invoice.paid` still moves `past_due` to `active`. No new Stripe dependency, and no dependency on Conversions
+- Webhook rows from older versions have no invoice snapshot. Replaying those does not invent an event
+
 ## [0.12.0] - 2026-10-14
 
 ### Changed
@@ -456,7 +471,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.9.0...v0.10.0

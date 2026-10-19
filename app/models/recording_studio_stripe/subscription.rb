@@ -16,6 +16,7 @@ module RecordingStudioStripe
     validates :subscription_type, presence: true
 
     before_validation :assign_default_subscription_type
+    after_save :record_trial_started_event
 
     scope :current, -> { where(status: ACTIVE_STATUSES) }
 
@@ -57,6 +58,12 @@ module RecordingStudioStripe
 
     def assign_default_subscription_type
       self.subscription_type = subscription_type.presence || SubscriptionTypes.keys.first
+    end
+
+    def record_trial_started_event
+      return unless trialing? && saved_change_to_status?
+
+      DomainEvents.record_trial_started!(self)
     end
   end
 end

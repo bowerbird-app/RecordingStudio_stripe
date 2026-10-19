@@ -26,6 +26,10 @@ module RecordingStudioStripe
       new(payload: payload, signature: signature).call
     end
 
+    def self.replay(webhook_event)
+      DomainEvents.replay(webhook_event)
+    end
+
     def initialize(payload:, signature:)
       @payload = payload
       @signature = signature
@@ -36,13 +40,13 @@ module RecordingStudioStripe
       return :duplicate if WebhookEvent.exists?(stripe_id: event.id)
 
       ApplicationRecord.transaction do
-        WebhookEvent.create!(
+        webhook_event = WebhookEvent.create!(
           stripe_id: event.id,
           event_type: event.type,
           processed_at: Time.current,
           payload: event_payload(event)
         )
-        handle(event)
+        DomainEvents.with_webhook(webhook_event) { handle(event) }
       end
       :processed
     rescue ActiveRecord::RecordNotUnique => e
@@ -75,13 +79,43 @@ module RecordingStudioStripe
 
     def event_payload(event)
       object = stripe_get(stripe_get(event, :data), :object)
-      {
+      payload = {
         "id" => event.id,
         "type" => event.type,
         "created" => stripe_get(event, :created),
         "object_id" => stripe_get(object, :id),
         "livemode" => stripe_get(event, :livemode)
       }
+      append_invoice_snapshot(payload, event, object)
+      append_subscription_status(payload, event, object)
+      append_checkout_subscription(payload, event, object)
+      payload
+    end
+
+    def append_invoice_snapshot(payload, event, object)
+      return unless event.type == "invoice.paid"
+
+      payload["invoice"] = InvoiceSnapshot.from(object)
+    end
+
+    def append_subscription_status(payload, event, object)
+      return unless event.type.to_s.start_with?("customer.subscription.")
+
+      status = stripe_get(object, :status).to_s
+      payload["subscription_status"] = status if status.present?
+    end
+
+    def append_checkout_subscription(payload, event, object)
+      return unless event.type.to_s.start_with?("checkout.session.")
+
+      raw = stripe_get(object, :subscription)
+      return if raw.blank? || raw.is_a?(String)
+
+      status = stripe_get(raw, :status).to_s
+      return if status.blank?
+
+      payload["subscription_status"] = status
+      payload["stripe_subscription_id"] = stripe_get(raw, :id).to_s
     end
 
     def duplicate_event?(error)
@@ -214,9 +248,9 @@ module RecordingStudioStripe
     def handle_invoice_paid(invoice)
       subscription = subscription_from_invoice(invoice)
       return if subscription == :none
-      return unless subscription.status == "past_due"
 
-      subscription.update!(status: "active")
+      subscription.update!(status: "active") if subscription.status == "past_due"
+      DomainEvents.record_invoice_paid!(subscription)
     end
 
     def handle_invoice_payment_failed(invoice)

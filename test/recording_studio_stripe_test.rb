@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.12.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.13.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -17,6 +17,9 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes gemspec, 'spec.add_dependency "recording_studio", "~> 4.1"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.18"'
     assert_includes gemspec, 'spec.add_dependency "stripe"'
+    refute_includes gemspec, "recording_studio_conversions"
+    refute_includes gemspec, "attachable"
+    refute_includes gemspec, "recording_studio_library"
   end
 
   def test_gemspec_excludes_cursor_config
@@ -229,6 +232,17 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes template, "usage_path"
     assert_includes template, "usage_costs"
     refute_includes template, "media_monitoring"
+  end
+
+  def test_readme_explains_domain_events
+    readme = File.read(File.expand_path("../README.md", __dir__))
+
+    assert_includes readme, "trial_started.recording_studio_stripe"
+    assert_includes readme, "invoice_paid.recording_studio_stripe"
+    assert_includes readme, "ProcessWebhook.replay"
+    assert_includes readme, "kind` is `trial_fee"
+    assert_includes readme, "does not call Stripe"
+    assert_includes readme, "first_payment"
   end
 
   def test_billing_docs_explain_paywalls

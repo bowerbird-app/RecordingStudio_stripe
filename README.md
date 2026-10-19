@@ -253,6 +253,38 @@ Point Stripe at `POST /webhooks/stripe`. Set `STRIPE_WEBHOOK_SECRET` whenever St
 
 `checkout.session.completed` does nothing until `payment_status` is `paid` or `no_payment_required`. A handler that cannot apply yet (Price or workspace missing) returns 503 and does not store the event, so Stripe retries. Checkout return still does not fulfil on its own. `/billing?checkout=ok` and `/billing?allowance=ok` tell people to refresh if Stripe is still writing. Choosing a plan in a group you already have opens a confirmation page, then upgrades or schedules a downgrade. It does not open a second Stripe Subscription. Stripe upgrades wait for the webhook before the local Price changes.
 
+Webhook rows keep the event id, type, created time, object id, and livemode. They do not keep the full Stripe object. `invoice.paid` also keeps a small invoice snapshot: `amount_paid`, `currency`, `invoice_id`, the Stripe customer and subscription ids, each line's price id and amount, and `trial_fee`. Subscription events keep `subscription_status`. A checkout event keeps that status and the Stripe subscription id when the session includes the subscription.
+
+## Domain events
+
+After the database commit, the gem emits `ActiveSupport::Notifications`. Other gems can subscribe. This gem does not depend on them.
+
+| Name | When |
+| --- | --- |
+| `trial_started.recording_studio_stripe` | The local Subscription is first saved as `trialing`, or first changes to `trialing`. Once per Subscription. |
+| `invoice_paid.recording_studio_stripe` | `invoice.paid` for a real payment. A trial-fee invoice does not emit. |
+
+`RecordingStudioStripe::DomainEvents::TRIAL_STARTED` and `INVOICE_PAID` are those names. `SCHEMA_VERSION` is `1`.
+
+Every payload includes `schema_version`, `occurred_at`, `id` (this event's UUID), `subscription_id`, `customer_id`, and `root_recording_id`. Those ids are local UUIDs. Replay publishes the same row, so the UUIDs stay put.
+
+`invoice_paid` also includes:
+
+- `amount`, Stripe `amount_paid` in the smallest currency unit
+- `currency`
+- `invoice_id`, the Stripe invoice id (`in_...`). There is no local invoice row
+- `first_payment`, true only for the first real paid invoice on that Subscription
+
+A trial-fee invoice has at least one line whose local Price metadata `kind` is `trial_fee`, and no other line with a positive amount. A zero-amount plan line next to the fee still counts as a trial fee. That invoice does not emit `invoice_paid` and does not count toward `first_payment`. The next real invoice is the first payment. Detection uses the Prices already stored here. The webhook snapshot records the decision.
+
+`invoice.paid` still moves `past_due` back to `active`, including when the invoice is a trial fee. A trialing Subscription stays trialing.
+
+`occurred_at` is the Stripe event `created` time when the event came from a webhook. A local trial uses the time the Subscription was saved.
+
+Replay with `RecordingStudioStripe::ProcessWebhook.replay(webhook_event)`. The domain event row is written in the same transaction as the webhook. If the process dies after that commit and before the notification, `published_at` is still blank. Replay emits that stored payload once and then marks it published. It reads the snapshot on the webhook row and does not call Stripe. A second replay, or a second delivery of the same Stripe event id, does not emit again. Webhook rows stored before this snapshot have nothing to rebuild.
+
+The notification runs after the webhook transaction commits. Subscribers do not see it if that transaction rolls back.
+
 Set `config.automatic_tax = true` only after Stripe Tax is on in the Dashboard. Checkout then also sends `customer_update: { address: "auto" }`. Promotion codes are on by default.
 
 Hosts that do not use `current_user` should set `config.current_actor`. Hosts that do not use `current_root_recording` should set `config.current_root_recording`. `draw_recording_studio_stripe at:` overwrites `config.mount_path`. Billing screens use Accessible `ControllerAuth` for actor and root; grant `:view` / `:admin` on the workspace root. If Accessible is not loaded, set `config.authenticate` or money actions stay forbidden.
