@@ -39,8 +39,7 @@ module RecordingStudioStripe
       end
 
       def record_trial_started!(subscription)
-        return unless subscription&.trialing?
-        return unless events_table?
+        return unless subscription&.trialing? && events_table?
 
         create_event(
           name: "trial_started",
@@ -51,8 +50,7 @@ module RecordingStudioStripe
       end
 
       def record_invoice_paid!(subscription)
-        return unless events_table?
-        return if subscription.blank?
+        return if subscription.blank? || !events_table?
 
         snapshot = invoice_snapshot
         return if skip_invoice?(snapshot)
@@ -60,9 +58,11 @@ module RecordingStudioStripe
         subscription.with_lock do
           held = PricesPending.waiting?(current_webhook, snapshot)
           held ||= PricesPending.hold_for_older?(current_webhook, snapshot)
-          return if held
-
-          create_invoice_event(subscription, snapshot)
+          if held # rubocop:disable Style/GuardClause -- keep the write in the else, not an early exit
+            next
+          else
+            create_invoice_event(subscription, snapshot)
+          end
         end
       end
 
@@ -148,8 +148,7 @@ module RecordingStudioStripe
       end
 
       def create_event(name:, idempotency_key:, subscription:, payload:)
-        # Unique index is the lock. A uniqueness validation would raise RecordInvalid
-        # before create_or_find_by! can rescue the database conflict in a savepoint.
+        # Unique index is the lock. A validation would raise before create_or_find_by! can use a savepoint.
         DomainEvent.create_or_find_by!(idempotency_key: idempotency_key) do |event|
           event.name = name
           event.subscription = subscription
@@ -167,8 +166,7 @@ module RecordingStudioStripe
         PricesPending.alert!(webhook_event)
         PricesPending.report_missing_subscription!(webhook_event)
         PricesPending.refresh!(webhook_event)
-        return if skip_invoice?(invoice_snapshot)
-        return if invoice_snapshot.to_h["prices_pending"] == true
+        return if skip_invoice?(invoice_snapshot) || invoice_snapshot.to_h["prices_pending"] == true
 
         subscription = Subscription.find_by(stripe_id: invoice_snapshot["subscription"])
         record_invoice_paid!(subscription) if subscription
