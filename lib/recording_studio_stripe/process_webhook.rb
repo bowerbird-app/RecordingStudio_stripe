@@ -5,6 +5,13 @@ module RecordingStudioStripe
     include StripeRequest
 
     PAID_PAYMENT_STATUSES = %w[paid no_payment_required].freeze
+    ORDERING_RACES = [
+      "Checkout has no Subscription yet",
+      "Price product is not in the catalogue yet",
+      "Workspace is not in this app yet",
+      "Price is not in the catalogue yet",
+      "Subscription is not in this app yet"
+    ].freeze
 
     EVENT_HANDLERS = {
       "checkout.session.completed" => :handle_checkout,
@@ -58,7 +65,7 @@ module RecordingStudioStripe
 
       :duplicate
     rescue DeferredWebhook => e
-      DomainEvents.report_publish_failure(e, context: { deferred: true })
+      note_deferred(e)
       :deferred
     end
 
@@ -117,6 +124,14 @@ module RecordingStudioStripe
 
       payload["subscription_status"] = status
       payload["stripe_subscription_id"] = stripe_get(raw, :id).to_s
+    end
+
+    def note_deferred(error)
+      if ORDERING_RACES.include?(error.message)
+        Rails.logger.warn("Stripe webhook deferred until a related record exists: #{error.message}")
+      else
+        DomainEvents.report_handled(error, context: { deferred: true })
+      end
     end
 
     def duplicate_event?(error)

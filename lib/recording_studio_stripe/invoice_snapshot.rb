@@ -11,14 +11,32 @@ module RecordingStudioStripe
       new(invoice).to_h
     end
 
-    def self.ensure_prices_known!(snapshot)
+    def self.missing_prices?(snapshot)
+      missing_price_ids(snapshot).any?
+    end
+
+    def self.refresh(snapshot)
+      data = snapshot.to_h.stringify_keys
+      lines = Array(data["lines"]).map { |line| line.to_h.stringify_keys }
+      data["lines"] = lines
+      data["trial_fee"] = TrialFeeInvoice.trial_fee?(lines: lines, fee_price_ids: fee_price_ids(lines))
+      data["prices_pending"] = missing_price_ids(data).any?
+      data
+    end
+
+    def self.missing_price_ids(snapshot)
       ids = Array(snapshot.to_h["lines"]).filter_map { |line| line.to_h["price_id"].presence }.uniq
-      return if ids.empty?
+      return [] if ids.empty?
 
       known = Price.where(stripe_id: ids).pluck(:stripe_id)
-      return if (ids - known).empty?
+      ids - known
+    end
 
-      raise DeferredWebhook, "Price is not in the catalogue yet"
+    def self.fee_price_ids(lines)
+      ids = Array(lines).filter_map { |line| line.to_h["price_id"].presence }
+      return [] if ids.empty?
+
+      Price.where(stripe_id: ids).filter_map { |price| price.stripe_id if Trial.fee_kind?(price) }
     end
 
     def initialize(invoice)

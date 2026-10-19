@@ -286,18 +286,15 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
   end
 
   test "an unknown price is deferred and a priceless line still emits" do
-    recorder = nil
     subscribe!("sub_lines", "cus_lines", status: "active")
 
-    recorder = ErrorRecorder.new
-    Rails.error.subscribe(recorder)
-    post_invoice("evt_unknown_price", "in_unknown_price", "sub_lines", amount: 100,
-                                                                       lines: [{ "amount" => 100, "price" => { "id" => "price_missing" } }],
-                                                                       success: :service_unavailable)
-    assert_equal 1, recorder.errors.size
-    assert_instance_of RecordingStudioStripe::DeferredWebhook, recorder.errors.first
-    assert_equal [true], recorder.handled
-    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_unknown_price")
+    events = capture(INVOICE) do
+      post_invoice("evt_unknown_price", "in_unknown_price", "sub_lines", amount: 100,
+                                                                         lines: [{ "amount" => 100, "price" => { "id" => "price_missing" } }])
+    end
+    assert_empty events
+    pending = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_unknown_price").payload["invoice"]
+    assert pending["prices_pending"]
     assert_equal 0, RecordingStudioStripe::DomainEvent.where(name: "invoice_paid").count
 
     events = capture(INVOICE) do
@@ -311,6 +308,52 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
     snapshot = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_priceless").payload["invoice"]
     refute snapshot["trial_fee"]
     assert_equal "", snapshot["lines"].first["price_id"]
+  end
+
+  test "an unknown price on a past_due invoice reactivates and waits for the price" do
+    subscription = subscribe!("sub_pending_price", "cus_pending_price", status: "active")
+    subscription.update!(status: "past_due")
+
+    events = capture(INVOICE) do
+      post_invoice("evt_pending_price", "in_pending_price", "sub_pending_price", amount: 2900,
+                                                                                 lines: [{ "amount" => 2900, "price" => { "id" => "price_later" } }],
+                                                                                 billing_reason: "subscription_cycle")
+    end
+
+    assert_empty events
+    assert_equal "active", subscription.reload.status
+    webhook = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_pending_price")
+    assert webhook.payload["invoice"]["prices_pending"]
+    refute RecordingStudioStripe::DomainEvent.exists?(idempotency_key: "invoice_paid/in_pending_price")
+
+    RecordingStudioStripe::Price.create!(
+      product: @pro,
+      stripe_id: "price_later",
+      currency: "usd",
+      unit_amount: 2900,
+      interval: "month",
+      active: true
+    )
+    webhook.update_column(:created_at, 10.minutes.ago)
+    replayed = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+    assert_equal 1, replayed.size
+    assert_equal "in_pending_price", replayed.first.payload[:invoice_id]
+    refute webhook.reload.payload["invoice"]["prices_pending"]
+  end
+
+  test "an unknown stripe subscription id is an ordering race and returns 503" do
+    recorder = nil
+    recorder = ErrorRecorder.new
+    Rails.error.subscribe(recorder)
+
+    capture(INVOICE) do
+      post_invoice("evt_unknown_sub", "in_unknown_sub", "sub_not_here", amount: 2900, lines: plan_lines,
+                                                                        success: :service_unavailable)
+    end
+
+    assert_empty recorder.errors
+    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_unknown_sub")
   ensure
     Rails.error.unsubscribe(recorder) if recorder
   end
@@ -670,6 +713,35 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
     snapshot = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_has_more").payload["invoice"]
     assert snapshot["lines_has_more"]
     assert_equal 1, snapshot["lines"].size
+  end
+
+  test "an expired publisher does not clear the claim that replaced it" do
+    subscription = subscribe!("sub_claim_token", "cus_claim_token", status: "active")
+    original = RecordingStudioStripe::DomainEvent.create!(
+      name: "invoice_paid",
+      idempotency_key: "invoice_paid/in_claim_token",
+      subscription: subscription,
+      customer_id: subscription.customer_id,
+      root_recording_id: subscription.root_recording_id,
+      occurred_at: Time.current,
+      payload: { "amount" => 2900, "currency" => "usd", "invoice_id" => "in_claim_token", "first_payment" => true }
+    )
+    original.update_columns(published_at: nil, publish_claimed_at: nil, publish_claim_token: nil, publish_attempts: 0)
+    assert original.send(:claimed_publish?)
+    original.update_column(:publish_claimed_at, 10.minutes.ago)
+
+    replacement = RecordingStudioStripe::DomainEvent.find(original.id)
+    assert replacement.send(:claimed_publish?)
+    refute_equal original.publish_claim_token, replacement.publish_claim_token
+
+    original.send(:release_publish_claim!)
+    original.send(:mark_published!)
+    current = RecordingStudioStripe::DomainEvent.find(original.id)
+
+    assert_equal replacement.publish_claim_token, current.publish_claim_token
+    assert current.publish_claimed_at
+    assert_nil current.published_at
+    assert_equal 0, current.publish_attempts
   end
 
   private

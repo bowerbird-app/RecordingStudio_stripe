@@ -55,8 +55,8 @@ module RecordingStudioStripe
         return if subscription.blank?
 
         snapshot = invoice_snapshot
-        InvoiceSnapshot.ensure_prices_known!(snapshot)
         return if skip_invoice?(snapshot)
+        return if PricesPending.waiting?(current_webhook, snapshot)
 
         subscription.with_lock { create_invoice_event(subscription, snapshot) }
       end
@@ -75,9 +75,10 @@ module RecordingStudioStripe
         return unless events_table?
 
         DomainEvent.publish_pending!(older_than: older_than)
+        PricesPending.each_ready(older_than: older_than) { |webhook| replay(webhook) }
       end
 
-      def report_publish_failure(error, context: {})
+      def report_handled(error, context: {})
         return unless defined?(Rails) && Rails.respond_to?(:error) && Rails.error
 
         Rails.error.report(error, handled: true, context: context)
@@ -134,31 +135,8 @@ module RecordingStudioStripe
           "invoice_id" => invoice_id,
           "billing_reason" => snapshot["billing_reason"].to_s,
           "subscription_status" => subscription.status.to_s,
-          "first_payment" => first_payment?(subscription, snapshot)
+          "first_payment" => InvoicePayment.first?(subscription, snapshot)
         }
-      end
-
-      # A positive subscription_create is the first payment when this local
-      # Subscription has no invoice_paid row yet. A fee or zero create is skipped.
-      # The next positive invoice is first_payment only when payments_tracked is
-      # set and no paid event is stored yet. A local row reused for a new Stripe
-      # Subscription does not start over: an existing invoice_paid row keeps
-      # later invoices, including subscription_create, at first_payment false.
-      # Replay that inserts a missing row computes this again. A stored row
-      # keeps the first_payment it was saved with.
-      def first_payment?(subscription, snapshot)
-        return false if paid_invoice_recorded?(subscription)
-        return true if snapshot["billing_reason"].to_s == "subscription_create"
-
-        payments_tracked?(subscription)
-      end
-
-      def paid_invoice_recorded?(subscription)
-        DomainEvent.exists?(subscription_id: subscription.id, name: "invoice_paid")
-      end
-
-      def payments_tracked?(subscription)
-        subscription.metadata.to_h.stringify_keys["payments_tracked"] == true
       end
 
       def create_event(name:, idempotency_key:, subscription:, payload:)
@@ -177,7 +155,10 @@ module RecordingStudioStripe
 
       def rebuild_invoice(webhook_event)
         return unless webhook_event.event_type == "invoice.paid"
+
+        PricesPending.refresh!(webhook_event)
         return if skip_invoice?(invoice_snapshot)
+        return if invoice_snapshot.to_h["prices_pending"] == true
 
         subscription = Subscription.find_by(stripe_id: invoice_snapshot["subscription"])
         record_invoice_paid!(subscription) if subscription

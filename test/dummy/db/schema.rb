@@ -179,6 +179,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_120000) do
     t.datetime "occurred_at", null: false
     t.jsonb "payload", default: {}, null: false
     t.integer "publish_attempts", default: 0, null: false
+    t.uuid "publish_claim_token"
     t.datetime "publish_claimed_at"
     t.datetime "published_at"
     t.uuid "root_recording_id", null: false

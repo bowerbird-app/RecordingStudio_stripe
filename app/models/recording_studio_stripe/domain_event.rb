@@ -59,31 +59,43 @@ module RecordingStudioStripe
       true
     rescue StandardError => e
       release_publish_claim!
-      DomainEvents.report_publish_failure(e, context: { publish_attempts: publish_attempts })
+      DomainEvents.report_handled(e, context: { publish_attempts: publish_attempts })
       false
     end
 
     def claimed_publish?
       now = Time.current
+      token = SecureRandom.uuid
       claimed = self.class.where(id: id, published_at: nil)
                     .where(self.class.lease_sql, now - self.class.publish_lease)
-                    .update_all(publish_claimed_at: now) == 1
-      self.publish_claimed_at = now if claimed
-      claimed
+                    .update_all(publish_claimed_at: now, publish_claim_token: token) == 1
+      return false unless claimed
+
+      self.publish_claimed_at = now
+      self.publish_claim_token = token
+      true
     end
 
     def mark_published!
       now = Time.current
-      self.class.where(id: id).update_all(published_at: now, publish_claimed_at: nil)
+      marked = self.class.where(id: id, publish_claim_token: publish_claim_token).update_all(
+        published_at: now, publish_claimed_at: nil, publish_claim_token: nil
+      ) == 1
+      return unless marked
+
       self.published_at = now
       self.publish_claimed_at = nil
+      self.publish_claim_token = nil
     end
 
     def release_publish_claim!
-      self.class.where(id: id, published_at: nil).update_all(
-        "publish_claimed_at = NULL, publish_attempts = publish_attempts + 1"
-      )
+      released = self.class.where(id: id, published_at: nil, publish_claim_token: publish_claim_token).update_all(
+        "publish_claimed_at = NULL, publish_claim_token = NULL, publish_attempts = publish_attempts + 1"
+      ) == 1
+      return unless released
+
       self.publish_claimed_at = nil
+      self.publish_claim_token = nil
       self.publish_attempts = publish_attempts.to_i + 1
     end
 

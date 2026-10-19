@@ -13,6 +13,7 @@ class CreateRecordingStudioStripeDomainEvents < ActiveRecord::Migration[8.1]
       t.datetime :occurred_at, null: false
       t.datetime :published_at
       t.datetime :publish_claimed_at
+      t.uuid :publish_claim_token
       t.integer :publish_attempts, null: false, default: 0
       t.timestamps
     end
