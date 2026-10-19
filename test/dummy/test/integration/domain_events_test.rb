@@ -339,7 +339,47 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
 
     assert_equal 1, replayed.size
     assert_equal "in_pending_price", replayed.first.payload[:invoice_id]
+    assert replayed.first.payload[:first_payment]
     refute webhook.reload.payload["invoice"]["prices_pending"]
+
+    again = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+    assert_empty again
+    assert_equal 1, RecordingStudioStripe::DomainEvent.where(idempotency_key: "invoice_paid/in_pending_price").count
+  end
+
+  test "the pending sweep emits waiting invoices once in arrival order after the price syncs" do
+    subscribe!("sub_price_order", "cus_price_order", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_price_order_a", "in_price_order_a", "sub_price_order", amount: 2900,
+                                                                                 lines: [{ "amount" => 2900, "price" => { "id" => "price_order_later" } }],
+                                                                                 billing_reason: "subscription_cycle")
+      post_invoice("evt_price_order_b", "in_price_order_b", "sub_price_order", amount: 2900,
+                                                                                 lines: [{ "amount" => 2900, "price" => { "id" => "price_order_later" } }],
+                                                                                 billing_reason: "subscription_cycle",
+                                                                                 created: 1_700_000_100)
+    end
+    refute RecordingStudioStripe::DomainEvent.exists?(name: "invoice_paid")
+    first = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_price_order_a")
+    second = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_price_order_b")
+    first.update_column(:created_at, 20.minutes.ago)
+    second.update_column(:created_at, 10.minutes.ago)
+
+    RecordingStudioStripe::Price.create!(
+      product: @pro,
+      stripe_id: "price_order_later",
+      currency: "usd",
+      unit_amount: 2900,
+      interval: "month",
+      active: true
+    )
+    emitted = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+    assert_equal %w[in_price_order_a in_price_order_b], emitted.map { |event| event.payload[:invoice_id] }
+    assert emitted.first.payload[:first_payment]
+    refute emitted.second.payload[:first_payment]
+    quiet = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+    assert_empty quiet
+    assert_equal 2, RecordingStudioStripe::DomainEvent.where(name: "invoice_paid").count
   end
 
   test "an unknown stripe subscription id is an ordering race and returns 503" do

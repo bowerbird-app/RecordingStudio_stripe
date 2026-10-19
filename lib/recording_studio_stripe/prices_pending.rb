@@ -28,7 +28,8 @@ module RecordingStudioStripe
     def self.each_ready(older_than:, &)
       cutoff = Time.current - older_than
       WebhookEvent.where(event_type: "invoice.paid").where(created_at: ...cutoff)
-                  .where("payload #>> '{invoice,prices_pending}' = 'true'").find_each(&)
+                  .where("payload #>> '{invoice,prices_pending}' = 'true'")
+                  .order(:created_at, :id).each(&)
     end
 
     def self.pending?(webhook)
