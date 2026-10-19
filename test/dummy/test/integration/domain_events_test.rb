@@ -1,0 +1,1589 @@
+# frozen_string_literal: true
+
+require "test_helper"
+
+class DomainEventsTest < ActionDispatch::IntegrationTest
+  TRIAL = RecordingStudioStripe::DomainEvents::TRIAL_STARTED
+  INVOICE = RecordingStudioStripe::DomainEvents::INVOICE_PAID
+
+  setup do
+    RecordingStudioStripe::SeedDemoCatalog.call
+    @workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
+    @root = RecordingStudio.root_recording_for(@workspace)
+    @pro = RecordingStudioStripe::Product.find_by!(name: "Pro")
+    @price = @pro.monthly_price
+    @fee = @pro.trial.fee_price
+  end
+
+  test "trial_started fires once after commit when a subscription is first stored as trialing" do
+    occurred_at = Time.zone.at(1_700_000_000)
+    subscription_id = nil
+
+    events = capture(TRIAL) do
+      ApplicationRecord.transaction do
+        post_subscription("evt_trial_once", "sub_trial_once", status: "trialing")
+        assert_empty _events
+      end
+    end
+
+    assert_equal 1, events.size
+    payload = events.first.payload
+    subscription = RecordingStudioStripe::Subscription.find_by!(stripe_id: "sub_trial_once")
+    subscription_id = subscription.id
+    assert_equal TRIAL, events.first.name
+    assert_equal 1, payload[:schema_version]
+    assert_equal occurred_at, payload[:occurred_at]
+    assert_equal subscription.id, payload[:subscription_id]
+    assert_equal subscription.customer_id, payload[:customer_id]
+    assert_equal @root.id, payload[:root_recording_id]
+    refute_equal subscription.id, payload[:id]
+    domain_event = RecordingStudioStripe::DomainEvent.find(payload[:id])
+    assert_equal subscription.id, domain_event.subscription_id
+    assert_predicate domain_event, :published_at
+
+    more = capture(TRIAL) do
+      post_subscription("evt_trial_again", "sub_trial_once", status: "trialing", created: 1_700_000_100)
+    end
+    assert_empty more
+    assert_equal subscription_id, subscription.reload.id
+
+    duplicate = capture(TRIAL) do
+      post_subscription("evt_trial_once", "sub_trial_once", status: "trialing")
+    end
+    assert_empty duplicate
+
+    replay = capture(TRIAL) do
+      replay_webhook("evt_trial_once")
+      replay_webhook("evt_trial_once")
+    end
+    assert_empty replay
+    assert_equal domain_event.id, domain_event.reload.id
+  end
+
+  test "trial_started fires when an existing subscription first becomes trialing" do
+    subscription = RecordingStudioStripe::ApplySubscription.call(
+      root_recording: @root,
+      price: @price,
+      stripe_subscription_id: "sub_becomes_trial",
+      stripe_customer_id: "cus_becomes_trial",
+      status: "active"
+    )
+
+    events = capture(TRIAL) do
+      subscription.update!(status: "trialing")
+      subscription.update!(cancel_at_period_end: true)
+    end
+
+    assert_equal 1, events.size
+    assert_equal subscription.id, events.first.payload[:subscription_id]
+    assert_equal subscription.customer_id, events.first.payload[:customer_id]
+  end
+
+  test "a rolled back trial does not emit" do
+    events = capture(TRIAL) do
+      ApplicationRecord.transaction do
+        RecordingStudioStripe::ApplySubscription.call(
+          root_recording: @root,
+          price: @price,
+          stripe_subscription_id: "sub_rollback_trial",
+          stripe_customer_id: "cus_rollback_trial",
+          status: "trialing"
+        )
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    assert_empty events
+    refute RecordingStudioStripe::Subscription.exists?(stripe_id: "sub_rollback_trial")
+    assert_equal 0, RecordingStudioStripe::DomainEvent.where(name: "trial_started").count
+  end
+
+  test "replay emits an unpublished trial_started once and keeps its id" do
+    capture(TRIAL) { post_subscription("evt_trial_crash", "sub_trial_crash", status: "trialing") }
+    webhook = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_trial_crash")
+    domain_event = RecordingStudioStripe::DomainEvent.find_by!(webhook_event_id: webhook.id)
+    domain_event.update_column(:published_at, nil)
+    subscription_id = domain_event.subscription_id
+
+    events = capture(TRIAL) do
+      RecordingStudioStripe::ProcessWebhook.replay(webhook)
+      RecordingStudioStripe::ProcessWebhook.replay(webhook)
+    end
+
+    assert_equal [domain_event.id], events.map { |event| event.payload[:id] }
+    assert_equal subscription_id, domain_event.reload.subscription_id
+    assert_predicate domain_event, :published_at
+  end
+
+  test "replay rebuilds trial_started from the stored webhook when the event row is gone" do
+    capture(TRIAL) { post_subscription("evt_trial_rebuild", "sub_trial_rebuild", status: "trialing") }
+    webhook = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_trial_rebuild")
+    subscription = RecordingStudioStripe::Subscription.find_by!(stripe_id: "sub_trial_rebuild")
+    RecordingStudioStripe::DomainEvent.delete_all
+
+    events = capture(TRIAL) { RecordingStudioStripe::ProcessWebhook.replay(webhook) }
+
+    assert_equal 1, events.size
+    assert_equal subscription.id, events.first.payload[:subscription_id]
+    assert_equal subscription.reload.id, subscription.id
+    assert_equal "trialing", webhook.payload["subscription_status"]
+    refute webhook.payload.key?("data")
+  end
+
+  test "invoice_paid carries amount currency and first_payment, and a trial fee does not count" do
+    subscription = subscribe!("sub_invoice_events", "cus_invoice_events")
+    occurred_at = Time.zone.at(1_700_000_000)
+
+    fee_events = capture(INVOICE) { post_invoice("evt_fee", "in_fee", "sub_invoice_events", amount: 100, lines: fee_lines) }
+    assert_empty fee_events
+    assert_equal "trialing", subscription.reload.status
+
+    subscription.update!(status: "past_due")
+    fee_while_past_due = capture(INVOICE) do
+      post_invoice("evt_fee_past_due", "in_fee_past_due", "sub_invoice_events", amount: 100, lines: fee_lines,
+                                                                                 created: 1_700_000_050)
+    end
+    assert_empty fee_while_past_due
+    assert_equal "active", subscription.reload.status
+    stored_fee = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_fee").payload["invoice"]
+    assert stored_fee["trial_fee"]
+    assert_equal 100, stored_fee["amount_paid"]
+    assert_equal "usd", stored_fee["currency"]
+
+    first = capture(INVOICE) do
+      post_invoice("evt_first", "in_first", "sub_invoice_events", amount: 2900, lines: plan_lines)
+    end
+    assert_equal 1, first.size
+    payload = first.first.payload
+    assert_equal INVOICE, first.first.name
+    assert_equal 1, payload[:schema_version]
+    assert_equal occurred_at, payload[:occurred_at]
+    assert_equal 2900, payload[:amount]
+    assert_equal "usd", payload[:currency]
+    assert_equal "in_first", payload[:invoice_id]
+    assert_equal "", payload[:billing_reason]
+    assert_equal "active", payload[:subscription_status]
+    assert payload[:first_payment]
+    assert_equal subscription.id, payload[:subscription_id]
+    assert_equal subscription.customer_id, payload[:customer_id]
+    assert_equal @root.id, payload[:root_recording_id]
+    refute_equal subscription.id, payload[:id]
+
+    second = capture(INVOICE) do
+      post_invoice("evt_second", "in_second", "sub_invoice_events", amount: 2900, lines: plan_lines, created: 1_700_086_400)
+    end
+    assert_equal 1, second.size
+    refute second.first.payload[:first_payment]
+    assert_equal 2900, second.first.payload[:amount]
+
+    duplicate = capture(INVOICE) do
+      post_invoice("evt_first", "in_first", "sub_invoice_events", amount: 2900, lines: plan_lines)
+    end
+    assert_empty duplicate
+    assert_equal 2, RecordingStudioStripe::DomainEvent.where(name: "invoice_paid").count
+  end
+
+  test "invoice paid still clears past_due and the event fires after that transaction commits" do
+    subscription = subscribe!("sub_past_due", "cus_past_due", status: "active")
+    subscription.update!(status: "past_due")
+    baseline = ApplicationRecord.connection.open_transactions
+    open_during = nil
+
+    events = capture(INVOICE) do
+      subscriber = ActiveSupport::Notifications.subscribe(INVOICE) do
+        open_during = ApplicationRecord.connection.open_transactions
+      end
+      post_invoice("evt_recover", "in_recover", "sub_past_due", amount: 2900, lines: plan_lines)
+      ActiveSupport::Notifications.unsubscribe(subscriber)
+    end
+
+    assert_equal "active", subscription.reload.status
+    assert_equal 1, events.size
+    assert events.first.payload[:first_payment]
+    assert_equal baseline, open_during
+  end
+
+  test "replay of a paid invoice does not double emit, and an unpublished row emits once" do
+    subscribe!("sub_replay_invoice", "cus_replay_invoice")
+    capture(INVOICE) { post_invoice("evt_paid_replay", "in_paid_replay", "sub_replay_invoice", amount: 2900, lines: plan_lines) }
+    webhook = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_paid_replay")
+    domain_event = RecordingStudioStripe::DomainEvent.find_by!(idempotency_key: "invoice_paid/in_paid_replay")
+
+    quiet = capture(INVOICE) { RecordingStudioStripe::ProcessWebhook.replay(webhook) }
+    assert_empty quiet
+
+    domain_event.update_column(:published_at, nil)
+    events = capture(INVOICE) do
+      RecordingStudioStripe::ProcessWebhook.replay(webhook)
+      RecordingStudioStripe::ProcessWebhook.replay(webhook)
+    end
+
+    assert_equal [domain_event.id], events.map { |event| event.payload[:id] }
+    assert_equal 2900, events.first.payload[:amount]
+    assert events.first.payload[:first_payment]
+    assert_equal domain_event.id, domain_event.reload.id
+  end
+
+  test "replay rebuilds invoice_paid from the stored snapshot without a second first payment" do
+    subscribe!("sub_rebuild_invoice", "cus_rebuild_invoice")
+    capture(INVOICE) do
+      post_invoice("evt_rebuild_fee", "in_rebuild_fee", "sub_rebuild_invoice", amount: 100, lines: fee_lines)
+      post_invoice("evt_rebuild_paid", "in_rebuild_paid", "sub_rebuild_invoice", amount: 4200, lines: plan_lines(amount: 4200))
+    end
+    webhook = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_rebuild_paid")
+    subscription = RecordingStudioStripe::Subscription.find_by!(stripe_id: "sub_rebuild_invoice")
+    RecordingStudioStripe::DomainEvent.where(name: "invoice_paid").delete_all
+
+    fee_replay = capture(INVOICE) do
+      RecordingStudioStripe::ProcessWebhook.replay(
+        RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_rebuild_fee")
+      )
+    end
+    paid_replay = capture(INVOICE) { RecordingStudioStripe::ProcessWebhook.replay(webhook) }
+
+    assert_empty fee_replay
+    assert_equal 1, paid_replay.size
+    assert_equal 4200, paid_replay.first.payload[:amount]
+    assert_equal "usd", paid_replay.first.payload[:currency]
+    assert_equal "in_rebuild_paid", paid_replay.first.payload[:invoice_id]
+    assert paid_replay.first.payload[:first_payment]
+    assert_equal subscription.id, paid_replay.first.payload[:subscription_id]
+    assert_equal subscription.id, subscription.reload.id
+  end
+
+  test "a zero amount invoice does not emit and the next positive invoice is first_payment" do
+    subscription = subscribe!("sub_zero", "cus_zero", status: "past_due")
+
+    zero = capture(INVOICE) do
+      post_invoice("evt_zero", "in_zero", "sub_zero", amount: 0, lines: plan_lines(amount: 0),
+                                                      billing_reason: "subscription_create")
+    end
+    assert_empty zero
+    assert_equal "active", subscription.reload.status
+    stored = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_zero").payload["invoice"]
+    assert_equal 0, stored["amount_paid"]
+    assert_equal "subscription_create", stored["billing_reason"]
+    refute RecordingStudioStripe::DomainEvent.exists?(idempotency_key: "invoice_paid/in_zero")
+
+    paid = capture(INVOICE) do
+      post_invoice("evt_zero_real", "in_zero_real", "sub_zero", amount: 2900, lines: plan_lines,
+                                                                 billing_reason: "subscription_cycle")
+    end
+    assert_equal 1, paid.size
+    assert paid.first.payload[:first_payment]
+    assert_equal 2900, paid.first.payload[:amount]
+  end
+
+  test "a blank invoice id does not emit" do
+    subscribe!("sub_blank_invoice", "cus_blank_invoice", status: "active")
+
+    events = capture(INVOICE) do
+      post_invoice("evt_blank_invoice", "", "sub_blank_invoice", amount: 2900, lines: plan_lines)
+    end
+
+    assert_empty events
+    assert_equal 0, RecordingStudioStripe::DomainEvent.where(name: "invoice_paid").count
+  end
+
+  test "an unknown price is deferred and a priceless line still emits" do
+    subscribe!("sub_lines", "cus_lines", status: "active")
+
+    events = capture(INVOICE) do
+      post_invoice("evt_priceless", "in_priceless", "sub_lines", amount: 500,
+                                                                 lines: [{ "amount" => 500 }],
+                                                                 billing_reason: "subscription_create")
+    end
+    assert_equal 1, events.size
+    assert_equal 500, events.first.payload[:amount]
+    assert events.first.payload[:first_payment]
+    snapshot = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_priceless").payload["invoice"]
+    refute snapshot["trial_fee"]
+    assert_equal "", snapshot["lines"].first["price_id"]
+
+    events = capture(INVOICE) do
+      post_invoice("evt_unknown_price", "in_unknown_price", "sub_lines", amount: 100,
+                                                                         lines: [{ "amount" => 100, "price" => { "id" => "price_missing" } }])
+    end
+    assert_empty events
+    pending = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_unknown_price").payload["invoice"]
+    assert pending["prices_pending"]
+    assert_equal 1, RecordingStudioStripe::DomainEvent.where(name: "invoice_paid").count
+  end
+
+  test "an unknown price on a past_due invoice reactivates and waits for the price" do
+    subscription = subscribe!("sub_pending_price", "cus_pending_price", status: "active")
+    subscription.update!(status: "past_due")
+
+    events = capture(INVOICE) do
+      post_invoice("evt_pending_price", "in_pending_price", "sub_pending_price", amount: 2900,
+                                                                                 lines: [{ "amount" => 2900, "price" => { "id" => "price_later" } }],
+                                                                                 billing_reason: "subscription_cycle")
+    end
+
+    assert_empty events
+    assert_equal "active", subscription.reload.status
+    webhook = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_pending_price")
+    assert webhook.payload["invoice"]["prices_pending"]
+    refute RecordingStudioStripe::DomainEvent.exists?(idempotency_key: "invoice_paid/in_pending_price")
+
+    RecordingStudioStripe::Price.create!(
+      product: @pro,
+      stripe_id: "price_later",
+      currency: "usd",
+      unit_amount: 2900,
+      interval: "month",
+      active: true
+    )
+    webhook.update_column(:created_at, 10.minutes.ago)
+    replayed = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+    assert_equal 1, replayed.size
+    assert_equal "in_pending_price", replayed.first.payload[:invoice_id]
+    assert replayed.first.payload[:first_payment]
+    refute webhook.reload.payload["invoice"]["prices_pending"]
+
+    again = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+    assert_empty again
+    assert_equal 1, RecordingStudioStripe::DomainEvent.where(idempotency_key: "invoice_paid/in_pending_price").count
+  end
+
+  test "the pending sweep emits waiting invoices once in arrival order after the price syncs" do
+    subscribe!("sub_price_order", "cus_price_order", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_price_order_a", "in_price_order_a", "sub_price_order", amount: 2900,
+                                                                                 lines: [{ "amount" => 2900, "price" => { "id" => "price_order_later" } }],
+                                                                                 billing_reason: "subscription_cycle")
+      post_invoice("evt_price_order_b", "in_price_order_b", "sub_price_order", amount: 2900,
+                                                                                 lines: [{ "amount" => 2900, "price" => { "id" => "price_order_later" } }],
+                                                                                 billing_reason: "subscription_cycle",
+                                                                                 created: 1_700_000_100)
+    end
+    refute RecordingStudioStripe::DomainEvent.exists?(name: "invoice_paid")
+    first = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_price_order_a")
+    second = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_price_order_b")
+    first.update_column(:created_at, 20.minutes.ago)
+    second.update_column(:created_at, 10.minutes.ago)
+
+    RecordingStudioStripe::Price.create!(
+      product: @pro,
+      stripe_id: "price_order_later",
+      currency: "usd",
+      unit_amount: 2900,
+      interval: "month",
+      active: true
+    )
+    emitted = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+    assert_equal %w[in_price_order_a in_price_order_b], emitted.map { |event| event.payload[:invoice_id] }
+    assert emitted.first.payload[:first_payment]
+    refute emitted.second.payload[:first_payment]
+    quiet = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+    assert_empty quiet
+    assert_equal 2, RecordingStudioStripe::DomainEvent.where(name: "invoice_paid").count
+  end
+
+  test "a live invoice waits when an older invoice for the same subscription is prices_pending" do
+    subscribe!("sub_hold_older", "cus_hold_older", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_hold_a", "in_hold_a", "sub_hold_older", amount: 2900,
+                                                               lines: [{ "amount" => 2900, "price" => { "id" => "price_hold_later" } }],
+                                                               billing_reason: "subscription_cycle")
+      post_invoice("evt_hold_b", "in_hold_b", "sub_hold_older", amount: 2900, lines: plan_lines,
+                                                               billing_reason: "subscription_cycle",
+                                                               created: 1_700_000_200)
+    end
+    older = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_hold_a")
+    newer = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_hold_b")
+    assert older.payload["invoice"]["prices_pending"]
+    assert newer.payload["invoice"]["prices_pending"]
+    refute RecordingStudioStripe::DomainEvent.exists?(name: "invoice_paid")
+    older.update_column(:created_at, 20.minutes.ago)
+    newer.update_column(:created_at, 10.minutes.ago)
+
+    RecordingStudioStripe::Price.create!(
+      product: @pro, stripe_id: "price_hold_later", currency: "usd", unit_amount: 2900, interval: "month", active: true
+    )
+    emitted = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+    assert_equal %w[in_hold_a in_hold_b], emitted.map { |event| event.payload[:invoice_id] }
+    assert emitted.first.payload[:first_payment]
+    refute emitted.second.payload[:first_payment]
+    assert_empty capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+  end
+
+  test "a later invoice emits after max_hold when the older price never syncs" do
+    subscribe!("sub_hold_cap", "cus_hold_cap", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_cap_a", "in_cap_a", "sub_hold_cap", amount: 2900,
+                                                           lines: [{ "amount" => 2900, "price" => { "id" => "price_cap_never" } }],
+                                                           billing_reason: "subscription_cycle")
+      post_invoice("evt_cap_b", "in_cap_b", "sub_hold_cap", amount: 2900, lines: plan_lines,
+                                                           billing_reason: "subscription_cycle",
+                                                           created: 1_700_000_200)
+    end
+    older = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_cap_a")
+    newer = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_cap_b")
+    assert older.payload["invoice"]["prices_pending"]
+    assert newer.payload["invoice"]["prices_pending"]
+
+    travel_to(3.days.from_now + 1.minute) do
+      emitted = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+      assert_equal ["in_cap_b"], emitted.map { |event| event.payload[:invoice_id] }
+      assert emitted.first.payload[:first_payment]
+      assert older.reload.payload["invoice"]["prices_pending"]
+      refute newer.reload.payload["invoice"]["prices_pending"]
+
+      RecordingStudioStripe::Price.create!(
+        product: @pro, stripe_id: "price_cap_never", currency: "usd", unit_amount: 2900, interval: "month", active: true
+      )
+      replayed = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+      assert_equal ["in_cap_a"], replayed.map { |event| event.payload[:invoice_id] }
+      refute replayed.first.payload[:first_payment]
+      refute older.reload.payload["invoice"]["prices_pending"]
+    end
+  end
+
+  test "a prices_pending invoice is reported once after the alert window" do
+    subscribe!("sub_price_alert", "cus_price_alert", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_price_alert", "in_price_alert", "sub_price_alert", amount: 2900,
+                                                                           lines: [{ "amount" => 2900, "price" => { "id" => "price_never_alert" } }])
+    end
+    webhook = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_price_alert")
+
+    travel_to(1.day.from_now + 1.minute) do
+      emitted = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+      assert_empty emitted
+      assert webhook.reload.payload["invoice"]["prices_pending_alerted_at"]
+      assert webhook.payload["invoice"]["prices_pending"]
+      refute RecordingStudioStripe::DomainEvent.exists?(name: "invoice_paid")
+
+      capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+      assert webhook.reload.payload["invoice"]["prices_pending"]
+    end
+  end
+
+  test "a missing subscription held by an older invoice is reported once" do
+    subscription = subscribe!("sub_held_gone", "cus_held_gone", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_held_gone_a", "in_held_gone_a", "sub_held_gone", amount: 2900,
+                                                                        lines: [{ "amount" => 2900, "price" => { "id" => "price_held_gone_a" } }],
+                                                                        billing_reason: "subscription_cycle")
+      post_invoice("evt_held_gone_b", "in_held_gone_b", "sub_held_gone", amount: 2900, lines: plan_lines,
+                                                                        billing_reason: "subscription_cycle",
+                                                                        created: 1_700_000_250)
+    end
+    subscription.destroy!
+    older = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_held_gone_a")
+    newer = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_held_gone_b")
+    older.update_column(:created_at, 20.minutes.ago)
+    newer.update_column(:created_at, 10.minutes.ago)
+
+    emitted = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+    assert_empty emitted
+    assert newer.reload.payload["invoice"]["prices_pending"]
+    assert newer.payload["invoice"]["missing_subscription_reported_at"]
+    refute newer.payload["invoice"]["prices_pending_alerted_at"]
+    assert older.reload.payload["invoice"]["prices_pending"]
+    refute older.payload["invoice"]["missing_subscription_reported_at"]
+
+    capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+    assert newer.reload.payload["invoice"]["prices_pending"]
+  end
+
+  test "release! clears prices_pending and does not emit" do
+    subscribe!("sub_release", "cus_release", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_release", "in_release", "sub_release", amount: 2900,
+                                                              lines: [{ "amount" => 2900, "price" => { "id" => "price_release" } }])
+    end
+    webhook = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_release")
+
+    emitted = capture(INVOICE) { RecordingStudioStripe::PricesPending.release!(webhook) }
+
+    assert_empty emitted
+    refute webhook.reload.payload["invoice"]["prices_pending"]
+    refute RecordingStudioStripe::DomainEvent.exists?(name: "invoice_paid")
+
+    replay_webhook("evt_release")
+    assert webhook.reload.payload["invoice"]["prices_pending"]
+    refute RecordingStudioStripe::DomainEvent.exists?(name: "invoice_paid")
+  end
+
+  test "one failing webhook does not stop the prices_pending sweep" do
+    subscribe!("sub_sweep_fault", "cus_sweep_fault", status: "active")
+    good_root = RecordingStudio.root_recording_for(Workspace.create!(name: "Sweep Fault #{SecureRandom.hex(4)}"))
+    RecordingStudioStripe::ApplySubscription.call(
+      root_recording: good_root,
+      price: @price,
+      stripe_subscription_id: "sub_sweep_good",
+      stripe_customer_id: "cus_sweep_good",
+      status: "active"
+    )
+    capture(INVOICE) do
+      post_invoice("evt_sweep_bad", "in_sweep_bad", "sub_sweep_fault", amount: 2900,
+                                                                       lines: [{ "amount" => 2900, "price" => { "id" => "price_sweep_fault" } }],
+                                                                       billing_reason: "subscription_cycle")
+      post_invoice("evt_sweep_good", "in_sweep_good", "sub_sweep_good", amount: 2900,
+                                                                        lines: [{ "amount" => 2900, "price" => { "id" => "price_sweep_fault" } }],
+                                                                        billing_reason: "subscription_cycle",
+                                                                        created: 1_700_000_300)
+    end
+    bad = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_sweep_bad")
+    good = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_sweep_good")
+    bad.update_column(:created_at, 20.minutes.ago)
+    good.update_column(:created_at, 10.minutes.ago)
+    RecordingStudioStripe::Price.create!(
+      product: @pro, stripe_id: "price_sweep_fault", currency: "usd", unit_amount: 2900, interval: "month", active: true
+    )
+    events = RecordingStudioStripe::DomainEvents.singleton_class
+    events.alias_method(:replay_without_fault, :replay)
+    events.define_method(:replay) do |webhook|
+      raise "sweep boom" if webhook.stripe_id == "evt_sweep_bad"
+
+      replay_without_fault(webhook)
+    end
+    recorder = ErrorRecorder.new
+    Rails.error.subscribe(recorder)
+
+    emitted = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+    assert_equal ["in_sweep_good"], emitted.map { |event| event.payload[:invoice_id] }
+    assert_equal "sweep boom", recorder.errors.first.message
+    assert_equal bad.id, recorder.contexts.first[:webhook_id]
+    assert bad.reload.payload["invoice"]["prices_pending"]
+  ensure
+    Rails.error.unsubscribe(recorder) if recorder
+    if events&.method_defined?(:replay_without_fault)
+      events.alias_method(:replay, :replay_without_fault)
+      events.remove_method(:replay_without_fault)
+    end
+  end
+
+  test "a priced invoice whose subscription is gone is reported before prices_pending clears" do
+    subscription = subscribe!("sub_gone", "cus_gone", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_sub_gone", "in_sub_gone", "sub_gone", amount: 2900,
+                                                             lines: [{ "amount" => 2900, "price" => { "id" => "price_sub_gone" } }])
+    end
+    subscription.destroy!
+    RecordingStudioStripe::Price.create!(
+      product: @pro, stripe_id: "price_sub_gone", currency: "usd", unit_amount: 2900, interval: "month", active: true
+    )
+    webhook = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_sub_gone")
+    webhook.update_column(:created_at, 10.minutes.ago)
+    recorder = ErrorRecorder.new
+    Rails.error.subscribe(recorder)
+
+    emitted = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+    assert_empty emitted
+    assert_equal webhook.id, recorder.contexts.first[:webhook_id]
+    refute webhook.reload.payload["invoice"]["prices_pending"]
+    refute RecordingStudioStripe::DomainEvent.exists?(idempotency_key: "invoice_paid/in_sub_gone")
+  ensure
+    Rails.error.unsubscribe(recorder) if recorder
+  end
+
+  test "a late trial fee price is reclassified and does not emit" do
+    subscribe!("sub_late_fee", "cus_late_fee", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_late_fee", "in_late_fee", "sub_late_fee", amount: 100,
+                                                                 lines: [{ "amount" => 100, "price" => { "id" => "price_late_fee" } }])
+    end
+    webhook = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_late_fee")
+    assert webhook.payload["invoice"]["prices_pending"]
+    refute webhook.payload["invoice"]["trial_fee"]
+    webhook.update_column(:created_at, 10.minutes.ago)
+    RecordingStudioStripe::Price.create!(
+      product: @pro,
+      stripe_id: "price_late_fee",
+      currency: "usd",
+      unit_amount: 100,
+      active: true,
+      metadata: { "kind" => "trial_fee" }
+    )
+
+    emitted = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+    assert_empty emitted
+    refreshed = webhook.reload.payload["invoice"]
+    assert refreshed["trial_fee"]
+    refute refreshed["prices_pending"]
+    refute RecordingStudioStripe::DomainEvent.exists?(idempotency_key: "invoice_paid/in_late_fee")
+  end
+
+  test "an ordering race is logged and any other deferred webhook is reported" do
+    handler = RecordingStudioStripe::ProcessWebhook.new(payload: "{}", signature: nil)
+    recorder = ErrorRecorder.new
+    Rails.error.subscribe(recorder)
+    warnings = []
+    logger = Rails.logger.singleton_class
+    logger.alias_method(:warn_without_capture, :warn)
+    logger.define_method(:warn) { |message = nil, *| warnings << message }
+    handler.send(:note_deferred, RecordingStudioStripe::OrderingRace.new("Subscription is not in this app yet"))
+    handler.send(:note_deferred, RecordingStudioStripe::DeferredWebhook.new("unexpected deferral"))
+
+    assert_equal ["Stripe webhook deferred until a related record exists: Subscription is not in this app yet"], warnings
+    assert_equal ["unexpected deferral"], recorder.errors.map(&:message)
+    assert_equal [true], recorder.handled
+  ensure
+    Rails.error.unsubscribe(recorder) if recorder
+    if logger&.method_defined?(:warn_without_capture)
+      logger.alias_method(:warn, :warn_without_capture)
+      logger.remove_method(:warn_without_capture)
+    end
+  end
+
+  test "an unknown stripe subscription id is an ordering race and returns 503" do
+    recorder = nil
+    recorder = ErrorRecorder.new
+    Rails.error.subscribe(recorder)
+
+    capture(INVOICE) do
+      post_invoice("evt_unknown_sub", "in_unknown_sub", "sub_not_here", amount: 2900, lines: plan_lines,
+                                                                        success: :service_unavailable)
+    end
+
+    assert_empty recorder.errors
+    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_unknown_sub")
+  ensure
+    Rails.error.unsubscribe(recorder) if recorder
+  end
+
+  test "trial fee kind matching ignores case" do
+    subscribe!("sub_kind_case", "cus_kind_case", status: "active")
+    @fee.update!(metadata: @fee.metadata.to_h.merge("kind" => "TRIAL_FEE"))
+
+    events = capture(INVOICE) do
+      post_invoice("evt_kind_case", "in_kind_case", "sub_kind_case", amount: 100, lines: fee_lines)
+    end
+
+    assert_empty events
+    assert RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_kind_case").payload["invoice"]["trial_fee"]
+  end
+
+  test "a subscription created before payments were tracked does not report a renewal as first_payment" do
+    existing = subscribe!("sub_before_upgrade", "cus_before_upgrade", status: "active")
+    existing.update!(metadata: existing.metadata.to_h.except("payments_tracked"))
+
+    renewal = capture(INVOICE) do
+      post_invoice("evt_old_renewal", "in_old_renewal", "sub_before_upgrade", amount: 2900, lines: plan_lines,
+                                                                              billing_reason: "subscription_cycle")
+    end
+    refute renewal.first.payload[:first_payment]
+
+    created_root = RecordingStudio.root_recording_for(Workspace.create!(name: "Create Workspace"))
+    RecordingStudioStripe::ApplySubscription.call(
+      root_recording: created_root,
+      price: @price,
+      stripe_subscription_id: "sub_untracked_create",
+      stripe_customer_id: "cus_untracked_create",
+      status: "active"
+    ).update!(metadata: { "payments_tracked" => false })
+    created = capture(INVOICE) do
+      post_invoice("evt_old_create", "in_old_create", "sub_untracked_create", amount: 2900, lines: plan_lines,
+                                                                              billing_reason: "subscription_create",
+                                                                              created: 1_700_000_010)
+    end
+    assert created.first.payload[:first_payment]
+    assert_equal "subscription_create", created.first.payload[:billing_reason]
+    assert_equal "active", created.first.payload[:subscription_status]
+
+    tracked_root = RecordingStudio.root_recording_for(Workspace.create!(name: "Upgrade Workspace"))
+    tracked = RecordingStudioStripe::ApplySubscription.call(
+      root_recording: tracked_root,
+      price: @price,
+      stripe_subscription_id: "sub_after_upgrade",
+      stripe_customer_id: "cus_after_upgrade",
+      status: "active"
+    )
+    assert_equal true, tracked.metadata["payments_tracked"]
+    zero = capture(INVOICE) do
+      post_invoice("evt_tracked_zero", "in_tracked_zero", "sub_after_upgrade", amount: 0, lines: plan_lines(amount: 0),
+                                                                               billing_reason: "subscription_create")
+    end
+    assert_empty zero
+    first_real = capture(INVOICE) do
+      post_invoice("evt_tracked_real", "in_tracked_real", "sub_after_upgrade", amount: 2900, lines: plan_lines,
+                                                                               billing_reason: "subscription_cycle")
+    end
+    assert first_real.first.payload[:first_payment]
+  end
+
+  test "invoice_paid still emits when the subscription is canceled" do
+    subscription = subscribe!("sub_canceled_paid", "cus_canceled_paid", status: "active")
+    subscription.update!(status: "canceled")
+
+    events = capture(INVOICE) do
+      post_invoice("evt_canceled_paid", "in_canceled_paid", "sub_canceled_paid", amount: 2900, lines: plan_lines,
+                                                                                 billing_reason: "subscription_cycle")
+    end
+
+    assert_equal 1, events.size
+    assert_equal "canceled", subscription.reload.status
+    assert_equal "canceled", events.first.payload[:subscription_status]
+    assert_equal "subscription_cycle", events.first.payload[:billing_reason]
+  end
+
+  test "a reused local subscription does not report first_payment again" do
+    original = subscribe!("sub_reuse_old", "cus_reuse", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_reuse_old", "in_reuse_old", "sub_reuse_old", amount: 2900, lines: plan_lines,
+                                                                     billing_reason: "subscription_create")
+    end
+
+    reused = RecordingStudioStripe::ApplySubscription.call(
+      root_recording: @root,
+      price: @price,
+      stripe_subscription_id: "sub_reuse_new",
+      stripe_customer_id: original.customer.stripe_id,
+      status: "active"
+    )
+    assert_equal original.id, reused.id
+
+    again = capture(INVOICE) do
+      post_invoice("evt_reuse_new", "in_reuse_new", "sub_reuse_new", amount: 2900, lines: plan_lines,
+                                                                     billing_reason: "subscription_create",
+                                                                     created: 1_700_000_050)
+    end
+    refute again.first.payload[:first_payment]
+  end
+
+  test "an unknown price with no local subscription returns 200 and emits nothing" do
+    recorder = ErrorRecorder.new
+    Rails.error.subscribe(recorder)
+
+    events = capture(INVOICE) do
+      post "/webhooks/stripe",
+           params: stripe_event(
+             "evt_one_off_unknown",
+             "invoice.paid",
+             {
+               "id" => "in_one_off_unknown",
+               "amount_paid" => 500,
+               "currency" => "usd",
+               "customer" => "cus_one_off",
+               "billing_reason" => "manual",
+               "lines" => { "data" => [{ "amount" => 500, "price" => { "id" => "price_never_synced" } }] }
+             },
+             created: 1_700_000_000
+           ),
+           as: :json
+      assert_response :success
+    end
+
+    assert_empty events
+    assert_equal 0, RecordingStudioStripe::DomainEvent.count
+    assert RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_one_off_unknown")
+    assert_empty recorder.errors
+  ensure
+    Rails.error.unsubscribe(recorder) if recorder
+  end
+
+  test "a raising subscriber leaves the event unpublished and the sweep retries" do
+    subscribe!("sub_raiser", "cus_raiser", status: "active")
+    recorder = ErrorRecorder.new
+    Rails.error.subscribe(recorder)
+    raiser = ActiveSupport::Notifications.subscribe(INVOICE) { raise "subscriber blew up" }
+
+    post_invoice("evt_raiser", "in_raiser", "sub_raiser", amount: 2900, lines: plan_lines,
+                                                          billing_reason: "subscription_create")
+
+    domain_event = RecordingStudioStripe::DomainEvent.find_by!(idempotency_key: "invoice_paid/in_raiser")
+    assert_nil domain_event.published_at
+    assert_equal 1, recorder.errors.size
+    assert_equal "subscriber blew up", recorder.errors.first.message
+    assert_equal [true], recorder.handled
+    assert_equal 1, domain_event.reload.publish_attempts
+    assert_nil domain_event.publish_claimed_at
+    assert_equal 1, recorder.contexts.first[:publish_attempts]
+
+    ActiveSupport::Notifications.unsubscribe(raiser)
+    domain_event.update_column(:created_at, 10.minutes.ago)
+    retried = capture(INVOICE) { RecordingStudioStripe::PublishPendingDomainEventsJob.perform_now(300) }
+
+    assert_equal [domain_event.id], retried.map { |event| event.payload[:id] }
+    assert_predicate domain_event.reload, :published_at
+  ensure
+    ActiveSupport::Notifications.unsubscribe(raiser) if raiser
+    Rails.error.unsubscribe(recorder) if recorder
+  end
+
+  test "a crash during publish keeps the lease until the sweep retries" do
+    crashing = nil
+    subscribe!("sub_crash", "cus_crash", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_crash", "in_crash", "sub_crash", amount: 2900, lines: plan_lines,
+                                                         billing_reason: "subscription_create")
+    end
+    domain_event = RecordingStudioStripe::DomainEvent.find_by!(idempotency_key: "invoice_paid/in_crash")
+    domain_event.update_columns(published_at: nil, publish_claimed_at: nil, publish_attempts: 0,
+                                created_at: 10.minutes.ago)
+    crashing = ActiveSupport::Notifications.subscribe(INVOICE) { raise CrashDuringInstrument }
+
+    assert_raises(CrashDuringInstrument) { domain_event.publish! }
+    domain_event.reload
+    assert_nil domain_event.published_at
+    assert domain_event.publish_claimed_at
+    assert_equal 0, domain_event.publish_attempts
+
+    quiet = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+    assert_empty quiet
+
+    ActiveSupport::Notifications.unsubscribe(crashing)
+    crashing = nil
+    domain_event.update_column(:publish_claimed_at, 6.minutes.ago)
+    retried = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+    assert_equal [domain_event.id], retried.map { |event| event.payload[:id] }
+    assert_predicate domain_event.reload, :published_at
+  ensure
+    ActiveSupport::Notifications.unsubscribe(crashing) if crashing
+  end
+
+  test "the pending rake task publishes an old unpublished event" do
+    subscribe!("sub_rake", "cus_rake", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_rake", "in_rake", "sub_rake", amount: 1500, lines: plan_lines(amount: 1500))
+    end
+    domain_event = RecordingStudioStripe::DomainEvent.find_by!(idempotency_key: "invoice_paid/in_rake")
+    domain_event.update_columns(published_at: nil, created_at: 10.minutes.ago)
+    Rails.application.load_tasks
+    previous = ENV.fetch("OLDER_THAN_SECONDS", nil)
+    ENV["OLDER_THAN_SECONDS"] = "60"
+
+    events = capture(INVOICE) do
+      Rake::Task["recording_studio_stripe:publish_pending_domain_events"].reenable
+      Rake::Task["recording_studio_stripe:publish_pending_domain_events"].invoke
+    end
+
+    assert_equal [domain_event.id], events.map { |event| event.payload[:id] }
+    assert_predicate domain_event.reload, :published_at
+  ensure
+    if previous
+      ENV["OLDER_THAN_SECONDS"] = previous
+    else
+      ENV.delete("OLDER_THAN_SECONDS")
+    end
+  end
+
+  test "replay inside an open transaction emits after that transaction commits" do
+    subscribe!("sub_outer", "cus_outer", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_outer", "in_outer", "sub_outer", amount: 2900, lines: plan_lines)
+    end
+    webhook = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_outer")
+    domain_event = RecordingStudioStripe::DomainEvent.find_by!(idempotency_key: "invoice_paid/in_outer")
+    domain_event.update_column(:published_at, nil)
+    seen_inside = nil
+
+    events = capture(INVOICE) do
+      ApplicationRecord.transaction do
+        RecordingStudioStripe::ProcessWebhook.replay(webhook)
+        seen_inside = _events.size
+      end
+    end
+
+    assert_equal 0, seen_inside
+    assert_equal [domain_event.id], events.map { |event| event.payload[:id] }
+    assert_predicate domain_event.reload, :published_at
+  end
+
+  test "the same invoice id on a second webhook does not poison the transaction" do
+    subscribe!("sub_same_invoice", "cus_same_invoice", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_same_a", "in_same", "sub_same_invoice", amount: 2900, lines: plan_lines)
+      post_invoice("evt_same_b", "in_same", "sub_same_invoice", amount: 2900, lines: plan_lines, created: 1_700_000_020)
+    end
+
+    assert_equal 1, RecordingStudioStripe::DomainEvent.where(idempotency_key: "invoice_paid/in_same").count
+    assert RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_same_b")
+  end
+
+  test "destroying a customer deletes its domain events" do
+    subscription = subscribe!("sub_destroy_customer", "cus_destroy_customer", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_destroy_customer", "in_destroy_customer", "sub_destroy_customer", amount: 2900, lines: plan_lines)
+    end
+    customer = subscription.customer
+    customer_id = customer.id
+
+    customer.destroy!
+
+    refute RecordingStudioStripe::DomainEvent.exists?(customer_id: customer_id)
+    refute RecordingStudioStripe::Subscription.exists?(id: subscription.id)
+  end
+
+  test "a missing domain events table does not raise when a subscription is saved" do
+    singleton = RecordingStudioStripe::DomainEvents.singleton_class
+    singleton.alias_method(:events_table_without_stub?, :events_table?)
+    singleton.define_method(:events_table?) { false }
+    events = capture(TRIAL) do
+      subscribe!("sub_no_table", "cus_no_table", status: "trialing")
+    end
+
+    assert_empty events
+    assert RecordingStudioStripe::Subscription.exists?(stripe_id: "sub_no_table")
+    assert_equal 0, RecordingStudioStripe::DomainEvent.where(name: "trial_started").count
+  ensure
+    if singleton&.method_defined?(:events_table_without_stub?)
+      singleton.alias_method(:events_table?, :events_table_without_stub?)
+      singleton.remove_method(:events_table_without_stub?)
+    end
+  end
+
+  test "checkout that only has a subscription id stores the retrieved status" do
+    price = @price
+    configuration = RecordingStudioStripe.configuration
+    previous_client = configuration.client
+    previous_secret = configuration.webhook_secret
+    subscription = Stripe::StripeObject.construct_from(
+      "id" => "sub_retrieved_checkout",
+      "status" => "trialing",
+      "customer" => "cus_retrieved_checkout",
+      "cancel_at_period_end" => false,
+      "items" => {
+        "data" => [
+          {
+            "id" => "si_retrieved_checkout",
+            "price" => { "id" => price.stripe_id },
+            "current_period_start" => 1_700_000_000,
+            "current_period_end" => 1_700_000_000 + 14.days.to_i
+          }
+        ]
+      }
+    )
+    client = RetrievedSubscriptionClient.new(subscription)
+    configuration.client = client
+    configuration.webhook_secret = "whsec_domain_events"
+    payload = stripe_event(
+      "evt_retrieved_checkout",
+      "checkout.session.completed",
+      {
+        "id" => "cs_retrieved",
+        "mode" => "subscription",
+        "payment_status" => "paid",
+        "subscription" => "sub_retrieved_checkout",
+        "customer" => "cus_retrieved_checkout",
+        "client_reference_id" => @root.id.to_s,
+        "metadata" => {
+          "root_recording_id" => @root.id.to_s,
+          "price_id" => price.stripe_id
+        }
+      },
+      created: 1_700_000_000
+    ).to_json
+    signature = signed_header(payload, configuration.webhook_secret)
+
+    events = capture(TRIAL) do
+      post "/webhooks/stripe",
+           params: payload,
+           headers: { "CONTENT_TYPE" => "application/json", "HTTP_STRIPE_SIGNATURE" => signature }
+    end
+
+    assert_response :success
+    webhook = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_retrieved_checkout")
+    assert_equal "trialing", webhook.payload["subscription_status"]
+    assert_equal "sub_retrieved_checkout", webhook.payload["stripe_subscription_id"]
+    assert_equal 1, events.size
+    assert_equal "trialing", RecordingStudioStripe::Subscription.find_by!(stripe_id: "sub_retrieved_checkout").status
+  ensure
+    configuration.client = previous_client
+    configuration.webhook_secret = previous_secret
+  end
+
+  test "invoice snapshot records lines_has_more" do
+    subscribe!("sub_has_more", "cus_has_more", status: "active")
+    post_invoice(
+      "evt_has_more",
+      "in_has_more",
+      "sub_has_more",
+      amount: 2900,
+      lines: plan_lines,
+      has_more: true
+    )
+    snapshot = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_has_more").payload["invoice"]
+    assert snapshot["lines_has_more"]
+    assert_equal 1, snapshot["lines"].size
+  end
+
+  test "an expired publisher does not clear the claim that replaced it" do
+    subscription = subscribe!("sub_claim_token", "cus_claim_token", status: "active")
+    original = RecordingStudioStripe::DomainEvent.create!(
+      name: "invoice_paid",
+      idempotency_key: "invoice_paid/in_claim_token",
+      subscription: subscription,
+      customer_id: subscription.customer_id,
+      root_recording_id: subscription.root_recording_id,
+      occurred_at: Time.current,
+      payload: { "amount" => 2900, "currency" => "usd", "invoice_id" => "in_claim_token", "first_payment" => true }
+    )
+    original.update_columns(published_at: nil, publish_claimed_at: nil, publish_claim_token: nil, publish_attempts: 0)
+    assert original.send(:claimed_publish?)
+    original.update_column(:publish_claimed_at, 10.minutes.ago)
+
+    replacement = RecordingStudioStripe::DomainEvent.find(original.id)
+    assert replacement.send(:claimed_publish?)
+    refute_equal original.publish_claim_token, replacement.publish_claim_token
+
+    original.send(:release_publish_claim!)
+    original.send(:mark_published!)
+    current = RecordingStudioStripe::DomainEvent.find(original.id)
+
+    assert_equal replacement.publish_claim_token, current.publish_claim_token
+    assert current.publish_claimed_at
+    assert_nil current.published_at
+    assert_equal 0, current.publish_attempts
+  end
+
+  private
+
+  def capture(name)
+    found = []
+    subscriber = ActiveSupport::Notifications.subscribe(name) do |*args|
+      found << ActiveSupport::Notifications::Event.new(*args)
+    end
+    @_events = found
+    yield
+    found
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
+  def _events
+    @_events || []
+  end
+
+  def subscribe!(stripe_id, customer_id, status: "trialing")
+    RecordingStudioStripe::ApplySubscription.call(
+      root_recording: @root,
+      price: @price,
+      stripe_subscription_id: stripe_id,
+      stripe_customer_id: customer_id,
+      status: status
+    )
+  end
+
+  def post_subscription(event_id, stripe_id, status:, created: 1_700_000_000)
+    post "/webhooks/stripe",
+         params: stripe_event(
+           event_id,
+           "customer.subscription.created",
+           {
+            "id" => stripe_id,
+            "customer" => "cus_#{stripe_id}",
+            "status" => status,
+            "cancel_at_period_end" => false,
+             "metadata" => { "root_recording_id" => @root.id.to_s },
+             "items" => {
+               "data" => [
+                 {
+                   "id" => "si_#{stripe_id}",
+                   "price" => { "id" => @price.stripe_id },
+                   "current_period_start" => created,
+                   "current_period_end" => created + 14.days.to_i
+                 }
+               ]
+             }
+           },
+           created: created
+         ),
+         as: :json
+    assert_response :success
+  end
+
+  def post_invoice(event_id, invoice_id, stripe_subscription_id, amount:, lines:, created: 1_700_000_000,
+                   billing_reason: nil, has_more: false, success: :success)
+    invoice = {
+      "id" => invoice_id,
+      "amount_paid" => amount,
+      "currency" => "usd",
+      "customer" => "cus_#{stripe_subscription_id}",
+      "parent" => {
+        "type" => "subscription_details",
+        "subscription_details" => { "subscription" => stripe_subscription_id }
+      },
+      "lines" => { "data" => lines, "has_more" => has_more }
+    }
+    invoice["billing_reason"] = billing_reason if billing_reason
+    post "/webhooks/stripe",
+         params: stripe_event(event_id, "invoice.paid", invoice, created: created),
+         as: :json
+    assert_response success
+  end
+
+  def signed_header(payload, secret)
+    timestamp = Time.now
+    signature = Stripe::Webhook::Signature.compute_signature(timestamp, payload, secret)
+    Stripe::Webhook::Signature.generate_header(timestamp, signature)
+  end
+
+  def fee_lines
+    [
+      { "amount" => 100, "price" => { "id" => @fee.stripe_id } },
+      { "amount" => 0, "price" => { "id" => @price.stripe_id } }
+    ]
+  end
+
+  def plan_lines(amount: 2900)
+    [{ "amount" => amount, "pricing" => { "price_details" => { "price" => @price.stripe_id } } }]
+  end
+
+  def replay_webhook(stripe_id)
+    RecordingStudioStripe::ProcessWebhook.replay(
+      RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: stripe_id)
+    )
+  end
+
+  def stripe_event(id, type, object, created:)
+    { "id" => id, "object" => "event", "type" => type, "created" => created, "data" => { "object" => object } }
+  end
+end
+
+class PricesPendingReportTest < ActiveSupport::TestCase
+  self.use_transactional_tests = false
+
+  setup do
+    RecordingStudioStripe::SeedDemoCatalog.call
+    @workspace = Workspace.create!(name: "Pending report #{SecureRandom.hex(4)}")
+    root = RecordingStudio.root_recording_for(@workspace)
+    @price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    @subscription = RecordingStudioStripe::ApplySubscription.call(
+      root_recording: root,
+      price: @price,
+      stripe_subscription_id: "sub_report_#{SecureRandom.hex(4)}",
+      stripe_customer_id: "cus_report_#{SecureRandom.hex(4)}",
+      status: "active"
+    )
+    @recorder = ErrorRecorder.new
+    @recorder_mutex = Mutex.new
+    @safe_recorder = Object.new
+    mutex = @recorder_mutex
+    inner = @recorder
+    @safe_recorder.define_singleton_method(:report) do |error, handled:, severity:, context:, source:|
+      mutex.synchronize { inner.report(error, handled: handled, severity: severity, context: context, source: source) }
+    end
+    Rails.error.subscribe(@safe_recorder)
+  end
+
+  teardown do
+    Rails.error.unsubscribe(@safe_recorder) if @safe_recorder
+    RecordingStudioStripe::DomainEvent.where(subscription_id: @subscription&.id).delete_all
+    RecordingStudioStripe::WebhookEvent.where("stripe_id LIKE ?", "evt_report_%").delete_all
+    customer = @subscription&.customer
+    @subscription&.delete
+    customer&.delete
+    if @workspace
+      RecordingStudio::Recording.where(recordable: @workspace).delete_all
+      @workspace.delete
+    end
+  end
+
+  test "concurrent sweeps report a prices_pending alert once" do
+    webhook = pending_webhook("evt_report_race_#{SecureRandom.hex(4)}", "price_report_race_#{SecureRandom.hex(4)}")
+    ready = Queue.new
+    start = Queue.new
+    threads = 2.times.map do
+      Thread.new do
+        ActiveRecord::Base.connection_pool.with_connection do
+          ready << true
+          start.pop
+          RecordingStudioStripe::DomainEvents.replay(webhook)
+        end
+      end
+    end
+    2.times { ready.pop }
+    2.times { start << true }
+    threads.each(&:join)
+
+    assert_equal ["Invoice is still waiting on a Price"], @recorder.errors.map(&:message)
+    assert webhook.reload.payload.dig("invoice", "prices_pending_alerted_at")
+  end
+
+  test "a rolled-back replay does not report the prices_pending alert" do
+    webhook = pending_webhook("evt_report_rollback_#{SecureRandom.hex(4)}", "price_report_rollback_#{SecureRandom.hex(4)}")
+
+    2.times do
+      ApplicationRecord.transaction do
+        RecordingStudioStripe::DomainEvents.replay(webhook)
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    assert_empty @recorder.errors
+    refute webhook.reload.payload.dig("invoice", "prices_pending_alerted_at")
+
+    RecordingStudioStripe::DomainEvents.replay(webhook)
+    assert_equal ["Invoice is still waiting on a Price"], @recorder.errors.map(&:message)
+    RecordingStudioStripe::DomainEvents.replay(webhook)
+    assert_equal 1, @recorder.errors.size
+  end
+
+  test "a missing subscription is reported after the price alert" do
+    price_id = "price_report_then_gone_#{SecureRandom.hex(4)}"
+    webhook = pending_webhook("evt_report_then_gone_#{SecureRandom.hex(4)}", price_id)
+    RecordingStudioStripe::DomainEvents.replay(webhook)
+    assert_equal ["Invoice is still waiting on a Price"], @recorder.errors.map(&:message)
+
+    RecordingStudioStripe::Price.create!(
+      product: @price.product, stripe_id: price_id, currency: "usd", unit_amount: 2900, interval: "month", active: true
+    )
+    @subscription.destroy!
+    RecordingStudioStripe::DomainEvents.replay(webhook.reload)
+
+    assert_equal ["Invoice is still waiting on a Price", "Subscription is not in this app yet"], @recorder.errors.map(&:message)
+    invoice = webhook.reload.payload["invoice"]
+    assert invoice["prices_pending_alerted_at"]
+    assert invoice["missing_subscription_reported_at"]
+    RecordingStudioStripe::DomainEvents.replay(webhook)
+    assert_equal 2, @recorder.errors.size
+  end
+
+  test "release! reports after commit and a second call does not" do
+    webhook = pending_webhook("evt_report_release_#{SecureRandom.hex(4)}", "price_report_release_#{SecureRandom.hex(4)}")
+    RecordingStudioStripe::PricesPending.release!(webhook)
+
+    assert_equal ["Released a prices_pending invoice without emitting"], @recorder.errors.map(&:message)
+    refute webhook.reload.payload.dig("invoice", "prices_pending")
+    RecordingStudioStripe::PricesPending.release!(webhook)
+    assert_equal 1, @recorder.errors.size
+  end
+
+  private
+
+  def pending_webhook(stripe_id, price_id)
+    webhook = RecordingStudioStripe::WebhookEvent.create!(
+      stripe_id: stripe_id,
+      event_type: "invoice.paid",
+      processed_at: Time.current,
+      payload: {
+        "created" => 1_700_000_000,
+        "invoice" => {
+          "amount_paid" => 2900,
+          "currency" => "usd",
+          "invoice_id" => stripe_id.sub("evt_", "in_"),
+          "subscription" => @subscription.stripe_id,
+          "billing_reason" => "subscription_cycle",
+          "lines" => [{ "price_id" => price_id, "amount" => 2900 }],
+          "lines_has_more" => false,
+          "trial_fee" => false,
+          "prices_pending" => true
+        }
+      }
+    )
+    webhook.update_column(:created_at, 2.days.ago)
+    webhook
+  end
+end
+
+class PricesPendingLiveRaceTest < ActiveSupport::TestCase
+  self.use_transactional_tests = false
+
+  setup do
+    RecordingStudioStripe::SeedDemoCatalog.call
+    @workspace = Workspace.create!(name: "Live race #{SecureRandom.hex(4)}")
+    root = RecordingStudio.root_recording_for(@workspace)
+    @price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    @subscription = RecordingStudioStripe::ApplySubscription.call(
+      root_recording: root,
+      price: @price,
+      stripe_subscription_id: "sub_live_race_#{SecureRandom.hex(4)}",
+      stripe_customer_id: "cus_live_race_#{SecureRandom.hex(4)}",
+      status: "active"
+    )
+    @older = race_webhook("evt_live_a_#{SecureRandom.hex(4)}", "in_live_a_#{SecureRandom.hex(4)}", "price_live_unknown_#{SecureRandom.hex(4)}")
+    @newer = race_webhook("evt_live_b_#{SecureRandom.hex(4)}", "in_live_b_#{SecureRandom.hex(4)}", @price.stripe_id)
+    @older.update_column(:created_at, 2.minutes.ago)
+    @newer.update_column(:created_at, 1.minute.ago)
+  end
+
+  teardown do
+    RecordingStudioStripe::DomainEvent.where(subscription_id: @subscription&.id).delete_all
+    @older&.delete
+    @newer&.delete
+    customer = @subscription&.customer
+    @subscription&.delete
+    customer&.delete
+    if @workspace
+      RecordingStudio::Recording.where(recordable: @workspace).delete_all
+      @workspace.delete
+    end
+    restore_price_gates
+  end
+
+  test "two live threads keep an unknown price ahead of the later invoice" do
+    entered = Queue.new
+    release = Queue.new
+    gate_prices_pending(entered, release)
+    ready = Queue.new
+    start = Queue.new
+    older_thread = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        ready << true
+        start.pop
+        RecordingStudioStripe::DomainEvents.with_webhook(@older) do
+          RecordingStudioStripe::DomainEvents.record_invoice_paid!(@subscription)
+        end
+      end
+    end
+
+    ready.pop
+    start << true
+    assert_equal :waiting, entered.pop
+    newer_thread = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        RecordingStudioStripe::DomainEvents.with_webhook(@newer) do
+          RecordingStudioStripe::DomainEvents.record_invoice_paid!(@subscription)
+        end
+      end
+    end
+    assert_nil entered.pop(timeout: 2)
+    release << true
+    assert_equal :hold, entered.pop
+    release << true
+    [older_thread, newer_thread].each(&:join)
+
+    assert @older.reload.payload.dig("invoice", "prices_pending")
+    assert @newer.reload.payload.dig("invoice", "prices_pending")
+    assert_equal 0, RecordingStudioStripe::DomainEvent.where(subscription_id: @subscription.id).count
+  end
+
+  private
+
+  def race_webhook(stripe_id, invoice_id, price_id)
+    RecordingStudioStripe::WebhookEvent.create!(
+      stripe_id: stripe_id,
+      event_type: "invoice.paid",
+      processed_at: Time.current,
+      payload: {
+        "created" => 1_700_000_000,
+        "invoice" => {
+          "amount_paid" => 2900,
+          "currency" => "usd",
+          "invoice_id" => invoice_id,
+          "subscription" => @subscription.stripe_id,
+          "billing_reason" => "subscription_cycle",
+          "lines" => [{ "price_id" => price_id, "amount" => 2900 }],
+          "lines_has_more" => false,
+          "trial_fee" => false
+        }
+      }
+    )
+  end
+
+  def gate_prices_pending(entered, release)
+    prices = RecordingStudioStripe::PricesPending.singleton_class
+    prices.alias_method(:waiting_without_gate, :waiting?)
+    prices.alias_method(:hold_without_gate, :hold_for_older?)
+    prices.define_method(:waiting?) do |webhook, snapshot|
+      if RecordingStudioStripe::InvoiceSnapshot.missing_prices?(snapshot)
+        entered << :waiting
+        release.pop
+      end
+      waiting_without_gate(webhook, snapshot)
+    end
+    prices.define_method(:hold_for_older?) do |webhook, snapshot|
+      entered << :hold
+      release.pop
+      hold_without_gate(webhook, snapshot)
+    end
+  end
+
+  def restore_price_gates
+    prices = RecordingStudioStripe::PricesPending.singleton_class
+    return unless prices.method_defined?(:waiting_without_gate)
+
+    prices.alias_method(:waiting?, :waiting_without_gate)
+    prices.alias_method(:hold_for_older?, :hold_without_gate)
+    prices.remove_method(:waiting_without_gate)
+    prices.remove_method(:hold_without_gate)
+  end
+end
+
+class PricesPendingSweepConcurrencyTest < ActiveSupport::TestCase
+  self.use_transactional_tests = false
+
+  setup do
+    RecordingStudioStripe::SeedDemoCatalog.call
+    @workspace = Workspace.create!(name: "Sweep #{SecureRandom.hex(4)}")
+    root = RecordingStudio.root_recording_for(@workspace)
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    @subscription = RecordingStudioStripe::ApplySubscription.call(
+      root_recording: root,
+      price: price,
+      stripe_subscription_id: "sub_sweep_threads_#{SecureRandom.hex(4)}",
+      stripe_customer_id: "cus_sweep_threads_#{SecureRandom.hex(4)}",
+      status: "active"
+    )
+    @invoice_id = "in_sweep_threads_#{SecureRandom.hex(4)}"
+    @webhook = RecordingStudioStripe::WebhookEvent.create!(
+      stripe_id: "evt_sweep_threads_#{SecureRandom.hex(4)}",
+      event_type: "invoice.paid",
+      processed_at: Time.current,
+      payload: {
+        "created" => 1_700_000_000,
+        "invoice" => {
+          "amount_paid" => 2900,
+          "currency" => "usd",
+          "invoice_id" => @invoice_id,
+          "subscription" => @subscription.stripe_id,
+          "billing_reason" => "subscription_cycle",
+          "lines" => [{ "price_id" => price.stripe_id, "amount" => 2900 }],
+          "lines_has_more" => false,
+          "trial_fee" => false,
+          "prices_pending" => true
+        }
+      }
+    )
+    @webhook.update_column(:created_at, 10.minutes.ago)
+  end
+
+  teardown do
+    RecordingStudioStripe::DomainEvent.where(subscription_id: @subscription&.id).delete_all
+    @webhook&.delete
+    customer = @subscription&.customer
+    @subscription&.delete
+    customer&.delete
+    if @workspace
+      RecordingStudio::Recording.where(recordable: @workspace).delete_all
+      @workspace.delete
+    end
+  end
+
+  test "two sweep threads emit one invoice_paid for a prices_pending invoice" do
+    ready = Queue.new
+    start = Queue.new
+    name = RecordingStudioStripe::DomainEvents::INVOICE_PAID
+    delivered = 0
+    delivered_mutex = Mutex.new
+    listener = ActiveSupport::Notifications.subscribe(name) do
+      delivered_mutex.synchronize { delivered += 1 }
+    end
+
+    threads = 2.times.map do
+      Thread.new do
+        ActiveRecord::Base.connection_pool.with_connection do
+          ready << true
+          start.pop
+          RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0)
+        end
+      end
+    end
+
+    2.times { ready.pop }
+    2.times { start << true }
+    threads.each(&:join)
+
+    assert_equal 1, delivered
+    assert_equal 1, RecordingStudioStripe::DomainEvent.where(idempotency_key: "invoice_paid/#{@invoice_id}").count
+  ensure
+    ActiveSupport::Notifications.unsubscribe(listener) if listener
+  end
+end
+
+class DomainEventConcurrentPublishTest < ActiveSupport::TestCase
+  self.use_transactional_tests = false
+
+  setup do
+    RecordingStudioStripe::SeedDemoCatalog.call
+    workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
+    root = RecordingStudio.root_recording_for(workspace)
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    @subscription = RecordingStudioStripe::ApplySubscription.call(
+      root_recording: root,
+      price: price,
+      stripe_subscription_id: "sub_concurrent_publish",
+      stripe_customer_id: "cus_concurrent_publish",
+      status: "active"
+    )
+    @event = RecordingStudioStripe::DomainEvent.create!(
+      name: "invoice_paid",
+      idempotency_key: "invoice_paid/in_concurrent",
+      subscription: @subscription,
+      customer_id: @subscription.customer_id,
+      root_recording_id: @subscription.root_recording_id,
+      occurred_at: Time.current,
+      payload: { "amount" => 2900, "currency" => "usd", "invoice_id" => "in_concurrent", "first_payment" => true }
+    )
+    @event.update_column(:published_at, nil)
+  end
+
+  teardown do
+    RecordingStudioStripe::DomainEvent.where(subscription_id: @subscription&.id).delete_all
+    customer = @subscription&.customer
+    @subscription&.delete
+    customer&.delete
+  end
+
+  test "only one of two concurrent publishes instruments the event" do
+    ready = Queue.new
+    start = Queue.new
+    name = RecordingStudioStripe::DomainEvents::INVOICE_PAID
+    delivered = 0
+    delivered_mutex = Mutex.new
+    listener = ActiveSupport::Notifications.subscribe(name) do
+      delivered_mutex.synchronize { delivered += 1 }
+    end
+
+    threads = 2.times.map do
+      Thread.new do
+        ActiveRecord::Base.connection_pool.with_connection do
+          ready << true
+          start.pop
+          RecordingStudioStripe::DomainEvent.find(@event.id).publish!
+        end
+      end
+    end
+
+    2.times { ready.pop }
+    2.times { start << true }
+    threads.each(&:join)
+
+    assert_equal 1, delivered
+    assert_predicate @event.reload, :published_at
+  ensure
+    ActiveSupport::Notifications.unsubscribe(listener) if listener
+  end
+end
+
+class CrashDuringInstrument < Exception
+end
+
+class ErrorRecorder
+  attr_reader :errors, :handled, :contexts
+
+  def initialize
+    @errors = []
+    @handled = []
+    @contexts = []
+  end
+
+  def report(error, handled:, severity:, context:, source:)
+    @errors << error
+    @handled << handled
+    @contexts << context
+  end
+end
+
+class RetrievedSubscriptionClient
+  def initialize(subscription)
+    @subscription = subscription
+  end
+
+  def v1
+    self
+  end
+
+  def subscriptions
+    self
+  end
+
+  def retrieve(_id)
+    @subscription
+  end
+end

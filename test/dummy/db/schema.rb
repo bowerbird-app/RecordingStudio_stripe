@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_12_044322) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_19_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -171,6 +171,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_12_044322) do
     t.index ["stripe_id"], name: "index_recording_studio_stripe_customers_on_stripe_id", unique: true
   end
 
+  create_table "recording_studio_stripe_domain_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "customer_id", null: false
+    t.string "idempotency_key", null: false
+    t.string "name", null: false
+    t.datetime "occurred_at", null: false
+    t.jsonb "payload", default: {}, null: false
+    t.integer "publish_attempts", default: 0, null: false
+    t.uuid "publish_claim_token"
+    t.datetime "publish_claimed_at"
+    t.datetime "published_at"
+    t.uuid "root_recording_id", null: false
+    t.uuid "subscription_id", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "webhook_event_id"
+    t.index ["created_at"], name: "idx_rs_stripe_domain_events_unpublished", where: "(published_at IS NULL)"
+    t.index ["customer_id"], name: "idx_rs_stripe_domain_events_customer"
+    t.index ["idempotency_key"], name: "idx_rs_stripe_domain_events_idempotency", unique: true
+    t.index ["subscription_id", "name"], name: "idx_rs_stripe_domain_events_sub_name"
+    t.index ["webhook_event_id"], name: "idx_rs_stripe_domain_events_webhook"
+  end
+
   create_table "recording_studio_stripe_meters", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "label", null: false
@@ -276,6 +298,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_12_044322) do
     t.datetime "processed_at", null: false
     t.string "stripe_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["created_at", "id"], name: "idx_rs_stripe_webhook_events_prices_pending", where: "(((event_type)::text = 'invoice.paid'::text) AND ((payload #>> '{invoice,prices_pending}'::text[]) = 'true'::text))"
     t.index ["stripe_id"], name: "index_recording_studio_stripe_webhook_events_on_stripe_id", unique: true
   end
 
@@ -304,6 +327,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_12_044322) do
   add_foreign_key "recording_studio_stripe_allowance_purchases", "recording_studio_stripe_customers", column: "customer_id"
   add_foreign_key "recording_studio_stripe_allowance_purchases", "recording_studio_stripe_meters", column: "meter_id"
   add_foreign_key "recording_studio_stripe_allowance_purchases", "recording_studio_stripe_prices", column: "price_id"
+  add_foreign_key "recording_studio_stripe_domain_events", "recording_studio_stripe_customers", column: "customer_id", on_delete: :cascade
+  add_foreign_key "recording_studio_stripe_domain_events", "recording_studio_stripe_subscriptions", column: "subscription_id", on_delete: :cascade
+  add_foreign_key "recording_studio_stripe_domain_events", "recording_studio_stripe_webhook_events", column: "webhook_event_id"
   add_foreign_key "recording_studio_stripe_prices", "recording_studio_stripe_products", column: "product_id"
   add_foreign_key "recording_studio_stripe_product_paywalls", "recording_studio_stripe_paywalls", column: "paywall_id"
   add_foreign_key "recording_studio_stripe_product_paywalls", "recording_studio_stripe_products", column: "product_id"

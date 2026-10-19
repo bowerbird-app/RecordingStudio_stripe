@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-19
+
+### Added
+- `trial_started.recording_studio_stripe` after commit, once per local Subscription, when it is first saved as `trialing` or first changes to `trialing`
+- `invoice_paid.recording_studio_stripe` after commit for `invoice.paid`, with `amount` (Stripe `amount_paid`), `currency`, `invoice_id`, `billing_reason`, `subscription_status`, local `subscription_id`, `customer_id`, and `root_recording_id`, and `first_payment`
+- A trial-fee invoice (a `kind=trial_fee` Price line, and no other positive line) does not emit `invoice_paid` and does not count as the first payment
+- `RecordingStudioStripe::ProcessWebhook.replay` republishes an unpublished domain event from the stored webhook. The webhook row keeps the invoice snapshot and subscription status used to rebuild. Replay does not call Stripe
+- Table `recording_studio_stripe_domain_events`
+
+### Upgrade notes
+- Bump to **0.13.0**. Copy migrations with `bin/rails generate recording_studio_stripe:migrations`, then `bin/rails db:migrate`. A development database that already ran the removed migration `20261019140000` needs `bin/rails db:drop db:setup`. Saving a Subscription before the domain-events migration does not raise. Invoice events on a host that has not migrated are dropped. Replay the stored webhook after migrating to rebuild one. A negative `table_exists?` answer is cached on the connection until the process restarts
+- Subscribe to `RecordingStudioStripe::DomainEvents::TRIAL_STARTED` and `INVOICE_PAID`. Payload `schema_version` is `1`. It includes `billing_reason` and `subscription_status`. `subscription_status` of `canceled` is not a conversion signal. Dedupe on `payload[:id]`. Delivery is at-least-once. `published_at` is set only after the notification returns. A crash keeps a lease (`publish_claimed_at`, default 5 minutes, `config.domain_event_publish_lease`) until the sweep retries it
+- `first_payment` is true for a positive `subscription_create` that is not a trial fee, when that local Subscription has no `invoice_paid` row yet. Later invoices are `first_payment` only when `metadata["payments_tracked"]` is set. This version sets that flag on create. The migration also sets it for Subscriptions already `trialing` or `incomplete`, so a trial converting to paid can be the first payment. The migration does not set the flag for `incomplete_expired`, `active`, `past_due`, `unpaid`, `paused`, or `canceled`, so the next invoice on those rows is `first_payment: false`. That includes a `past_due`, `unpaid`, or `paused` Subscription that has never paid. Reusing a local row for a new Stripe Subscription does not report `first_payment` again once an `invoice_paid` row exists
+- `amount_paid` of 0 does not emit `invoice_paid`, and an unknown Price on that invoice does not retry. `invoice.paid` still moves `past_due` to `active`. A positive invoice whose Price is not in the catalogue yet keeps that status change, stores `prices_pending`, and emits on replay or the pending sweep after the Price syncs. A later invoice for that Stripe subscription waits with it, so `first_payment` follows arrival order. The wait is bounded: `config.prices_pending_alert_after` (default 1 day) reports a still-missing Price once (`prices_pending_alerted_at` on the snapshot). A missing Subscription is reported separately (`missing_subscription_reported_at`), including after the Price alert. `config.prices_pending_max_hold` (default 3 days) lets later invoices emit. After that, the later invoice can be `first_payment: true`, and the older one stays pending and replays with `first_payment: false` if its Price syncs. `PricesPending.release!(webhook)` clears the flag under a row lock, reports after commit, and does not emit. Replaying a released webhook whose Price is still missing marks it pending again. One webhook that raises during the sweep is reported and does not stop the rest. An invoice with no Stripe subscription id returns 200. An unknown Stripe subscription id returns 503. Ordering races are logged. Other deferred webhooks are reported
+- Schedule `recording_studio_stripe:publish_pending_domain_events` or `PublishPendingDomainEventsJob`. The sweep retries with no cap. Each failed notification increments `publish_attempts` and puts that count on the error report. No new Stripe dependency, and no dependency on Conversions
+- Webhook rows from older versions have no invoice snapshot. Replaying those does not invent an event
+
+## [0.12.1] - 2026-10-16
+
+### Changed
+- Development and dummy pins for `recording_studio_trashable` moved from `v0.10.0` to `v0.11.0` (Git tag `v0.12.1`)
+
+### Upgrade notes
+- No application migration and no gem API change. The version constant on that tag stayed `0.12.0`. Install trashable `0.11.0` when you follow the dummy Gemfile pins
+
 ## [0.12.0] - 2026-10-14
 
 ### Changed
@@ -456,7 +481,9 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.1...v0.13.0
+[0.12.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.9.0...v0.10.0

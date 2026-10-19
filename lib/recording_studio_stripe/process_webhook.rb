@@ -26,6 +26,10 @@ module RecordingStudioStripe
       new(payload: payload, signature: signature).call
     end
 
+    def self.replay(webhook_event)
+      DomainEvents.replay(webhook_event)
+    end
+
     def initialize(payload:, signature:)
       @payload = payload
       @signature = signature
@@ -36,13 +40,13 @@ module RecordingStudioStripe
       return :duplicate if WebhookEvent.exists?(stripe_id: event.id)
 
       ApplicationRecord.transaction do
-        WebhookEvent.create!(
+        webhook_event = WebhookEvent.create!(
           stripe_id: event.id,
           event_type: event.type,
           processed_at: Time.current,
           payload: event_payload(event)
         )
-        handle(event)
+        DomainEvents.with_webhook(webhook_event) { handle(event) }
       end
       :processed
     rescue ActiveRecord::RecordNotUnique => e
@@ -53,7 +57,8 @@ module RecordingStudioStripe
       raise unless duplicate_event?(e)
 
       :duplicate
-    rescue DeferredWebhook
+    rescue DeferredWebhook => e
+      note_deferred(e)
       :deferred
     end
 
@@ -75,13 +80,51 @@ module RecordingStudioStripe
 
     def event_payload(event)
       object = stripe_get(stripe_get(event, :data), :object)
-      {
+      payload = {
         "id" => event.id,
         "type" => event.type,
         "created" => stripe_get(event, :created),
         "object_id" => stripe_get(object, :id),
         "livemode" => stripe_get(event, :livemode)
       }
+      append_invoice_snapshot(payload, event, object)
+      append_subscription_status(payload, event, object)
+      append_checkout_subscription(payload, event, object)
+      payload
+    end
+
+    def append_invoice_snapshot(payload, event, object)
+      return unless event.type == "invoice.paid"
+
+      payload["invoice"] = InvoiceSnapshot.from(object)
+    end
+
+    def append_subscription_status(payload, event, object)
+      return unless event.type.to_s.start_with?("customer.subscription.")
+
+      status = stripe_get(object, :status).to_s
+      payload["subscription_status"] = status if status.present?
+    end
+
+    def append_checkout_subscription(payload, event, object)
+      return unless event.type.to_s.start_with?("checkout.session.")
+
+      raw = stripe_get(object, :subscription)
+      return if raw.blank? || raw.is_a?(String)
+
+      status = stripe_get(raw, :status).to_s
+      return if status.blank?
+
+      payload["subscription_status"] = status
+      payload["stripe_subscription_id"] = stripe_get(raw, :id).to_s
+    end
+
+    def note_deferred(error)
+      if error.is_a?(OrderingRace)
+        Rails.logger.warn("Stripe webhook deferred until a related record exists: #{error.message}")
+      else
+        DomainEvents.report_handled(error, context: { deferred: true })
+      end
     end
 
     def duplicate_event?(error)
@@ -145,10 +188,11 @@ module RecordingStudioStripe
       root = require_root!(root_from(session))
       require_price!(price)
       stripe_subscription = checkout_subscription(session)
+      remember_retrieved_subscription!(stripe_subscription)
       stripe_subscription_id = checkout_subscription_id(stripe_subscription) ||
                                checkout_subscription_id(stripe_get(session, :subscription))
       if stripe_subscription_id.blank? && !RecordingStudioStripe.configuration.local_mode?
-        raise DeferredWebhook, "Checkout has no Subscription yet"
+        raise OrderingRace, "Checkout has no Subscription yet"
       end
 
       period_start, period_end = checkout_subscription_period(stripe_subscription)
@@ -214,9 +258,9 @@ module RecordingStudioStripe
     def handle_invoice_paid(invoice)
       subscription = subscription_from_invoice(invoice)
       return if subscription == :none
-      return unless subscription.status == "past_due"
 
-      subscription.update!(status: "active")
+      subscription.update!(status: "active") if subscription.status == "past_due"
+      DomainEvents.record_invoice_paid!(subscription)
     end
 
     def handle_invoice_payment_failed(invoice)
@@ -229,7 +273,7 @@ module RecordingStudioStripe
     def handle_price_upsert(stripe_price)
       product_id = stripe_price_product_id(stripe_price)
       if product_id.present? && Product.find_by(stripe_id: product_id).blank?
-        raise DeferredWebhook, "Price product is not in the catalogue yet"
+        raise OrderingRace, "Price product is not in the catalogue yet"
       end
 
       UpsertPrice.call(stripe_price)
@@ -278,13 +322,13 @@ module RecordingStudioStripe
     end
 
     def require_root!(root)
-      raise DeferredWebhook, "Workspace is not in this app yet" unless root
+      raise OrderingRace, "Workspace is not in this app yet" unless root
 
       root
     end
 
     def require_price!(price)
-      raise DeferredWebhook, "Price is not in the catalogue yet" if price.blank?
+      raise OrderingRace, "Price is not in the catalogue yet" if price.blank?
 
       price
     end
@@ -294,7 +338,7 @@ module RecordingStudioStripe
       return :none if stripe_id.blank?
 
       subscription = Subscription.find_by(stripe_id: stripe_id)
-      raise DeferredWebhook, "Subscription is not in this app yet" unless subscription
+      raise OrderingRace, "Subscription is not in this app yet" unless subscription
 
       subscription
     end
@@ -307,6 +351,15 @@ module RecordingStudioStripe
       return value if value.is_a?(String)
 
       stripe_get(value, :id) || value.to_s
+    end
+
+    def remember_retrieved_subscription!(stripe_subscription)
+      return if stripe_subscription.blank? || stripe_subscription.is_a?(String)
+
+      DomainEvents.remember_subscription!(
+        status: stripe_get(stripe_subscription, :status),
+        stripe_subscription_id: checkout_subscription_id(stripe_subscription)
+      )
     end
 
     def checkout_subscription(session)
