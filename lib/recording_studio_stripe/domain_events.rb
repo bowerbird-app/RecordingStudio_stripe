@@ -52,8 +52,10 @@ module RecordingStudioStripe
 
       def record_invoice_paid!(subscription)
         return unless events_table?
+        return if subscription.blank?
 
         snapshot = invoice_snapshot
+        InvoiceSnapshot.ensure_prices_known!(snapshot)
         return if skip_invoice?(snapshot)
 
         subscription.with_lock { create_invoice_event(subscription, snapshot) }
@@ -75,10 +77,10 @@ module RecordingStudioStripe
         DomainEvent.publish_pending!(older_than: older_than)
       end
 
-      def report_publish_failure(error)
+      def report_publish_failure(error, context: {})
         return unless defined?(Rails) && Rails.respond_to?(:error) && Rails.error
 
-        Rails.error.report(error, handled: true)
+        Rails.error.report(error, handled: true, context: context)
       end
 
       def events_table?
@@ -130,21 +132,29 @@ module RecordingStudioStripe
           "amount" => snapshot["amount_paid"],
           "currency" => snapshot["currency"],
           "invoice_id" => invoice_id,
+          "billing_reason" => snapshot["billing_reason"].to_s,
+          "subscription_status" => subscription.status.to_s,
           "first_payment" => first_payment?(subscription, snapshot)
         }
       end
 
-      # subscription_create with a positive amount is the first payment.
-      # A fee or zero subscription_create is skipped. The next positive invoice
-      # is first_payment only when this Subscription was created after payments
-      # were tracked (metadata payments_tracked) and no paid event is stored yet.
-      # Replay that has to insert a missing row computes this again. A stored row
+      # A positive subscription_create is the first payment when this local
+      # Subscription has no invoice_paid row yet. A fee or zero create is skipped.
+      # The next positive invoice is first_payment only when payments_tracked is
+      # set and no paid event is stored yet. A local row reused for a new Stripe
+      # Subscription does not start over: an existing invoice_paid row keeps
+      # later invoices, including subscription_create, at first_payment false.
+      # Replay that inserts a missing row computes this again. A stored row
       # keeps the first_payment it was saved with.
       def first_payment?(subscription, snapshot)
+        return false if paid_invoice_recorded?(subscription)
         return true if snapshot["billing_reason"].to_s == "subscription_create"
-        return false unless payments_tracked?(subscription)
 
-        !DomainEvent.exists?(subscription_id: subscription.id, name: "invoice_paid")
+        payments_tracked?(subscription)
+      end
+
+      def paid_invoice_recorded?(subscription)
+        DomainEvent.exists?(subscription_id: subscription.id, name: "invoice_paid")
       end
 
       def payments_tracked?(subscription)

@@ -161,6 +161,8 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
     assert_equal 2900, payload[:amount]
     assert_equal "usd", payload[:currency]
     assert_equal "in_first", payload[:invoice_id]
+    assert_equal "", payload[:billing_reason]
+    assert_equal "active", payload[:subscription_status]
     assert payload[:first_payment]
     assert_equal subscription.id, payload[:subscription_id]
     assert_equal subscription.customer_id, payload[:customer_id]
@@ -284,11 +286,17 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
   end
 
   test "an unknown price is deferred and a priceless line still emits" do
+    recorder = nil
     subscribe!("sub_lines", "cus_lines", status: "active")
 
+    recorder = ErrorRecorder.new
+    Rails.error.subscribe(recorder)
     post_invoice("evt_unknown_price", "in_unknown_price", "sub_lines", amount: 100,
                                                                        lines: [{ "amount" => 100, "price" => { "id" => "price_missing" } }],
                                                                        success: :service_unavailable)
+    assert_equal 1, recorder.errors.size
+    assert_instance_of RecordingStudioStripe::DeferredWebhook, recorder.errors.first
+    assert_equal [true], recorder.handled
     refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_unknown_price")
     assert_equal 0, RecordingStudioStripe::DomainEvent.where(name: "invoice_paid").count
 
@@ -303,6 +311,8 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
     snapshot = RecordingStudioStripe::WebhookEvent.find_by!(stripe_id: "evt_priceless").payload["invoice"]
     refute snapshot["trial_fee"]
     assert_equal "", snapshot["lines"].first["price_id"]
+  ensure
+    Rails.error.unsubscribe(recorder) if recorder
   end
 
   test "trial fee kind matching ignores case" do
@@ -327,12 +337,22 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
     end
     refute renewal.first.payload[:first_payment]
 
+    created_root = RecordingStudio.root_recording_for(Workspace.create!(name: "Create Workspace"))
+    RecordingStudioStripe::ApplySubscription.call(
+      root_recording: created_root,
+      price: @price,
+      stripe_subscription_id: "sub_untracked_create",
+      stripe_customer_id: "cus_untracked_create",
+      status: "active"
+    ).update!(metadata: { "payments_tracked" => false })
     created = capture(INVOICE) do
-      post_invoice("evt_old_create", "in_old_create", "sub_before_upgrade", amount: 2900, lines: plan_lines,
-                                                                            billing_reason: "subscription_create",
-                                                                            created: 1_700_000_010)
+      post_invoice("evt_old_create", "in_old_create", "sub_untracked_create", amount: 2900, lines: plan_lines,
+                                                                              billing_reason: "subscription_create",
+                                                                              created: 1_700_000_010)
     end
     assert created.first.payload[:first_payment]
+    assert_equal "subscription_create", created.first.payload[:billing_reason]
+    assert_equal "active", created.first.payload[:subscription_status]
 
     tracked_root = RecordingStudio.root_recording_for(Workspace.create!(name: "Upgrade Workspace"))
     tracked = RecordingStudioStripe::ApplySubscription.call(
@@ -366,6 +386,63 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
 
     assert_equal 1, events.size
     assert_equal "canceled", subscription.reload.status
+    assert_equal "canceled", events.first.payload[:subscription_status]
+    assert_equal "subscription_cycle", events.first.payload[:billing_reason]
+  end
+
+  test "a reused local subscription does not report first_payment again" do
+    original = subscribe!("sub_reuse_old", "cus_reuse", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_reuse_old", "in_reuse_old", "sub_reuse_old", amount: 2900, lines: plan_lines,
+                                                                     billing_reason: "subscription_create")
+    end
+
+    reused = RecordingStudioStripe::ApplySubscription.call(
+      root_recording: @root,
+      price: @price,
+      stripe_subscription_id: "sub_reuse_new",
+      stripe_customer_id: original.customer.stripe_id,
+      status: "active"
+    )
+    assert_equal original.id, reused.id
+
+    again = capture(INVOICE) do
+      post_invoice("evt_reuse_new", "in_reuse_new", "sub_reuse_new", amount: 2900, lines: plan_lines,
+                                                                     billing_reason: "subscription_create",
+                                                                     created: 1_700_000_050)
+    end
+    refute again.first.payload[:first_payment]
+  end
+
+  test "an unknown price with no local subscription returns 200 and emits nothing" do
+    recorder = ErrorRecorder.new
+    Rails.error.subscribe(recorder)
+
+    events = capture(INVOICE) do
+      post "/webhooks/stripe",
+           params: stripe_event(
+             "evt_one_off_unknown",
+             "invoice.paid",
+             {
+               "id" => "in_one_off_unknown",
+               "amount_paid" => 500,
+               "currency" => "usd",
+               "customer" => "cus_one_off",
+               "billing_reason" => "manual",
+               "lines" => { "data" => [{ "amount" => 500, "price" => { "id" => "price_never_synced" } }] }
+             },
+             created: 1_700_000_000
+           ),
+           as: :json
+      assert_response :success
+    end
+
+    assert_empty events
+    assert_equal 0, RecordingStudioStripe::DomainEvent.count
+    assert RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_one_off_unknown")
+    assert_empty recorder.errors
+  ensure
+    Rails.error.unsubscribe(recorder) if recorder
   end
 
   test "a raising subscriber leaves the event unpublished and the sweep retries" do
@@ -382,6 +459,9 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
     assert_equal 1, recorder.errors.size
     assert_equal "subscriber blew up", recorder.errors.first.message
     assert_equal [true], recorder.handled
+    assert_equal 1, domain_event.reload.publish_attempts
+    assert_nil domain_event.publish_claimed_at
+    assert_equal 1, recorder.contexts.first[:publish_attempts]
 
     ActiveSupport::Notifications.unsubscribe(raiser)
     domain_event.update_column(:created_at, 10.minutes.ago)
@@ -392,6 +472,38 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
   ensure
     ActiveSupport::Notifications.unsubscribe(raiser) if raiser
     Rails.error.unsubscribe(recorder) if recorder
+  end
+
+  test "a crash during publish keeps the lease until the sweep retries" do
+    crashing = nil
+    subscribe!("sub_crash", "cus_crash", status: "active")
+    capture(INVOICE) do
+      post_invoice("evt_crash", "in_crash", "sub_crash", amount: 2900, lines: plan_lines,
+                                                         billing_reason: "subscription_create")
+    end
+    domain_event = RecordingStudioStripe::DomainEvent.find_by!(idempotency_key: "invoice_paid/in_crash")
+    domain_event.update_columns(published_at: nil, publish_claimed_at: nil, publish_attempts: 0,
+                                created_at: 10.minutes.ago)
+    crashing = ActiveSupport::Notifications.subscribe(INVOICE) { raise CrashDuringInstrument }
+
+    assert_raises(CrashDuringInstrument) { domain_event.publish! }
+    domain_event.reload
+    assert_nil domain_event.published_at
+    assert domain_event.publish_claimed_at
+    assert_equal 0, domain_event.publish_attempts
+
+    quiet = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+    assert_empty quiet
+
+    ActiveSupport::Notifications.unsubscribe(crashing)
+    crashing = nil
+    domain_event.update_column(:publish_claimed_at, 6.minutes.ago)
+    retried = capture(INVOICE) { RecordingStudioStripe::DomainEvents.publish_pending!(older_than: 0) }
+
+    assert_equal [domain_event.id], retried.map { |event| event.payload[:id] }
+    assert_predicate domain_event.reload, :published_at
+  ensure
+    ActiveSupport::Notifications.unsubscribe(crashing) if crashing
   end
 
   test "the pending rake task publishes an old unpublished event" do
@@ -729,17 +841,22 @@ class DomainEventConcurrentPublishTest < ActiveSupport::TestCase
   end
 end
 
+class CrashDuringInstrument < Exception
+end
+
 class ErrorRecorder
-  attr_reader :errors, :handled
+  attr_reader :errors, :handled, :contexts
 
   def initialize
     @errors = []
     @handled = []
+    @contexts = []
   end
 
   def report(error, handled:, severity:, context:, source:)
     @errors << error
     @handled << handled
+    @contexts << context
   end
 end
 

@@ -19,7 +19,8 @@ module RecordingStudioStripe
                   :mount_path,
                   :authenticate,
                   :current_actor,
-                  :current_root_recording
+                  :current_root_recording,
+                  :domain_event_publish_lease
     attr_reader :hooks, :usage_costs, :limit_usages
     attr_writer :usage_path
 
@@ -45,6 +46,7 @@ module RecordingStudioStripe
       @authenticate = nil
       @current_actor = nil
       @current_root_recording = nil
+      @domain_event_publish_lease = 5.minutes
       @hooks = RecordingStudio::Hooks.new
     end
 

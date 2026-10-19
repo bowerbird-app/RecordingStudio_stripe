@@ -11,13 +11,22 @@ module RecordingStudioStripe
       new(invoice).to_h
     end
 
+    def self.ensure_prices_known!(snapshot)
+      ids = Array(snapshot.to_h["lines"]).filter_map { |line| line.to_h["price_id"].presence }.uniq
+      return if ids.empty?
+
+      known = Price.where(stripe_id: ids).pluck(:stripe_id)
+      return if (ids - known).empty?
+
+      raise DeferredWebhook, "Price is not in the catalogue yet"
+    end
+
     def initialize(invoice)
       @invoice = invoice
     end
 
     def to_h
       parsed = lines
-      ensure_prices_known!(parsed)
       {
         "amount_paid" => amount_paid,
         "currency" => currency,
@@ -76,16 +85,6 @@ module RecordingStudioStripe
       return value.to_s if value.is_a?(String)
 
       stripe_get(value, :id).presence&.to_s || value.to_s
-    end
-
-    def ensure_prices_known!(parsed)
-      ids = parsed.filter_map { |line| line["price_id"].presence }.uniq
-      return if ids.empty?
-
-      known = Price.where(stripe_id: ids).pluck(:stripe_id)
-      return if (ids - known).empty?
-
-      raise DeferredWebhook, "Price is not in the catalogue yet"
     end
 
     def trial_fee?(parsed)

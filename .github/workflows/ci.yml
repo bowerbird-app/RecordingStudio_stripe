@@ -88,6 +88,16 @@ jobs:
         run: bundle exec rails tailwindcss:build
         working-directory: test/dummy
 
+      - name: Roll the latest migration back and forward
+        run: |
+          bundle exec rails db:migrate
+          bundle exec rails db:rollback STEP=1
+          bundle exec rails db:migrate
+        working-directory: test/dummy
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/recording_studio_stripe_test
+          RAILS_ENV: test
+
       - name: Run tests
         run: bundle exec rake test:all
         env:

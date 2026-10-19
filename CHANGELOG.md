@@ -11,17 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `trial_started.recording_studio_stripe` after commit, once per local Subscription, when it is first saved as `trialing` or first changes to `trialing`
-- `invoice_paid.recording_studio_stripe` after commit for `invoice.paid`, with `amount` (Stripe `amount_paid`), `currency`, `invoice_id`, local `subscription_id`, `customer_id`, and `root_recording_id`, and `first_payment`
+- `invoice_paid.recording_studio_stripe` after commit for `invoice.paid`, with `amount` (Stripe `amount_paid`), `currency`, `invoice_id`, `billing_reason`, `subscription_status`, local `subscription_id`, `customer_id`, and `root_recording_id`, and `first_payment`
 - A trial-fee invoice (a `kind=trial_fee` Price line, and no other positive line) does not emit `invoice_paid` and does not count as the first payment
 - `RecordingStudioStripe::ProcessWebhook.replay` republishes an unpublished domain event from the stored webhook. The webhook row keeps the invoice snapshot and subscription status used to rebuild. Replay does not call Stripe
 - Table `recording_studio_stripe_domain_events`
 
 ### Upgrade notes
-- Bump to **0.13.0**. Copy migrations with `bin/rails generate recording_studio_stripe:migrations`, then `bin/rails db:migrate`. Saving a Subscription before that migration does not raise. Invoice events wait until the table exists
-- Subscribe to `RecordingStudioStripe::DomainEvents::TRIAL_STARTED` and `INVOICE_PAID`. Payload `schema_version` is `1`. Dedupe on `payload[:id]`. Delivery is at-least-once
-- `first_payment` is true for a positive `subscription_create` that is not a trial fee. Later invoices are `first_payment` only for Subscriptions created by this version (`metadata["payments_tracked"]`). A Subscription that already existed before the upgrade reports `first_payment: false` on renewal, because earlier invoices were not stored
-- `amount_paid` of 0 does not emit `invoice_paid`. `invoice.paid` still moves `past_due` to `active`, for every Subscription status
-- Schedule `recording_studio_stripe:publish_pending_domain_events` or `PublishPendingDomainEventsJob` so a subscriber error is retried. No new Stripe dependency, and no dependency on Conversions
+- Bump to **0.13.0**. Copy migrations with `bin/rails generate recording_studio_stripe:migrations`, then `bin/rails db:migrate`. Saving a Subscription before that migration does not raise. Invoice events on a host that has not migrated are dropped. Replay the stored webhook after migrating to rebuild one. A negative `table_exists?` answer is cached on the connection until the process restarts
+- Subscribe to `RecordingStudioStripe::DomainEvents::TRIAL_STARTED` and `INVOICE_PAID`. Payload `schema_version` is `1`. It includes `billing_reason` and `subscription_status`. `subscription_status` of `canceled` is not a conversion signal. Dedupe on `payload[:id]`. Delivery is at-least-once. `published_at` is set only after the notification returns. A crash keeps a lease (`publish_claimed_at`, default 5 minutes, `config.domain_event_publish_lease`) until the sweep retries it
+- `first_payment` is true for a positive `subscription_create` that is not a trial fee, when that local Subscription has no `invoice_paid` row yet. Later invoices are `first_payment` only when `metadata["payments_tracked"]` is set. This version sets that flag on create. The migration also sets it for Subscriptions already `trialing` or `incomplete`, so a trial converting to paid can be the first payment. Subscriptions that were already `active`, `past_due`, or `canceled` are not backfilled, so their next invoice is `first_payment: false`. Reusing a local row for a new Stripe Subscription does not report `first_payment` again once an `invoice_paid` row exists
+- `amount_paid` of 0 does not emit `invoice_paid`. `invoice.paid` still moves `past_due` to `active`, for every Subscription status. An unknown Price is a 503 only when a local Subscription was found. An invoice with no local Subscription returns 200
+- Schedule `recording_studio_stripe:publish_pending_domain_events` or `PublishPendingDomainEventsJob`. The sweep retries with no cap. Each failed notification increments `publish_attempts` and puts that count on the error report. No new Stripe dependency, and no dependency on Conversions
 - Webhook rows from older versions have no invoice snapshot. Replaying those does not invent an event
 
 ## [0.12.1] - 2026-10-16

@@ -57,7 +57,8 @@ module RecordingStudioStripe
       raise unless duplicate_event?(e)
 
       :duplicate
-    rescue DeferredWebhook
+    rescue DeferredWebhook => e
+      DomainEvents.report_publish_failure(e, context: { deferred: true })
       :deferred
     end
 
