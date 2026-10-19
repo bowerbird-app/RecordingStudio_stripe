@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_19_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_19_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -183,6 +183,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_120000) do
     t.uuid "subscription_id", null: false
     t.datetime "updated_at", null: false
     t.uuid "webhook_event_id"
+    t.index ["created_at"], name: "idx_rs_stripe_domain_events_unpublished", where: "(published_at IS NULL)"
+    t.index ["customer_id"], name: "idx_rs_stripe_domain_events_customer"
     t.index ["idempotency_key"], name: "idx_rs_stripe_domain_events_idempotency", unique: true
     t.index ["subscription_id", "name"], name: "idx_rs_stripe_domain_events_sub_name"
     t.index ["webhook_event_id"], name: "idx_rs_stripe_domain_events_webhook"
@@ -321,8 +323,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_120000) do
   add_foreign_key "recording_studio_stripe_allowance_purchases", "recording_studio_stripe_customers", column: "customer_id"
   add_foreign_key "recording_studio_stripe_allowance_purchases", "recording_studio_stripe_meters", column: "meter_id"
   add_foreign_key "recording_studio_stripe_allowance_purchases", "recording_studio_stripe_prices", column: "price_id"
-  add_foreign_key "recording_studio_stripe_domain_events", "recording_studio_stripe_customers", column: "customer_id"
-  add_foreign_key "recording_studio_stripe_domain_events", "recording_studio_stripe_subscriptions", column: "subscription_id"
+  add_foreign_key "recording_studio_stripe_domain_events", "recording_studio_stripe_customers", column: "customer_id", on_delete: :cascade
+  add_foreign_key "recording_studio_stripe_domain_events", "recording_studio_stripe_subscriptions", column: "subscription_id", on_delete: :cascade
   add_foreign_key "recording_studio_stripe_domain_events", "recording_studio_stripe_webhook_events", column: "webhook_event_id"
   add_foreign_key "recording_studio_stripe_prices", "recording_studio_stripe_products", column: "product_id"
   add_foreign_key "recording_studio_stripe_product_paywalls", "recording_studio_stripe_paywalls", column: "paywall_id"

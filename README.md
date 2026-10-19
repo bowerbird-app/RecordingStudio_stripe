@@ -253,7 +253,7 @@ Point Stripe at `POST /webhooks/stripe`. Set `STRIPE_WEBHOOK_SECRET` whenever St
 
 `checkout.session.completed` does nothing until `payment_status` is `paid` or `no_payment_required`. A handler that cannot apply yet (Price or workspace missing) returns 503 and does not store the event, so Stripe retries. Checkout return still does not fulfil on its own. `/billing?checkout=ok` and `/billing?allowance=ok` tell people to refresh if Stripe is still writing. Choosing a plan in a group you already have opens a confirmation page, then upgrades or schedules a downgrade. It does not open a second Stripe Subscription. Stripe upgrades wait for the webhook before the local Price changes.
 
-Webhook rows keep the event id, type, created time, object id, and livemode. They do not keep the full Stripe object. `invoice.paid` also keeps a small invoice snapshot: `amount_paid`, `currency`, `invoice_id`, the Stripe customer and subscription ids, each line's price id and amount, and `trial_fee`. Subscription events keep `subscription_status`. A checkout event keeps that status and the Stripe subscription id when the session includes the subscription.
+Webhook rows keep the event id, type, created time, object id, and livemode. They do not keep the full Stripe object. `invoice.paid` also keeps a small invoice snapshot: `amount_paid`, `currency`, `invoice_id`, `billing_reason`, the Stripe customer and subscription ids, each line's price id and amount (a line with no price id is kept), `lines_has_more`, and `trial_fee`. Subscription events keep `subscription_status`. A checkout event keeps that status when the session includes the subscription. If Checkout only has the subscription id, the gem retrieves the Subscription and stores that status too. Stripe sends the first 10 invoice lines. `lines_has_more` means a later page was not in the webhook.
 
 ## Domain events
 
@@ -262,7 +262,7 @@ After the database commit, the gem emits `ActiveSupport::Notifications`. Other g
 | Name | When |
 | --- | --- |
 | `trial_started.recording_studio_stripe` | The local Subscription is first saved as `trialing`, or first changes to `trialing`. Once per Subscription. |
-| `invoice_paid.recording_studio_stripe` | `invoice.paid` for a real payment. A trial-fee invoice does not emit. |
+| `invoice_paid.recording_studio_stripe` | `invoice.paid` with `amount_paid` greater than 0 that is not a trial fee. Status does not matter: trialing, active, past_due, and canceled all emit. |
 
 `RecordingStudioStripe::DomainEvents::TRIAL_STARTED` and `INVOICE_PAID` are those names. `SCHEMA_VERSION` is `1`.
 
@@ -273,17 +273,21 @@ Every payload includes `schema_version`, `occurred_at`, `id` (this event's UUID)
 - `amount`, Stripe `amount_paid` in the smallest currency unit
 - `currency`
 - `invoice_id`, the Stripe invoice id (`in_...`). There is no local invoice row
-- `first_payment`, true only for the first real paid invoice on that Subscription
+- `first_payment`
 
-A trial-fee invoice has at least one line whose local Price metadata `kind` is `trial_fee`, and no other line with a positive amount. A zero-amount plan line next to the fee still counts as a trial fee. That invoice does not emit `invoice_paid` and does not count toward `first_payment`. The next real invoice is the first payment. Detection uses the Prices already stored here. The webhook snapshot records the decision.
+`amount_paid` of 0 is not a payment. That includes a free trial invoice and a 100% coupon. It does not emit `invoice_paid` and it does not count toward `first_payment`. `invoice.paid` still moves `past_due` back to `active`.
 
-`invoice.paid` still moves `past_due` back to `active`, including when the invoice is a trial fee. A trialing Subscription stays trialing.
+A trial-fee invoice has at least one line whose local Price metadata `kind` is `trial_fee` (any casing), and no other positive line. A line with a positive amount and no price id counts as another line, so the invoice is not a trial fee. A zero-amount plan line next to the fee still counts as a trial fee. The fee does not emit and does not count toward `first_payment`. A line price that is not in the local catalogue raises a retry (503) instead of guessing. Kind comparison is case-insensitive.
+
+`first_payment` is true when `billing_reason` is `subscription_create` and the amount is positive and the invoice is not a trial fee. If that create invoice was a fee or zero, the next positive invoice is `first_payment` only when the local Subscription was created with `metadata["payments_tracked"]` (every Subscription created by this version) and no earlier `invoice_paid` row exists for it. A Subscription that already existed before the upgrade has no `payments_tracked` flag, so a later renewal is `first_payment: false`. That avoids calling every existing customer's next invoice their first payment. Two invoices for one Subscription are decided in arrival order under a row lock, not by Stripe's invoice time. A refund does not clear `first_payment` and does not emit another event. Rebuilding a missing row computes `first_payment` again. A row that is already stored keeps the value it was saved with.
+
+Delivery is at-least-once. A subscriber that raises is reported with `Rails.error.report(handled: true)` and does not fail the webhook. `published_at` stays blank so a sweep can retry. Dedupe on `payload[:id]`. `RecordingStudioStripe::DomainEvents.publish_pending!(older_than:)` republishes those rows. The rake task is `recording_studio_stripe:publish_pending_domain_events` (`OLDER_THAN_SECONDS`, default 300). `PublishPendingDomainEventsJob` does the same.
 
 `occurred_at` is the Stripe event `created` time when the event came from a webhook. A local trial uses the time the Subscription was saved.
 
-Replay with `RecordingStudioStripe::ProcessWebhook.replay(webhook_event)`. The domain event row is written in the same transaction as the webhook. If the process dies after that commit and before the notification, `published_at` is still blank. Replay emits that stored payload once and then marks it published. It reads the snapshot on the webhook row and does not call Stripe. A second replay, or a second delivery of the same Stripe event id, does not emit again. Webhook rows stored before this snapshot have nothing to rebuild.
+Replay with `RecordingStudioStripe::ProcessWebhook.replay(webhook_event)`. The notification waits until every open joinable transaction has committed (`ActiveRecord.after_all_transactions_commit`). The domain event row is written in the same transaction as the webhook. Replay reads the snapshot on the webhook row and does not call Stripe. A second replay, or a second delivery of the same Stripe event id, does not emit again. Webhook rows stored before this snapshot have nothing to rebuild. Saving a Subscription before the domain-events table exists does not raise.
 
-The notification runs after the webhook transaction commits. Subscribers do not see it if that transaction rolls back.
+`invoice.paid` still moves `past_due` back to `active`, including when the invoice is a trial fee or zero.
 
 Set `config.automatic_tax = true` only after Stripe Tax is on in the Dashboard. Checkout then also sends `customer_update: { address: "auto" }`. Promotion codes are on by default.
 

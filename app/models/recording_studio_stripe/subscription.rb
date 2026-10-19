@@ -9,6 +9,7 @@ module RecordingStudioStripe
     belongs_to :customer, class_name: "RecordingStudioStripe::Customer"
     belongs_to :price, class_name: "RecordingStudioStripe::Price", optional: true
     belongs_to :scheduled_price, class_name: "RecordingStudioStripe::Price", optional: true
+    has_many :domain_events, class_name: "RecordingStudioStripe::DomainEvent", dependent: :delete_all
 
     validates :stripe_id, presence: true, uniqueness: true
     validates :root_recording_id, presence: true
@@ -16,6 +17,7 @@ module RecordingStudioStripe
     validates :subscription_type, presence: true
 
     before_validation :assign_default_subscription_type
+    before_create :track_payments
     after_save :record_trial_started_event
 
     scope :current, -> { where(status: ACTIVE_STATUSES) }
@@ -60,8 +62,13 @@ module RecordingStudioStripe
       self.subscription_type = subscription_type.presence || SubscriptionTypes.keys.first
     end
 
+    def track_payments
+      self.metadata = metadata.to_h.stringify_keys.merge("payments_tracked" => true)
+    end
+
     def record_trial_started_event
       return unless trialing? && saved_change_to_status?
+      return unless DomainEvents.events_table?
 
       DomainEvents.record_trial_started!(self)
     end

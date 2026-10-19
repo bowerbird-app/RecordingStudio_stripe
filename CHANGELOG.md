@@ -17,10 +17,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Table `recording_studio_stripe_domain_events`
 
 ### Upgrade notes
-- Bump to **0.13.0**. Copy migrations with `bin/rails generate recording_studio_stripe:migrations`, then `bin/rails db:migrate`
-- Subscribe to `RecordingStudioStripe::DomainEvents::TRIAL_STARTED` and `INVOICE_PAID` if you want these events. Payload `schema_version` is `1`. Local UUIDs on an existing event row are not rewritten
-- `invoice.paid` still moves `past_due` to `active`. No new Stripe dependency, and no dependency on Conversions
+- Bump to **0.13.0**. Copy migrations with `bin/rails generate recording_studio_stripe:migrations`, then `bin/rails db:migrate`. Saving a Subscription before that migration does not raise. Invoice events wait until the table exists
+- Subscribe to `RecordingStudioStripe::DomainEvents::TRIAL_STARTED` and `INVOICE_PAID`. Payload `schema_version` is `1`. Dedupe on `payload[:id]`. Delivery is at-least-once
+- `first_payment` is true for a positive `subscription_create` that is not a trial fee. Later invoices are `first_payment` only for Subscriptions created by this version (`metadata["payments_tracked"]`). A Subscription that already existed before the upgrade reports `first_payment: false` on renewal, because earlier invoices were not stored
+- `amount_paid` of 0 does not emit `invoice_paid`. `invoice.paid` still moves `past_due` to `active`, for every Subscription status
+- Schedule `recording_studio_stripe:publish_pending_domain_events` or `PublishPendingDomainEventsJob` so a subscriber error is retried. No new Stripe dependency, and no dependency on Conversions
 - Webhook rows from older versions have no invoice snapshot. Replaying those does not invent an event
+
+## [0.12.1] - 2026-10-16
+
+### Changed
+- Development and dummy pins for `recording_studio_trashable` moved from `v0.10.0` to `v0.11.0` (Git tag `v0.12.1`)
+
+### Upgrade notes
+- No application migration and no gem API change. The version constant on that tag stayed `0.12.0`. Install trashable `0.11.0` when you follow the dummy Gemfile pins
 
 ## [0.12.0] - 2026-10-14
 
@@ -472,7 +482,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 Template environment work. See git history if you still have a copy from the gem template.
 
 [Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.13.0...HEAD
-[0.13.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.0...v0.13.0
+[0.13.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.1...v0.13.0
+[0.12.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.9.0...v0.10.0

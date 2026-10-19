@@ -179,6 +179,7 @@ module RecordingStudioStripe
       root = require_root!(root_from(session))
       require_price!(price)
       stripe_subscription = checkout_subscription(session)
+      remember_retrieved_subscription!(stripe_subscription)
       stripe_subscription_id = checkout_subscription_id(stripe_subscription) ||
                                checkout_subscription_id(stripe_get(session, :subscription))
       if stripe_subscription_id.blank? && !RecordingStudioStripe.configuration.local_mode?
@@ -341,6 +342,15 @@ module RecordingStudioStripe
       return value if value.is_a?(String)
 
       stripe_get(value, :id) || value.to_s
+    end
+
+    def remember_retrieved_subscription!(stripe_subscription)
+      return if stripe_subscription.blank? || stripe_subscription.is_a?(String)
+
+      DomainEvents.remember_subscription!(
+        status: stripe_get(stripe_subscription, :status),
+        stripe_subscription_id: checkout_subscription_id(stripe_subscription)
+      )
     end
 
     def checkout_subscription(session)

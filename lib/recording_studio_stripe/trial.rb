@@ -4,6 +4,10 @@ module RecordingStudioStripe
   class Trial
     FEE_KIND = "trial_fee"
 
+    def self.fee_kind?(price)
+      price.metadata.to_h.stringify_keys["kind"].to_s.casecmp?(FEE_KIND)
+    end
+
     def self.for(product)
       new(product)
     end
@@ -103,7 +107,7 @@ module RecordingStudioStripe
     end
 
     def fee_kind?(price)
-      price.metadata.to_h.stringify_keys["kind"] == FEE_KIND
+      self.class.fee_kind?(price)
     end
 
     def positive_int(value)

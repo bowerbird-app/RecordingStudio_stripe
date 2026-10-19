@@ -6,6 +6,7 @@ module RecordingStudioStripe
 
     has_many :subscriptions, class_name: "RecordingStudioStripe::Subscription", dependent: :destroy
     has_many :allowance_purchases, class_name: "RecordingStudioStripe::AllowancePurchase", dependent: :delete_all
+    has_many :domain_events, class_name: "RecordingStudioStripe::DomainEvent", dependent: :delete_all
 
     validates :root_recording_id, presence: true, uniqueness: true
     validates :stripe_id, presence: true, uniqueness: true

@@ -29,6 +29,15 @@ class TrialFeeInvoiceTest < Minitest::Test
     refute trial_fee?([{ price_id: "price_plan", amount: 2900 }], ["price_fee"])
   end
 
+  def test_a_positive_line_without_a_price_id_is_not_a_trial_fee
+    lines = [
+      { price_id: "price_fee", amount: 100 },
+      { price_id: "", amount: 50 }
+    ]
+
+    refute trial_fee?(lines, ["price_fee"])
+  end
+
   def test_blank_lines_are_not_a_trial_fee
     refute trial_fee?([], ["price_fee"])
     refute RecordingStudioStripe::TrialFeeInvoice.trial_fee?(lines: [{ price_id: "price_fee", amount: 100 }],

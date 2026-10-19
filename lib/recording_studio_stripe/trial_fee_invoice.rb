@@ -27,8 +27,10 @@ module RecordingStudioStripe
     end
 
     def other_positive_line?(line)
+      return false unless amount(line).positive?
+
       id = price_id(line)
-      id.present? && @fee_price_ids.exclude?(id) && amount(line).positive?
+      id.blank? || @fee_price_ids.exclude?(id)
     end
 
     def price_id(line)

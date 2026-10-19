@@ -2,7 +2,8 @@
 
 module RecordingStudioStripe
   # Minimal invoice fields kept on the webhook row so a replay can rebuild
-  # invoice_paid without calling Stripe.
+  # invoice_paid without calling Stripe. Stripe's webhook includes the first
+  # page of lines (10). When `lines_has_more` is true, a later page is not here.
   class InvoiceSnapshot
     include StripeRequest
 
@@ -15,14 +16,18 @@ module RecordingStudioStripe
     end
 
     def to_h
+      parsed = lines
+      ensure_prices_known!(parsed)
       {
         "amount_paid" => amount_paid,
         "currency" => currency,
         "invoice_id" => stripe_get(@invoice, :id).to_s,
         "customer" => id_from(stripe_get(@invoice, :customer)),
         "subscription" => subscription_id,
-        "lines" => lines,
-        "trial_fee" => trial_fee?
+        "billing_reason" => stripe_get(@invoice, :billing_reason).to_s,
+        "lines" => parsed,
+        "lines_has_more" => lines_has_more?,
+        "trial_fee" => trial_fee?(parsed)
       }
     end
 
@@ -43,14 +48,15 @@ module RecordingStudioStripe
     end
 
     def lines
-      stripe_list_items(stripe_get(@invoice, :lines)).filter_map { |line| line_snapshot(line) }
+      @lines ||= stripe_list_items(stripe_get(@invoice, :lines)).map { |line| line_snapshot(line) }
+    end
+
+    def lines_has_more?
+      stripe_get(stripe_get(@invoice, :lines), :has_more) == true
     end
 
     def line_snapshot(line)
-      price_id = line_price_id(line)
-      return if price_id.blank?
-
-      { "price_id" => price_id, "amount" => line_amount(line) }
+      { "price_id" => line_price_id(line).to_s, "amount" => line_amount(line) }
     end
 
     def line_amount(line)
@@ -62,7 +68,7 @@ module RecordingStudioStripe
       priced = stripe_get(stripe_get(stripe_get(line, :pricing), :price_details), :price)
       return id_from(priced) if priced.present?
 
-      item_price_id(line)
+      item_price_id(line).to_s
     end
 
     def id_from(value)
@@ -72,23 +78,25 @@ module RecordingStudioStripe
       stripe_get(value, :id).presence&.to_s || value.to_s
     end
 
-    def trial_fee?
-      TrialFeeInvoice.trial_fee?(lines: line_entries, fee_price_ids: fee_price_ids)
+    def ensure_prices_known!(parsed)
+      ids = parsed.filter_map { |line| line["price_id"].presence }.uniq
+      return if ids.empty?
+
+      known = Price.where(stripe_id: ids).pluck(:stripe_id)
+      return if (ids - known).empty?
+
+      raise DeferredWebhook, "Price is not in the catalogue yet"
     end
 
-    def line_entries
-      lines.map { |line| { price_id: line["price_id"], amount: line["amount"] } }
+    def trial_fee?(parsed)
+      TrialFeeInvoice.trial_fee?(lines: parsed, fee_price_ids: fee_price_ids(parsed))
     end
 
-    def fee_price_ids
-      ids = lines.map { |line| line["price_id"] }
+    def fee_price_ids(parsed)
+      ids = parsed.filter_map { |line| line["price_id"].presence }
       return [] if ids.empty?
 
-      Price.where(stripe_id: ids).filter_map { |price| price.stripe_id if fee_price?(price) }
-    end
-
-    def fee_price?(price)
-      price.metadata.to_h.stringify_keys["kind"] == Trial::FEE_KIND
+      Price.where(stripe_id: ids).filter_map { |price| price.stripe_id if Trial.fee_kind?(price) }
     end
   end
 end

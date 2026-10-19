@@ -11,6 +11,7 @@ module RecordingStudioStripe
       "trial_started" => TRIAL_STARTED,
       "invoice_paid" => INVOICE_PAID
     }.freeze
+    WEBHOOK_KEY = :recording_studio_stripe_domain_webhook
 
     class << self
       def notification_name(name)
@@ -25,8 +26,21 @@ module RecordingStudioStripe
         self.current_webhook = previous
       end
 
+      def remember_subscription!(status:, stripe_subscription_id:)
+        webhook = current_webhook
+        return if webhook.blank? || status.blank?
+
+        webhook.update!(
+          payload: webhook.payload.merge(
+            "subscription_status" => status.to_s,
+            "stripe_subscription_id" => stripe_subscription_id.to_s
+          )
+        )
+      end
+
       def record_trial_started!(subscription)
         return unless subscription&.trialing?
+        return unless events_table?
 
         create_event(
           name: "trial_started",
@@ -37,8 +51,10 @@ module RecordingStudioStripe
       end
 
       def record_invoice_paid!(subscription)
+        return unless events_table?
+
         snapshot = invoice_snapshot
-        return if snapshot.blank? || snapshot["trial_fee"]
+        return if skip_invoice?(snapshot)
 
         subscription.with_lock { create_invoice_event(subscription, snapshot) }
       end
@@ -50,17 +66,35 @@ module RecordingStudioStripe
             rebuild_trial(webhook_event)
           end
         end
-        publish_unpublished(webhook_event)
+        ActiveRecord.after_all_transactions_commit { publish_unpublished(webhook_event) }
+      end
+
+      def publish_pending!(older_than:)
+        return unless events_table?
+
+        DomainEvent.publish_pending!(older_than: older_than)
+      end
+
+      def report_publish_failure(error)
+        return unless defined?(Rails) && Rails.respond_to?(:error) && Rails.error
+
+        Rails.error.report(error, handled: true)
+      end
+
+      def events_table?
+        DomainEvent.table_exists?
+      rescue ActiveRecord::NoDatabaseError, ActiveRecord::ConnectionNotEstablished
+        false
       end
 
       private
 
       def current_webhook
-        Thread.current[:recording_studio_stripe_domain_webhook]
+        ActiveSupport::IsolatedExecutionState[WEBHOOK_KEY]
       end
 
       def current_webhook=(webhook)
-        Thread.current[:recording_studio_stripe_domain_webhook] = webhook
+        ActiveSupport::IsolatedExecutionState[WEBHOOK_KEY] = webhook
       end
 
       def occurred_at
@@ -74,10 +108,14 @@ module RecordingStudioStripe
         current_webhook&.payload.to_h["invoice"]
       end
 
+      def skip_invoice?(snapshot)
+        snapshot.blank? || snapshot["trial_fee"] || snapshot["amount_paid"].to_i.zero? ||
+          snapshot["invoice_id"].blank?
+      end
+
       def create_invoice_event(subscription, snapshot)
         invoice_id = snapshot["invoice_id"].to_s
-        existing = DomainEvent.find_by(idempotency_key: "invoice_paid/#{invoice_id}")
-        return existing if existing
+        return if invoice_id.blank?
 
         create_event(
           name: "invoice_paid",
@@ -92,35 +130,44 @@ module RecordingStudioStripe
           "amount" => snapshot["amount_paid"],
           "currency" => snapshot["currency"],
           "invoice_id" => invoice_id,
-          "first_payment" => first_payment?(subscription)
+          "first_payment" => first_payment?(subscription, snapshot)
         }
       end
 
-      def first_payment?(subscription)
+      # subscription_create with a positive amount is the first payment.
+      # A fee or zero subscription_create is skipped. The next positive invoice
+      # is first_payment only when this Subscription was created after payments
+      # were tracked (metadata payments_tracked) and no paid event is stored yet.
+      # Replay that has to insert a missing row computes this again. A stored row
+      # keeps the first_payment it was saved with.
+      def first_payment?(subscription, snapshot)
+        return true if snapshot["billing_reason"].to_s == "subscription_create"
+        return false unless payments_tracked?(subscription)
+
         !DomainEvent.exists?(subscription_id: subscription.id, name: "invoice_paid")
       end
 
-      def create_event(name:, idempotency_key:, subscription:, payload:)
-        existing = DomainEvent.find_by(idempotency_key: idempotency_key)
-        return existing if existing
+      def payments_tracked?(subscription)
+        subscription.metadata.to_h.stringify_keys["payments_tracked"] == true
+      end
 
-        DomainEvent.create!(
-          name: name,
-          idempotency_key: idempotency_key,
-          subscription: subscription,
-          customer_id: subscription.customer_id,
-          root_recording_id: subscription.root_recording_id,
-          webhook_event: current_webhook,
-          occurred_at: occurred_at,
-          payload: payload
-        )
-      rescue ActiveRecord::RecordNotUnique
-        DomainEvent.find_by!(idempotency_key: idempotency_key)
+      def create_event(name:, idempotency_key:, subscription:, payload:)
+        # Unique index is the lock. A uniqueness validation would raise RecordInvalid
+        # before create_or_find_by! can rescue the database conflict in a savepoint.
+        DomainEvent.create_or_find_by!(idempotency_key: idempotency_key) do |event|
+          event.name = name
+          event.subscription = subscription
+          event.customer_id = subscription.customer_id
+          event.root_recording_id = subscription.root_recording_id
+          event.webhook_event = current_webhook
+          event.occurred_at = occurred_at
+          event.payload = payload
+        end
       end
 
       def rebuild_invoice(webhook_event)
         return unless webhook_event.event_type == "invoice.paid"
-        return if invoice_snapshot.blank? || invoice_snapshot["trial_fee"]
+        return if skip_invoice?(invoice_snapshot)
 
         subscription = Subscription.find_by(stripe_id: invoice_snapshot["subscription"])
         record_invoice_paid!(subscription) if subscription
