@@ -5,7 +5,9 @@ module RecordingStudioStripe
   # stays stored, and the pending sweep emits invoice_paid after the Price syncs.
   class PricesPending
     BATCH_SIZE = 100
-    PENDING_SQL = "payload #>> '{invoice,prices_pending}' = 'true'"
+    # Same predicate as idx_rs_stripe_webhook_events_prices_pending, so the
+    # planner can prove the partial index applies.
+    PENDING_SQL = "event_type = 'invoice.paid' AND (payload #>> '{invoice,prices_pending}') = 'true'"
 
     def self.waiting?(webhook, snapshot)
       return false if snapshot.blank? || !InvoiceSnapshot.missing_prices?(snapshot)
@@ -53,6 +55,33 @@ module RecordingStudioStripe
       DeferredWebhook.new("Subscription is not in this app yet")
     end
 
+    def self.report_missing_subscription!(webhook)
+      error = missing_subscription(webhook)
+      report_once!(webhook, error) if error
+    end
+
+    # A Price that never syncs is reported once, then left pending.
+    def self.alert!(webhook)
+      return unless pending?(webhook)
+      return if reported?(webhook)
+      return unless InvoiceSnapshot.missing_prices?(webhook.payload.to_h["invoice"])
+      return if webhook.created_at >= Time.current - alert_after
+
+      report_once!(webhook, DeferredWebhook.new("Invoice is still waiting on a Price"))
+    end
+
+    # Manual escape. Clears the flag and reports it. Does not emit invoice_paid.
+    def self.release!(webhook)
+      return unless pending?(webhook)
+
+      DomainEvents.report_handled(
+        DeferredWebhook.new("Released a prices_pending invoice without emitting"),
+        context: { webhook_id: webhook.id }
+      )
+      invoice = webhook.payload.to_h["invoice"].to_h.merge("prices_pending" => false)
+      webhook.update!(payload: webhook.payload.merge("invoice" => invoice))
+    end
+
     def self.each_ready(older_than:, &)
       cutoff = Time.current - older_than
       cursor_at = nil
@@ -72,15 +101,20 @@ module RecordingStudioStripe
       webhook&.payload.to_h.dig("invoice", "prices_pending") == true
     end
 
+    def self.reported?(webhook)
+      webhook&.payload.to_h.dig("invoice", "prices_pending_reported_at").present?
+    end
+
     def self.older_pending?(webhook, snapshot)
       return false if webhook.blank?
 
       stripe_subscription_id = snapshot.to_h["subscription"].to_s
       return false if stripe_subscription_id.blank?
 
-      WebhookEvent.where(event_type: "invoice.paid").where.not(id: webhook.id)
+      WebhookEvent.where.not(id: webhook.id)
                   .where(PENDING_SQL)
                   .where("payload #>> '{invoice,subscription}' = ?", stripe_subscription_id)
+                  .where(created_at: hold_cutoff..)
                   .where(
                     "created_at < :created_at OR (created_at = :created_at AND id < :id)",
                     created_at: webhook.created_at,
@@ -89,7 +123,7 @@ module RecordingStudioStripe
     end
 
     def self.ready_batch(cutoff, cursor_at, cursor_id)
-      scope = WebhookEvent.where(event_type: "invoice.paid").where(created_at: ...cutoff).where(PENDING_SQL)
+      scope = WebhookEvent.where(created_at: ...cutoff).where(PENDING_SQL)
       if cursor_at
         scope = scope.where(
           "created_at > :created_at OR (created_at = :created_at AND id > :id)",
@@ -99,6 +133,22 @@ module RecordingStudioStripe
       end
       scope.order(:created_at, :id).limit(BATCH_SIZE).to_a
     end
-    private_class_method :ready_batch, :older_pending?
+
+    def self.report_once!(webhook, error)
+      return if reported?(webhook)
+
+      DomainEvents.report_handled(error, context: { webhook_id: webhook.id })
+      invoice = webhook.payload.to_h["invoice"].to_h.merge("prices_pending_reported_at" => Time.current.iso8601)
+      webhook.update!(payload: webhook.payload.merge("invoice" => invoice))
+    end
+
+    def self.alert_after
+      RecordingStudioStripe.configuration.prices_pending_alert_after
+    end
+
+    def self.hold_cutoff
+      Time.current - RecordingStudioStripe.configuration.prices_pending_max_hold
+    end
+    private_class_method :ready_batch, :older_pending?, :report_once!, :alert_after, :hold_cutoff
   end
 end

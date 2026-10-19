@@ -20,7 +20,9 @@ module RecordingStudioStripe
                   :authenticate,
                   :current_actor,
                   :current_root_recording,
-                  :domain_event_publish_lease
+                  :domain_event_publish_lease,
+                  :prices_pending_alert_after,
+                  :prices_pending_max_hold
     attr_reader :hooks, :usage_costs, :limit_usages
     attr_writer :usage_path
 
@@ -47,6 +49,8 @@ module RecordingStudioStripe
       @current_actor = nil
       @current_root_recording = nil
       @domain_event_publish_lease = 5.minutes
+      @prices_pending_alert_after = 1.day
+      @prices_pending_max_hold = 3.days
       @hooks = RecordingStudio::Hooks.new
     end
 

@@ -67,6 +67,11 @@ class ConfigurationTest < Minitest::Test
     assert_kind_of RecordingStudioStripe::Configuration, RecordingStudioStripe.configuration
   end
 
+  def test_prices_pending_hold_defaults
+    assert_equal 1.day, @configuration.prices_pending_alert_after
+    assert_equal 3.days, @configuration.prices_pending_max_hold
+  end
+
   def test_default_meters_are_ai_tokens_and_api_calls
     assert_equal %w[ai_tokens api_calls], @configuration.meters.keys
     assert_equal "AI tokens", @configuration.meters.fetch("ai_tokens").fetch("label")

@@ -91,7 +91,7 @@ jobs:
       - name: Roll the latest migration back and forward
         run: |
           bundle exec rails db:migrate
-          bundle exec rails db:rollback STEP=1
+          bundle exec rails db:rollback STEP=2
           bundle exec rails db:migrate
         working-directory: test/dummy
         env:
