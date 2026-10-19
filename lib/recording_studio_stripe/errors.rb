@@ -57,6 +57,10 @@ module RecordingStudioStripe
 
   class DeferredWebhook < Error; end
 
+  # Stripe sent a record before the one it depends on. The webhook returns 503
+  # and is not stored, so Stripe retries. These are logged, not error-reported.
+  class OrderingRace < DeferredWebhook; end
+
   class AmbiguousSubscriptionLine < Error
     attr_reader :meter
 

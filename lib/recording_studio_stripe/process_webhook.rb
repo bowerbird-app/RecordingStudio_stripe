@@ -5,13 +5,6 @@ module RecordingStudioStripe
     include StripeRequest
 
     PAID_PAYMENT_STATUSES = %w[paid no_payment_required].freeze
-    ORDERING_RACES = [
-      "Checkout has no Subscription yet",
-      "Price product is not in the catalogue yet",
-      "Workspace is not in this app yet",
-      "Price is not in the catalogue yet",
-      "Subscription is not in this app yet"
-    ].freeze
 
     EVENT_HANDLERS = {
       "checkout.session.completed" => :handle_checkout,
@@ -127,7 +120,7 @@ module RecordingStudioStripe
     end
 
     def note_deferred(error)
-      if ORDERING_RACES.include?(error.message)
+      if error.is_a?(OrderingRace)
         Rails.logger.warn("Stripe webhook deferred until a related record exists: #{error.message}")
       else
         DomainEvents.report_handled(error, context: { deferred: true })
@@ -199,7 +192,7 @@ module RecordingStudioStripe
       stripe_subscription_id = checkout_subscription_id(stripe_subscription) ||
                                checkout_subscription_id(stripe_get(session, :subscription))
       if stripe_subscription_id.blank? && !RecordingStudioStripe.configuration.local_mode?
-        raise DeferredWebhook, "Checkout has no Subscription yet"
+        raise OrderingRace, "Checkout has no Subscription yet"
       end
 
       period_start, period_end = checkout_subscription_period(stripe_subscription)
@@ -280,7 +273,7 @@ module RecordingStudioStripe
     def handle_price_upsert(stripe_price)
       product_id = stripe_price_product_id(stripe_price)
       if product_id.present? && Product.find_by(stripe_id: product_id).blank?
-        raise DeferredWebhook, "Price product is not in the catalogue yet"
+        raise OrderingRace, "Price product is not in the catalogue yet"
       end
 
       UpsertPrice.call(stripe_price)
@@ -329,13 +322,13 @@ module RecordingStudioStripe
     end
 
     def require_root!(root)
-      raise DeferredWebhook, "Workspace is not in this app yet" unless root
+      raise OrderingRace, "Workspace is not in this app yet" unless root
 
       root
     end
 
     def require_price!(price)
-      raise DeferredWebhook, "Price is not in the catalogue yet" if price.blank?
+      raise OrderingRace, "Price is not in the catalogue yet" if price.blank?
 
       price
     end
@@ -345,7 +338,7 @@ module RecordingStudioStripe
       return :none if stripe_id.blank?
 
       subscription = Subscription.find_by(stripe_id: stripe_id)
-      raise DeferredWebhook, "Subscription is not in this app yet" unless subscription
+      raise OrderingRace, "Subscription is not in this app yet" unless subscription
 
       subscription
     end

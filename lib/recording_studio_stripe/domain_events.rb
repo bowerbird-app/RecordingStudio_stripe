@@ -57,6 +57,7 @@ module RecordingStudioStripe
         snapshot = invoice_snapshot
         return if skip_invoice?(snapshot)
         return if PricesPending.waiting?(current_webhook, snapshot)
+        return if PricesPending.hold_for_older?(current_webhook, snapshot)
 
         subscription.with_lock { create_invoice_event(subscription, snapshot) }
       end
@@ -75,7 +76,11 @@ module RecordingStudioStripe
         return unless events_table?
 
         DomainEvent.publish_pending!(older_than: older_than)
-        PricesPending.each_ready(older_than: older_than) { |webhook| replay(webhook) }
+        PricesPending.each_ready(older_than: older_than) do |webhook|
+          replay(webhook)
+        rescue StandardError => e
+          report_handled(e, context: { webhook_id: webhook.id })
+        end
       end
 
       def report_handled(error, context: {})
@@ -112,8 +117,7 @@ module RecordingStudioStripe
       end
 
       def skip_invoice?(snapshot)
-        snapshot.blank? || snapshot["trial_fee"] || snapshot["amount_paid"].to_i.zero? ||
-          snapshot["invoice_id"].blank?
+        snapshot.blank? || snapshot["trial_fee"] || snapshot["amount_paid"].to_i.zero? || snapshot["invoice_id"].blank?
       end
 
       def create_invoice_event(subscription, snapshot)
@@ -156,6 +160,7 @@ module RecordingStudioStripe
       def rebuild_invoice(webhook_event)
         return unless webhook_event.event_type == "invoice.paid"
 
+        report_priced_invoice_without_subscription!(webhook_event)
         PricesPending.refresh!(webhook_event)
         return if skip_invoice?(invoice_snapshot)
         return if invoice_snapshot.to_h["prices_pending"] == true
@@ -164,11 +169,15 @@ module RecordingStudioStripe
         record_invoice_paid!(subscription) if subscription
       end
 
+      def report_priced_invoice_without_subscription!(webhook_event)
+        error = PricesPending.missing_subscription(webhook_event)
+        report_handled(error, context: { webhook_id: webhook_event.id }) if error
+      end
+
       def rebuild_trial(webhook_event)
         return unless webhook_event.payload.to_h["subscription_status"] == "trialing"
 
-        subscription = Subscription.find_by(stripe_id: trial_stripe_id(webhook_event))
-        record_trial_started!(subscription)
+        record_trial_started!(Subscription.find_by(stripe_id: trial_stripe_id(webhook_event)))
       end
 
       def trial_stripe_id(webhook_event)
