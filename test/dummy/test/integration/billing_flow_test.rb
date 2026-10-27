@@ -66,7 +66,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "body[data-theme='rounded']", count: 1
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='center']", count: 1
-    assert_select "[data-plans-heading].text-center", count: 1
+    assert_select "h1", text: "Pricing", count: 1
+    assert_select "[data-plans-heading]", count: 0
     assert_select "[data-plan-group-heading]", count: 2
     assert_select "[data-plan-group-heading].items-center", count: 2
     assert_select "a[href='/'][aria-label='Close']"

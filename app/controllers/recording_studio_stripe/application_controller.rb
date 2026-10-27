@@ -2,15 +2,13 @@
 
 module RecordingStudioStripe
   class ApplicationController < ::ApplicationController
-    include RecordingStudio::UsesDefaultLayout
-
     # CSRF must run before host auth and ControllerAuth filters. Use prepend
     # so a local protect_from_forgery does not fall behind authenticate_user!.
     protect_from_forgery with: :exception, prepend: true
 
     include RecordingStudioAccessible::ControllerAuth
 
-    layout "recording_studio/default_layout"
+    recording_studio_layout { RecordingStudioStripe.configuration.layout }
 
     recording_studio_auth(
       config: -> { RecordingStudioStripe.configuration },

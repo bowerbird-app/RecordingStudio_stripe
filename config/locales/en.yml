@@ -21,6 +21,8 @@ en:
         aria: "%{label} %{cadence}"
         price_unit: "/%{abbrev}"
         amount: "%{amount}/%{interval}"
+      nav:
+        close: Close
       plans:
         title: Pricing
         subtitle: Monthly or yearly. You can switch later.

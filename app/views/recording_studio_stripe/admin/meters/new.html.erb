@@ -1,16 +1,13 @@
-<% recording_studio_page_nav(
-  title: t("recording_studio.stripe.admin.meters.new_title"),
-  page_nav_back_url: admin_screen_url("meters"),
-  page_nav_back_label: t("recording_studio.stripe.admin.nav.meters")
+<% content_for :title, t("recording_studio.stripe.admin.meters.new_title") %>
+<% content_for :subtitle, t("recording_studio.stripe.admin.meters.new_subtitle") %>
+<% flat_pack_page_nav(
+  round: true,
+  style: :default,
+  back_href: admin_screen_url("meters"),
+  back_tooltip: t("recording_studio.stripe.admin.nav.meters")
 ) %>
 
 <div class="flex w-full flex-col gap-6">
-  <%= render FlatPack::PageTitle::Component.new(
-    title: t("recording_studio.stripe.admin.meters.new_title"),
-    subtitle: t("recording_studio.stripe.admin.meters.new_subtitle"),
-    variant: :h1
-  ) %>
-
   <%= form_with url: recording_studio_stripe.admin_meters_path, method: :post, local: true, class: "flex max-w-xl flex-col gap-4" do %>
     <%= render FlatPack::TextInput::Component.new(
       name: "name",

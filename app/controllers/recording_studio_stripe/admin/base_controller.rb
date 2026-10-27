@@ -3,9 +3,7 @@
 module RecordingStudioStripe
   module Admin
     class BaseController < ::ApplicationController
-      include RecordingStudio::UsesDefaultLayout
-
-      layout "recording_studio/default_layout"
+      recording_studio_layout { RecordingStudioStripe.configuration.layout }
 
       before_action :require_admin_access!
 

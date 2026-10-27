@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-27
+
+### Changed
+- Requires `recording_studio` `>= 6.1.0` (was `~> 4.1`) and Accessible `~> 0.22`
+- Requires `view_component` `>= 4.14, < 5`. This repo locks `4.19.0`. FlatPack is `0.1.319` (`>= 0.1.315`)
+- `RecordingStudioStripe.configuration.layout` selects the layout for engine screens
+- Customer and staff screens set `content_for :title` and `content_for :subtitle`, and call `flat_pack_page_nav` for back and close
+- Cards use `background`, `border`, and `shadow` instead of `style`
+
+### Upgrade notes
+- Bump to **0.14.0**. Install Recording Studio **6.1.0** or newer, Accessible **0.22.x**, and FlatPack **0.1.315** or newer. `view_component` stays below 5
+- Remove `include RecordingStudio::UsesDefaultLayout` and `layout "recording_studio/default_layout"` from host controllers that copied the old engine. Call `recording_studio_layout { RecordingStudioStripe.configuration.layout }`
+- `config.layout` defaults to `nil`. That uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. Assign a layout name, `false`, or a callable that takes `controller:` and returns a String, `nil`, or `false`. Anything else raises `ArgumentError`
+- Replace `recording_studio_page_nav` with `content_for :title`, `content_for :subtitle`, and `flat_pack_page_nav(round: true, style: :default, back_href:, back_tooltip:, anchor_href:, anchor_tooltip:)`. Put extra actions in `register_page_nav` or `content_for :page_nav_right`. Do not also render a page-level `FlatPack::PageTitle` in the view body
+- `FlatPack::Card` no longer takes `style:`. Pass `background:`, `border:`, and `shadow:`
+- Logs, Metrics, Cache, Internationalization, and Root Switchable may still declare `recording_studio` below 6. Load `test/support/widen_recording_studio_requirement.rb` from the host Gemfile before Bundler evaluates those gemspecs, or wait until those gems allow 6.1
+- No database migration
+
 ## [0.13.0] - 2026-10-19
 
 ### Added
@@ -481,7 +499,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.11.0...v0.12.0

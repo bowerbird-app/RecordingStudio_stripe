@@ -4,14 +4,32 @@
 
 - Ruby 3.3 or newer
 - Rails 8.1 or newer
-- Recording Studio 4.x (`~> 4.1` in the gemspec; dummy GitHub tag `v4.7.0`, required by Trashable `0.11.0`)
-- Accessible `~> 0.18` (gemspec dependency for `ControllerAuth`; GitHub tag `v0.18.0` until a newer 0.18.x tag ships)
-- Root Switchable dummy tag `v0.9.0`
-- Metrics dummy tag `v0.2.0` (required by Root Switchable `>= 0.7.0` and Trashable)
-- Cache dummy tag `v0.5.0` (required by Root Switchable `>= 0.9.0`)
-- Admin dummy tag `v2.3.0` and FlatPack dummy tag `v0.1.207`
-- Trashable dummy tag `v0.11.0` (`require: false`; Admin/Accessible query helpers)
+- Recording Studio `>= 6.1.0` (gemspec). Development pin is GitHub tag `v6.1.0`
+- Accessible `~> 0.22` (GitHub tag `v0.22.0`)
+- `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
+- FlatPack `>= 0.1.315` through Recording Studio. This repo pins commit `1fcbafe94f8eb118f0a22182f63f5110fcc97a56` so the loaded version is `0.1.319`
+- Trashable GitHub tag `v0.12.0` (`require: false`)
+- Admin dummy tag `v2.7.0` and Logs dummy tag `v0.7.0`
+- Root Switchable commit `8dd47257db449120496ad64ed2ce68af600dd6cd` (`0.11.0`, Recording Studio 6.1 layout)
+- Metrics dummy tag `v0.6.1`
+- Cache dummy tag `v0.5.1`
+- Internationalization dummy tag `v0.1.7`
 - Public RubyGems and GitHub access for dependency installation
+
+Logs, Metrics, Cache, Internationalization, and Root Switchable still declare `recording_studio` below 6. Both Gemfiles require `test/support/widen_recording_studio_requirement.rb` before Bundler loads those gemspecs.
+
+## Layout
+
+`RecordingStudioStripe.configuration.layout` is the engine layout setting.
+
+- `nil` uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`
+- A String is that layout name
+- `false` renders with no layout
+- A callable takes `controller:` and returns a String, `nil`, or `false`
+
+Engine controllers call `recording_studio_layout { RecordingStudioStripe.configuration.layout }`. Do not set `layout "recording_studio/default_layout"` and do not include `RecordingStudio::UsesDefaultLayout`.
+
+Page titles use `content_for :title` and `content_for :subtitle`. Back and close use `flat_pack_page_nav`. The right side of the top nav uses `register_page_nav` or `content_for :page_nav_right`.
 
 ## Verification
 
@@ -21,6 +39,7 @@ Install both bundles and run the complete gem and dummy app test path:
 bundle install
 BUNDLE_GEMFILE=test/dummy/Gemfile bundle install
 bundle exec rake test:all
+bundle exec rake recording_studio:check_layouts
 ```
 
 Run the dummy app from its directory for browser verification:

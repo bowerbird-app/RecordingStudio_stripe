@@ -131,6 +131,45 @@ class ConfigurationTest < Minitest::Test
     assert_equal true, @configuration.authenticate.call
   end
 
+  def test_layout_accepts_nil_string_false_and_keyword_callable
+    assert_nil @configuration.layout
+
+    @configuration.layout = "focus"
+    assert_equal "focus", @configuration.layout
+
+    @configuration.layout = false
+    assert_equal false, @configuration.layout
+
+    callable = ->(controller:) { "focus" if controller }
+    @configuration.layout = callable
+    assert_equal callable, @configuration.layout
+    assert_equal "focus", RecordingStudio::Layout.resolve(callable, controller: Object.new)
+
+    @configuration.merge!(layout: nil)
+    assert_nil @configuration.layout
+  end
+
+  def test_layout_rejects_invalid_values
+    assert_raises(ArgumentError) { @configuration.layout = "" }
+    assert_raises(ArgumentError) { @configuration.layout = :sidebar }
+    assert_raises(ArgumentError) { @configuration.layout = ->(controller) { controller && "focus" } }
+    assert_raises(ArgumentError) { @configuration.layout = Object.new }
+    assert_nil @configuration.layout
+  end
+
+  def test_controllers_delegate_layout_and_do_not_hardcode_it
+    root = File.expand_path("..", __dir__)
+    stripe = File.read(File.join(root, "app/controllers/recording_studio_stripe/application_controller.rb"))
+    admin = File.read(File.join(root, "app/controllers/recording_studio_stripe/admin/base_controller.rb"))
+
+    assert_includes stripe, "recording_studio_layout { RecordingStudioStripe.configuration.layout }"
+    assert_includes admin, "recording_studio_layout { RecordingStudioStripe.configuration.layout }"
+    refute_includes stripe, "UsesDefaultLayout"
+    refute_includes admin, "UsesDefaultLayout"
+    assert_empty RecordingStudio::Layout.hardcoded_layout_paths(root)
+    assert_empty RecordingStudio::Layout.hardcoded_layout_paths(File.join(root, "test/dummy"))
+  end
+
   def test_local_mode_when_no_secret
     ENV["STRIPE_SECRET_KEY"] = nil
     configuration = RecordingStudioStripe::Configuration.new

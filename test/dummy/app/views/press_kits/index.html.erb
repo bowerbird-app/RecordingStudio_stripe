@@ -1,11 +1,6 @@
-<% dummy_page_nav(title: "Press kits", back_url: root_path) %>
+<% dummy_page_nav(title: "Press kits", subtitle: dummy_press_kits_subtitle, back_url: root_path) %>
 
 <div class="flex w-full flex-col gap-6">
-  <%= render FlatPack::PageTitle::Component.new(
-    title: "Press kits",
-    subtitle: dummy_press_kits_subtitle,
-    variant: :h1
-  ) %>
 
   <% kits = dummy_press_kit_recordings %>
   <% if kits.any? %>

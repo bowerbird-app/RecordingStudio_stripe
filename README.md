@@ -37,9 +37,26 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 
 ```ruby
 # Gemfile
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.1.0"
 gem "recording_studio_stripe", github: "bowerbird-app/RecordingStudio_stripe"
-gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.18.0"
+gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.22.0"
+gem "flat_pack", github: "bowerbird-app/flatpack", ref: "1fcbafe94f8eb118f0a22182f63f5110fcc97a56"
+gem "view_component", "4.19.0"
 ```
+
+This gem requires `recording_studio` `>= 6.1.0`, Accessible `~> 0.22`, and `view_component` `>= 4.14, < 5`. FlatPack comes in through Recording Studio at `>= 0.1.315`. The pin above loads FlatPack `0.1.319`.
+
+`config.layout` chooses the screen chrome for this engine. `nil` uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. A String is a layout name. `false` renders with no layout. A callable must take `controller:` and return a String, `nil`, or `false`.
+
+```ruby
+RecordingStudioStripe.configure do |config|
+  config.layout = "billing"
+end
+```
+
+Page titles are `content_for :title` and `content_for :subtitle`. The default layout draws one heading above the page. Back and close go through `flat_pack_page_nav`. Extra actions go through `register_page_nav` or `content_for :page_nav_right`.
+
+Logs, Metrics, Cache, Internationalization, and Root Switchable may still declare `recording_studio` below 6. This repo loads `test/support/widen_recording_studio_requirement.rb` from the Gemfile so Bundler can resolve `6.1.0`. A host that bundles those gems needs the same widen until they publish a 6.1 requirement.
 
 ```bash
 bin/rails generate recording_studio_stripe:install

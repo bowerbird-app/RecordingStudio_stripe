@@ -1,136 +1,82 @@
+<%
+  rs_config = RecordingStudio.configuration
+  app_name = (rs_config.respond_to?(:app_name) ? rs_config.app_name : nil).presence || "CHANGE_APP_NAME_IN_DEFAULT_LAYOUT"
+  heading = content_for(:title).to_s.strip.presence
+  subtitle = content_for(:subtitle).to_s.strip.presence
+  document_title = heading || app_name
+  back_row = flat_pack_page_nav_tag
+  page_buttons = page_nav_button_group(
+    styles: {
+      primary: {style: :ghost, size: :sm},
+      secondary: {style: :ghost, size: :sm},
+      destructive: {style: :ghost, size: :sm}
+    },
+    variant: :outlined,
+    collapse: :menu
+  )
+  page_nav_right = safe_join([dummy_language_selector, content_for(:page_nav_right).presence].compact).presence
+%>
 <!DOCTYPE html>
 <html data-theme="rounded" <%= tag.attributes(dummy_locale_attributes) %>>
   <head>
-    <% rs_config = RecordingStudio.configuration %>
-    <% app_name = (rs_config.respond_to?(:app_name) ? rs_config.app_name : nil) || "CHANGE_APP_NAME_IN_DEFAULT_LAYOUT" %>
-    <title><%= content_for(:title).presence || app_name %></title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title><%= document_title %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "flat_pack/variables", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "flat_pack/application", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "flat_pack/rich_text", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <% if lookup_context.exists?("recording_studio/default_layout_head", [], true) %>
       <%= render "recording_studio/default_layout_head" %>
     <% end %>
     <%= yield :head %>
-    <% page_title = content_for(:title).presence || app_name %>
     <% seo_description = content_for(:seo_description) %>
-    <% seo_image = content_for(:seo_image) %>
-
     <% if seo_description.present? %>
       <meta name="description" content="<%= seo_description %>">
-    <% end %>
-    <% if seo_image.present? %>
-      <meta property="og:image" content="<%= seo_image %>">
-    <% end %>
-
-    <meta property="og:title" content="<%= page_title %>">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="<%= request.original_url %>">
-    <% if seo_description.present? %>
       <meta property="og:description" content="<%= seo_description %>">
     <% end %>
+    <meta property="og:title" content="<%= document_title %>">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<%= request.original_url %>">
     <% site_name = rs_config.respond_to?(:app_name) ? rs_config.app_name : nil %>
-    <% site_name = site_name.presence || page_title %>
-    <meta property="og:site_name" content="<%= site_name %>">
+    <meta property="og:site_name" content="<%= site_name.presence || document_title %>">
     <%= javascript_importmap_tags if respond_to?(:javascript_importmap_tags) %>
   </head>
 
-  <body class="bg-(--surface-page-background-color) text-(--surface-content-color)" data-recording-studio-default-layout="true" data-theme="<%= content_for(:body_theme).presence || 'rounded' %>">
-    <main class="mx-auto min-h-screen w-full max-w-6xl p-6">
-      <% if flash[:notice].present? %>
-        <%= render FlatPack::Alert::Component.new(description: flash[:notice], style: :success, class: "mb-4") %>
-      <% end %>
-      <% if flash[:alert].present? %>
-        <%= render FlatPack::Alert::Component.new(description: flash[:alert], style: :danger, class: "mb-4") %>
-      <% end %>
-
-      <% page_nav_options = {
-        back_icon: content_for(:page_nav_back_icon).presence || "chevron-left",
-        back_label: content_for(:page_nav_back_label).presence || "Go back",
-        back_style: (content_for(:page_nav_back_style).presence || "secondary").to_sym,
-        back_size: (content_for(:page_nav_back_size).presence || "md").to_sym,
-        anchor_icon: content_for(:page_nav_anchor_icon).presence || "x-mark",
-        anchor_label: content_for(:page_nav_anchor_label).presence || "Close"
-      } %>
-      <% back_url = content_for(:page_nav_back_url).presence %>
-      <% anchor_url = content_for(:page_nav_anchor_url).presence %>
-      <% page_nav_options[:anchor_href] = anchor_url if anchor_url.present? %>
-
-      <div class="mt-4 mb-8">
-        <% if defined?(FlatPack::PageNav::Component) %>
-          <%= render FlatPack::PageNav::Component.new(**page_nav_options) do |page_nav| %>
-            <% page_nav.right_slot do %>
-              <%= dummy_language_selector %>
-              <%= yield :page_nav_right if content_for?(:page_nav_right) %>
-            <% end %>
+  <body class="bg-(--surface-page-background-color) text-(--surface-content-color)" data-recording-studio-default-layout="true" data-theme="rounded">
+    <%= render FlatPack::PageLayout::Component.new(width: :default) do |layout| %>
+      <% if back_row || page_buttons || page_nav_right %>
+        <% layout.top_nav do %>
+          <%= render FlatPack::TopNav::Component.new(padding: :none, size: :lg) do |nav| %>
+            <% nav.left { back_row } if back_row %>
+            <% nav.right { safe_join([page_nav_right, page_buttons].compact) } if page_buttons || page_nav_right %>
           <% end %>
-        <% else %>
-          <nav aria-label="Page navigation" class="flex items-center justify-between gap-3">
-            <div>
-              <% if defined?(FlatPack::Button::Component) %>
-                <% if back_url.present? %>
-                  <%= render FlatPack::Button::Component.new(
-                    icon: page_nav_options[:back_icon],
-                    icon_only: true,
-                    style: page_nav_options[:back_style],
-                    size: page_nav_options[:back_size],
-                    href: back_url,
-                    aria: { label: page_nav_options[:back_label] }
-                  ) %>
-                <% else %>
-                  <button name="button" type="button" id="recording-studio-back-button" class="inline-flex items-center justify-center gap-2 rounded-[var(--button-border-radius)] font-medium cursor-pointer transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--button-focus-ring-color)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--button-focus-ring-offset-color)] disabled:pointer-events-none disabled:opacity-[var(--button-disabled-opacity)] bg-[var(--button-secondary-background-color)] hover:bg-[var(--button-secondary-hover-background-color)] text-[var(--button-secondary-text-color)] border border-[var(--button-secondary-border-color)] p-[var(--button-icon-only-padding-md)]" aria-label="<%= page_nav_options[:back_label] %>">
-                    <svg class="inline-block w-5 h-5" data-controller="flat-pack--icon" data-flat-pack--icon-name-value="<%= page_nav_options[:back_icon] %>" data-flat-pack--icon-variant-value="outline" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"></path></svg>
-                  </button>
-                  <%= javascript_tag nonce: true do %>
-                    document.getElementById("recording-studio-back-button").addEventListener("click", function() {
-                      history.back();
-                    });
-                  <% end %>
-                <% end %>
-                <% if anchor_url.present? %>
-                  <%= render FlatPack::Button::Component.new(
-                    icon: page_nav_options[:anchor_icon],
-                    icon_only: true,
-                    style: :secondary,
-                    size: :md,
-                    href: anchor_url,
-                    aria: { label: page_nav_options[:anchor_label] },
-                    class: "ml-2"
-                  ) %>
-                <% end %>
-              <% else %>
-                <% if back_url.present? %>
-                  <a href="<%= back_url %>" class="inline-flex items-center gap-2 text-sm font-medium text-(--surface-content-color)">
-                    <%= page_nav_options[:back_label] %>
-                  </a>
-                <% else %>
-                  <button onclick="history.back()" class="inline-flex items-center gap-2 text-sm font-medium text-(--surface-content-color) cursor-pointer">
-                    <%= page_nav_options[:back_label] %>
-                  </button>
-                <% end %>
-                <% if anchor_url.present? %>
-                  <a href="<%= anchor_url %>" class="inline-flex items-center gap-2 text-sm font-medium text-(--surface-content-color) ml-2">
-                    <%= content_for(:page_nav_anchor_label).presence || "Close" %>
-                  </a>
-                <% end %>
-              <% end %>
-            </div>
-            <% if content_for?(:page_nav_right) %>
-              <div class="flex items-center justify-end">
-                <%= yield :page_nav_right %>
-              </div>
-            <% end %>
-          </nav>
         <% end %>
-      </div>
+      <% end %>
 
-      <%= yield %>
-    </main>
+      <% if flash[:notice].present? || flash[:alert].present? %>
+        <%= render FlatPack::Grid::Component.new(cols: 1, gap: :lg) do %>
+          <% if flash[:notice].present? %>
+            <%= render FlatPack::Alert::Component.new(description: flash[:notice], style: :success) %>
+          <% end %>
+          <% if flash[:alert].present? %>
+            <%= render FlatPack::Alert::Component.new(description: flash[:alert], style: :danger) %>
+          <% end %>
+          <% if heading %>
+            <%= render FlatPack::PageTitle::Component.new(title: heading, subtitle: subtitle) %>
+          <% end %>
+          <%= yield %>
+        <% end %>
+      <% else %>
+        <% if heading %>
+          <%= render FlatPack::PageTitle::Component.new(title: heading, subtitle: subtitle) %>
+        <% end %>
+        <%= yield %>
+      <% end %>
+    <% end %>
   </body>
 </html>

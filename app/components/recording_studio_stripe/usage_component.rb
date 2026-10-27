@@ -21,6 +21,8 @@ module RecordingStudioStripe
     private
 
     def heading
+      return if @title.nil?
+
       render FlatPack::PageTitle::Component.new(
         title: Copy.value(@title, "usage.title"),
         subtitle: @subtitle || usage_subtitle(@lines),

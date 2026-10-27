@@ -23,7 +23,7 @@ module RecordingStudioStripe
                   :domain_event_publish_lease,
                   :prices_pending_alert_after,
                   :prices_pending_max_hold
-    attr_reader :hooks, :usage_costs, :limit_usages
+    attr_reader :hooks, :usage_costs, :limit_usages, :layout
     attr_writer :usage_path
 
     def initialize
@@ -51,7 +51,12 @@ module RecordingStudioStripe
       @domain_event_publish_lease = 5.minutes
       @prices_pending_alert_after = 1.day
       @prices_pending_max_hold = 3.days
+      @layout = nil
       @hooks = RecordingStudio::Hooks.new
+    end
+
+    def layout=(value)
+      @layout = RecordingStudio::Layout.accept(value)
     end
 
     def stripe_configured?

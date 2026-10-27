@@ -1,3 +1,10 @@
-<% recording_studio_page_nav(title: t("recording_studio.stripe.usage.title"), page_nav_anchor_url: main_app.root_path) %>
+<% content_for :title, t("recording_studio.stripe.usage.title") %>
+<% content_for :subtitle, usage_subtitle(@lines) %>
+<% flat_pack_page_nav(
+  round: true,
+  style: :default,
+  anchor_href: main_app.root_path,
+  anchor_tooltip: t("recording_studio.stripe.nav.close")
+) %>
 
-<%= render RecordingStudioStripe::UsageComponent.new(billing: billing, lines: @lines) %>
+<%= render RecordingStudioStripe::UsageComponent.new(billing: billing, lines: @lines, title: nil) %>
