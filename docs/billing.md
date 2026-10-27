@@ -56,6 +56,8 @@ A workspace that already has a live plan in that group still upgrades or downgra
 
 Engine controllers call `recording_studio_layout { RecordingStudioStripe.configuration.layout }`. The default template reads `content_for :title` and `content_for :subtitle` and draws one page heading. `flat_pack_page_nav` sets back and close. `register_page_nav` and `content_for :page_nav_right` fill the right side of the top nav.
 
+`recording_studio_background_image(url)` writes `content_for :background_image`. The default layout passes that URL to `FlatPack::PageLayout` as a decorative image (`alt=""`, `loading="lazy"`). A blank URL leaves the page unchanged. `recording_studio_page_width(:wide)` writes `content_for :page_width`. Allowed values are `:narrow`, `:default`, `:wide`, and `:full`. A blank value stays `:default`. A host layout that replaces the default reads `content_for(:background_image)` and `content_for(:page_width)`.
+
 ## Plan cards
 
 Customer chrome on `/plans`, `/billing`, `/billing/usage`, change, and cancel is `recording_studio.stripe.*` I18n. Staff Admin form views, flashes, and resolvable Definitions chrome (titles, buttons, link text, widget titles/info) use `recording_studio.stripe.admin.*`. The gem ships English. Hosts add other languages. Product names, prices, card subtitles, and `plan_line` text stay as stored. Admin screen/section subtitles, table column headers, and cell values stay English literals. This gem never shipped a top-level `recording_studio_stripe.*` locale namespace.
