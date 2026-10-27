@@ -27,7 +27,7 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Customer pricing page, billing page, and usage page
 - Manage billing on Stripe on `/billing` opens the Stripe Customer Portal for invoices and cards
 - Usage at `/billing/usage` for standing caps and period meters
-- `PlansComponent` for those cards, centered by default (`align: :center`). Cards in a group share height, with the action in the footer
+- `PlansComponent` for those cards, centered by default (`align: :center`). Cards in a group share height. The price and the action sit under the title, above the feature list
 - `UsageComponent` for caps and meters on a host screen
 - Recording Studio Admin section for Products, Prices, Meters, Paywalls, Customers, and Subscriptions
 - Named paywalls on a Product, checked with Accessible `authorized_action?`

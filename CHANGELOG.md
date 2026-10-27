@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/plans` centers its title and subtitle with `PlansComponent` (`align: :center`). It does not set `content_for :title`, so the layout does not draw a second heading
 - A blank `plans.subtitle` is omitted. `PlansComponent` passes `Copy.value(@subtitle, "plans.subtitle").presence` to `FlatPack::PageTitle`. The gem English subtitle stays "Monthly or yearly. You can switch later." The dummy English locale sets that key to an empty string
 - `/plans` calls `recording_studio_background_image` with `RecordingStudioStripe.configuration.plans_background_image`. The setting defaults to nil, which leaves the backdrop unset. The dummy app sets it to `/plans-backdrop.svg`
+- Plan cards put the price and the action in the card body, under the title and above the feature list. The card no longer uses a footer for that block. `PlanCardPrice` drops the extra vertical padding the footer used
 
 ### Upgrade notes
 - Bump to **0.15.0**. Install Recording Studio **6.2.0** or newer. No database migration
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/plans` draws the centered title in the page. The document title on that screen falls back to the app name, because the layout uses `content_for :title` for both the tab and the heading
 - Set `recording_studio.stripe.plans.subtitle` to `""` to hide that line. A host that keeps the gem translation still sees it
 - Set `config.plans_background_image` to a public path or URL when `/plans` should show a decorative backdrop. Leave it nil to keep that page plain
+- Hosts that replaced `PlanCardComponent` should render the price and the button in the card body, between the title and the feature list, and drop the footer. Drop `py-[var(--card-padding-md)]` on the price. The body stack's gap is the vertical space
 
 ## [0.14.0] - 2026-10-27
 

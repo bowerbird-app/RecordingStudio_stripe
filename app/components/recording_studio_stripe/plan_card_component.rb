@@ -18,8 +18,7 @@ module RecordingStudioStripe
         shadow: current? ? :md : :none,
         class: "h-full"
       ) do |card|
-        card.body { helpers.stripe_card_stack(title, inclusions) }
-        card.footer(divider: false) { footer } if price
+        card.body { helpers.stripe_card_stack(title, price_and_action, inclusions) }
       end
     end
 
@@ -44,7 +43,9 @@ module RecordingStudioStripe
       @product.card_subtitle
     end
 
-    def footer
+    def price_and_action
+      return unless price
+
       helpers.tag.div(class: "flex w-full flex-col gap-3") do
         safe_join([rendered_price, action].compact)
       end

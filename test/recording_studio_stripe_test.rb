@@ -478,7 +478,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes card, "stripe_plan_feature_lines"
     assert_includes card, "FlatPack::List::Component.new(spacing: :dense, divider: true)"
     assert_includes card, "FlatPack::List::Item"
-    assert_includes card, "footer(divider: false)"
+    assert_includes card, "stripe_card_stack(title, price_and_action, inclusions)"
+    refute_includes card, "card.footer"
     assert_includes card, "class: \"w-full\""
     assert_includes card, "subscription_change_path"
     assert_includes card, 'Copy.t("plans.downgrade")'

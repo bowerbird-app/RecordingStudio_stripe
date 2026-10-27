@@ -10,4 +10,5 @@ Customer and staff screens use the Recording Studio 6.2 default template.
 - A blank `plans.subtitle` is not rendered. The gem English subtitle stays "Monthly or yearly. You can switch later." Dummy English sets that key to `""`
 - `recording_studio_background_image` writes `content_for :background_image`. `recording_studio_page_width` writes `content_for :page_width`. The default layout paints a decorative backdrop and sets `FlatPack::PageLayout` width. Blank values leave the page unchanged
 - `/plans` passes `config.plans_background_image` to that helper. Nil leaves the page plain. Dummy sets `/plans-backdrop.svg`
+- Plan cards place the price and the buy button under the title, above the feature list. The card body stack spaces those parts. The price block does not add its own vertical padding
 - `test/support/widen_recording_studio_requirement.rb` lets Bundler resolve sibling gems that still declare Recording Studio below 6. The widened floor stays `>= 6.1.0`, which `6.2.0` satisfies

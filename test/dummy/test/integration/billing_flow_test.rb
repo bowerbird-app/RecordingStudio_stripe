@@ -38,7 +38,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "[data-plan-group='inbox'] p", text: "$25/mo"
     assert_select "[data-plan-group='inbox'] p", text: "$90/mo"
     assert_select "[data-plan-group='studio'] p", text: "For a quiet start"
-    assert_includes response.body, "py-[var(--card-padding-md)]"
+    refute_includes response.body, "py-[var(--card-padding-md)]"
+    assert_price_and_action_above_features("studio")
+    assert_price_and_action_above_features("inbox")
     assert_select "[data-plan-group='studio'] p", text: "For the usual week"
     assert_select "[data-plan-group='studio'] p", text: "For the whole crew"
     assert_select "[data-plan-group='inbox'] p", text: "For what people send"
@@ -98,6 +100,12 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_includes html, "No month Price yet"
     refute_includes html, "For a quiet start"
+    card = Nokogiri::HTML(html).at_css(".fp-card")
+    card_html = card.to_html
+    refute_includes card_html, "Choose plan"
+    refute_includes card_html, "py-[var(--card-padding-md)]"
+    assert_equal 1, card.element_children.size
+    assert_operator card_html.index("<h3"), :<, card_html.index("<li")
   end
 
   test "plans with no Prices show the empty state" do
@@ -965,5 +973,28 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Stripe is confirming this plan. Refresh in a moment."
+  end
+
+  private
+
+  def assert_price_and_action_above_features(group)
+    cards = css_select("[data-plan-group='#{group}'] .fp-card")
+    assert_predicate cards, :any?
+
+    cards.each do |card|
+      assert_equal 1, card.element_children.size
+      html = card.to_html
+      title_at = html.index("<h3")
+      price_at = html.index(/\$\d/)
+      action_at = html.index(/Choose plan|Try now|Current plan|Upgrade|Downgrade|Switch now/)
+      feature_at = html.index("<li")
+      assert title_at
+      assert price_at
+      assert action_at
+      assert feature_at
+      assert_operator title_at, :<, price_at
+      assert_operator price_at, :<, action_at
+      assert_operator action_at, :<, feature_at
+    end
   end
 end
