@@ -467,7 +467,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes source, "usage_in_use?"
     assert_includes source, "line_has_recorded_usage?"
     assert_includes card, "stripe_plan_feature_lines"
-    assert_includes card, "FlatPack::List::Component"
+    assert_includes card, "FlatPack::List::Component.new(spacing: :dense, divider: true)"
     assert_includes card, "FlatPack::List::Item"
     assert_includes card, "footer(divider: false)"
     assert_includes card, "class: \"w-full\""

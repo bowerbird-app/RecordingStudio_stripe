@@ -59,7 +59,7 @@ module RecordingStudioStripe
     end
 
     def inclusions
-      render FlatPack::List::Component.new(spacing: :dense) do
+      render FlatPack::List::Component.new(spacing: :dense, divider: true) do
         safe_join(feature_lines.map { |line| feature_item(line) })
       end
     end
