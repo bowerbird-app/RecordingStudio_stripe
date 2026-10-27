@@ -54,7 +54,7 @@ RecordingStudioStripe.configure do |config|
 end
 ```
 
-Page titles are `content_for :title` and `content_for :subtitle`. The default layout draws one heading above the page. Back and close go through `flat_pack_page_nav`. Extra actions go through `register_page_nav` or `content_for :page_nav_right`.
+Page titles are `content_for :title` and `content_for :subtitle`. The default layout draws one heading above the page. Back and close go through `flat_pack_page_nav`. Extra actions go through `register_page_nav` or `content_for :page_nav_right`. `/plans` centers its title and subtitle in `PlansComponent` and does not set `content_for :title`, so the layout does not draw a second heading.
 
 `recording_studio_background_image(url)` sets `content_for :background_image`. The default layout passes that URL to `FlatPack::PageLayout` as a decorative image (`alt=""`, `loading="lazy"`). A blank URL leaves the page unchanged. `recording_studio_page_width(:wide)` sets `content_for :page_width`. Allowed values are `:narrow`, `:default`, `:wide`, and `:full`. A blank value stays `:default`.
 
