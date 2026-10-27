@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Engine screens still use `recording_studio/default_layout`. That layout reads `content_for :background_image` and `content_for :page_width`
 - `/plans` centers its title and subtitle with `PlansComponent` (`align: :center`). It does not set `content_for :title`, so the layout does not draw a second heading
 - A blank `plans.subtitle` is omitted. `PlansComponent` passes `Copy.value(@subtitle, "plans.subtitle").presence` to `FlatPack::PageTitle`. The gem English subtitle stays "Monthly or yearly. You can switch later." The dummy English locale sets that key to an empty string
+- `/plans` calls `recording_studio_background_image` with `RecordingStudioStripe.configuration.plans_background_image`. The setting defaults to nil, which leaves the backdrop unset. The dummy app sets it to `/plans-backdrop.svg`
 
 ### Upgrade notes
 - Bump to **0.15.0**. Install Recording Studio **6.2.0** or newer. No database migration
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - This repo does not copy `default_layout` into the dummy app. A host layout that replaces the default reads `content_for(:background_image)` and `content_for(:page_width)`
 - `/plans` draws the centered title in the page. The document title on that screen falls back to the app name, because the layout uses `content_for :title` for both the tab and the heading
 - Set `recording_studio.stripe.plans.subtitle` to `""` to hide that line. A host that keeps the gem translation still sees it
+- Set `config.plans_background_image` to a public path or URL when `/plans` should show a decorative backdrop. Leave it nil to keep that page plain
 
 ## [0.14.0] - 2026-10-27
 

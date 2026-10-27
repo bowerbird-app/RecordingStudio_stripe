@@ -131,6 +131,16 @@ class ConfigurationTest < Minitest::Test
     assert_equal true, @configuration.authenticate.call
   end
 
+  def test_plans_background_image_defaults_to_nil
+    assert_nil @configuration.plans_background_image
+
+    @configuration.plans_background_image = "/plans-backdrop.svg"
+    assert_equal "/plans-backdrop.svg", @configuration.plans_background_image
+
+    @configuration.merge!(plans_background_image: nil)
+    assert_nil @configuration.plans_background_image
+  end
+
   def test_layout_accepts_nil_string_false_and_keyword_callable
     assert_nil @configuration.layout
 

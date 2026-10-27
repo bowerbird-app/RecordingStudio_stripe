@@ -56,7 +56,7 @@ end
 
 Page titles are `content_for :title` and `content_for :subtitle`. The default layout draws one heading above the page. Back and close go through `flat_pack_page_nav`. Extra actions go through `register_page_nav` or `content_for :page_nav_right`. `/plans` centers its title and subtitle in `PlansComponent` and does not set `content_for :title`, so the layout does not draw a second heading.
 
-`recording_studio_background_image(url)` sets `content_for :background_image`. The default layout passes that URL to `FlatPack::PageLayout` as a decorative image (`alt=""`, `loading="lazy"`). A blank URL leaves the page unchanged. `recording_studio_page_width(:wide)` sets `content_for :page_width`. Allowed values are `:narrow`, `:default`, `:wide`, and `:full`. A blank value stays `:default`.
+`recording_studio_background_image(url)` sets `content_for :background_image`. The default layout passes that URL to `FlatPack::PageLayout` as a decorative image (`alt=""`, `loading="lazy"`). A blank URL leaves the page unchanged. `/plans` passes `config.plans_background_image`. That setting defaults to nil. `recording_studio_page_width(:wide)` sets `content_for :page_width`. Allowed values are `:narrow`, `:default`, `:wide`, and `:full`. A blank value stays `:default`.
 
 Logs, Metrics, Cache, Internationalization, and Root Switchable may still declare `recording_studio` below 6. This repo loads `test/support/widen_recording_studio_requirement.rb` from the Gemfile so Bundler can resolve `6.2.0`. The widened floor stays `>= 6.1.0`, which `6.2.0` satisfies. A host that bundles those gems needs the same widen until they publish a 6.2 requirement.
 

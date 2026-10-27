@@ -149,6 +149,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes plans, "align: :center"
     assert_includes plans, "recording_studio.stripe.plans.title"
     assert_includes plans, "recording_studio.stripe.plans.subtitle"
+    assert_includes plans, "recording_studio_background_image"
+    assert_includes plans, "plans_background_image"
     refute_includes plans, "title: nil"
     refute_includes plans, "content_for :title"
     refute_includes plans, "back_href:"
@@ -245,6 +247,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes initializer, "PressKit"
     assert_includes initializer, "plan_line"
     assert_includes initializer, "rectangle-stack"
+    assert_includes initializer, "plans_background_image"
+    assert_includes initializer, "/plans-backdrop.svg"
   end
 
   def test_install_initializer_template_documents_paywalls
@@ -261,6 +265,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes template, "limit_reached_path"
     assert_includes template, "usage_path"
     assert_includes template, "usage_costs"
+    assert_includes template, "plans_background_image"
     refute_includes template, "media_monitoring"
   end
 

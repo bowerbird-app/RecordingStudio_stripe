@@ -19,14 +19,31 @@ class DefaultLayoutBackgroundTest < ActionDispatch::IntegrationTest
     switch_to_root!(@root)
   end
 
-  test "plans keeps the default layout and leaves the backdrop unset" do
+  test "plans paints the configured background image on the default layout" do
+    get "/plans-backdrop.svg"
+    assert_response :success
+    assert_equal "image/svg+xml", response.media_type
+
     get "/plans"
 
     assert_response :success
     assert_plans_on_default_layout
     assert_select "[data-fp-page-layout-width=default]", count: 1
+    assert_background_image "/plans-backdrop.svg"
+  end
+
+  test "a blank plans background image leaves the backdrop unset" do
+    with_plans_background_image(nil) { get "/plans" }
+
+    assert_response :success
+    assert_plans_on_default_layout
     assert_select "[data-flat-pack-layout-background]", count: 0
-    assert_select ".fp-backdrop", count: 0
+    assert_select ".fp-backdrop-media img", count: 0
+
+    with_plans_background_image("   ") { get "/plans" }
+
+    assert_response :success
+    assert_select "[data-flat-pack-layout-background]", count: 0
     assert_select ".fp-backdrop-media img", count: 0
   end
 
@@ -69,12 +86,23 @@ class DefaultLayoutBackgroundTest < ActionDispatch::IntegrationTest
   def with_plans_slot_probe
     controller = RecordingStudioStripe::PlansController
     original_paths = controller.view_paths.dup
+    previous_image = RecordingStudioStripe.configuration.plans_background_image
+    RecordingStudioStripe.configuration.plans_background_image = nil
     controller.prepend_view_path(Rails.root.join("test/views"))
     yield
   ensure
+    RecordingStudioStripe.configuration.plans_background_image = previous_image
     controller.view_paths = original_paths
     leaked = controller.view_paths.any? { |path| path.to_s.end_with?("test/views") }
     flunk "plans probe view path leaked" if leaked
+  end
+
+  def with_plans_background_image(image)
+    previous_image = RecordingStudioStripe.configuration.plans_background_image
+    RecordingStudioStripe.configuration.plans_background_image = image
+    yield
+  ensure
+    RecordingStudioStripe.configuration.plans_background_image = previous_image
   end
 
   def assert_plans_on_default_layout

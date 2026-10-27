@@ -59,6 +59,8 @@ RecordingStudioStripe.configure do |config|
   # RecordingStudioStripe.register_limit_usage(:storage_bytes) do |root_recording|
   #   MyStorageGem.current_bytes_for(root_recording)
   # end
+  # Decorative backdrop for /plans. Blank leaves that page unchanged.
+  # config.plans_background_image = "/plans-backdrop.svg"
   # config.limit_reached_path = "/plans"
   # config.usage_path = "/billing/usage"
   # config.automatic_tax = true
