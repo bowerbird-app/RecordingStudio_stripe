@@ -14,6 +14,7 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_gemspec_pins_recording_studio_accessible_and_stripe
     gemspec = File.read(File.expand_path("../recording_studio_stripe.gemspec", __dir__))
 
+    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.315"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.1.0"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.22"'
     assert_includes gemspec, 'spec.add_dependency "view_component", ">= 4.14", "< 5"'

@@ -44,7 +44,7 @@ gem "flat_pack", github: "bowerbird-app/flatpack", ref: "1fcbafe94f8eb118f0a2218
 gem "view_component", "4.19.0"
 ```
 
-This gem requires `recording_studio` `>= 6.1.0`, Accessible `~> 0.22`, and `view_component` `>= 4.14, < 5`. FlatPack comes in through Recording Studio at `>= 0.1.315`. The pin above loads FlatPack `0.1.319`.
+This gem requires `recording_studio` `>= 6.1.0`, Accessible `~> 0.22`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.315`. The pin above loads FlatPack `0.1.319`.
 
 `config.layout` chooses the screen chrome for this engine. `nil` uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. A String is a layout name. `false` renders with no layout. A callable must take `controller:` and return a String, `nil`, or `false`.
 

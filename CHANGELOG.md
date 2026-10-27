@@ -11,13 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Requires `recording_studio` `>= 6.1.0` (was `~> 4.1`) and Accessible `~> 0.22`
-- Requires `view_component` `>= 4.14, < 5`. This repo locks `4.19.0`. FlatPack is `0.1.319` (`>= 0.1.315`)
+- Requires `view_component` `>= 4.14, < 5`. This repo locks `4.19.0`. `flat_pack` is a direct dependency at `>= 0.1.315` (this repo pins `0.1.319`)
 - `RecordingStudioStripe.configuration.layout` selects the layout for engine screens
 - Customer and staff screens set `content_for :title` and `content_for :subtitle`, and call `flat_pack_page_nav` for back and close
 - Cards use `background`, `border`, and `shadow` instead of `style`
 
 ### Upgrade notes
-- Bump to **0.14.0**. Install Recording Studio **6.1.0** or newer, Accessible **0.22.x**, and FlatPack **0.1.315** or newer. `view_component` stays below 5
+- Bump to **0.14.0**. Install Recording Studio **6.1.0** or newer, Accessible **0.22.x**, and FlatPack **0.1.315** or newer. The gemspec depends on `flat_pack` directly. `view_component` stays below 5
 - Remove `include RecordingStudio::UsesDefaultLayout` and `layout "recording_studio/default_layout"` from host controllers that copied the old engine. Call `recording_studio_layout { RecordingStudioStripe.configuration.layout }`
 - `config.layout` defaults to `nil`. That uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. Assign a layout name, `false`, or a callable that takes `controller:` and returns a String, `nil`, or `false`. Anything else raises `ArgumentError`
 - Replace `recording_studio_page_nav` with `content_for :title`, `content_for :subtitle`, and `flat_pack_page_nav(round: true, style: :default, back_href:, back_tooltip:, anchor_href:, anchor_tooltip:)`. Put extra actions in `register_page_nav` or `content_for :page_nav_right`. Do not also render a page-level `FlatPack::PageTitle` in the view body
