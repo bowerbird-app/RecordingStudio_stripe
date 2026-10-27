@@ -38,7 +38,9 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Pricing"
-    assert_includes response.body, "Monthly or yearly. You can switch later."
+    refute_includes response.body, "Monthly or yearly. You can switch later."
+    assert_select "[data-plans-heading].text-center h1", text: "Pricing"
+    assert_select "[data-plans-heading] p", count: 0
     assert_includes response.body, "Choose plan"
   end
 
@@ -75,6 +77,18 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Conso"
     refute_includes response.body, ">Usage<"
+  end
+
+  test "a blank plans subtitle is left off the heading" do
+    [ "", nil, "   " ].each do |subtitle|
+      html = ApplicationController.render(
+        RecordingStudioStripe::PlansComponent.new(products: [], subtitle: subtitle)
+      )
+      heading = Nokogiri::HTML.fragment(html).at_css("[data-plans-heading]")
+
+      assert_equal "Pricing", heading.at_css("h1").text
+      assert_nil heading.at_css("p")
+    end
   end
 
   test "PlansComponent title override still wins" do

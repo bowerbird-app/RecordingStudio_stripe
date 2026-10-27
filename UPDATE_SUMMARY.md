@@ -7,5 +7,6 @@ Customer and staff screens use the Recording Studio 6.2 default template.
 - `config.layout` is the engine layout setting. Controllers call `recording_studio_layout`
 - Page titles are `content_for :title` and `content_for :subtitle`. Back and close use `flat_pack_page_nav`
 - `/plans` centers the title and subtitle in `PlansComponent` (`align: :center`, `text-center` on the page title). It does not set `content_for :title`
+- A blank `plans.subtitle` is not rendered. The gem English subtitle stays "Monthly or yearly. You can switch later." Dummy English sets that key to `""`
 - `recording_studio_background_image` writes `content_for :background_image`. `recording_studio_page_width` writes `content_for :page_width`. The default layout paints a decorative backdrop and sets `FlatPack::PageLayout` width. Blank values leave the page unchanged
 - `test/support/widen_recording_studio_requirement.rb` lets Bundler resolve sibling gems that still declare Recording Studio below 6. The widened floor stays `>= 6.1.0`, which `6.2.0` satisfies

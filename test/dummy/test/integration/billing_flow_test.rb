@@ -69,7 +69,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "h1", text: "Pricing", count: 1
     assert_select "[data-plans-heading].text-center", count: 1
     assert_select "[data-plans-heading].text-center h1", text: "Pricing"
-    assert_select "[data-plans-heading].text-center p", text: "Monthly or yearly. You can switch later."
+    assert_select "[data-plans-heading] p", count: 0
     assert_select "[data-plan-group-heading]", count: 2
     assert_select "[data-plan-group-heading].items-center", count: 2
     assert_select "a[href='/'][aria-label='Close']"
@@ -130,6 +130,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='center']", count: 1
     assert_select "[data-plans-heading].text-center", count: 1
+    assert_select "[data-plans-heading] p", count: 0
     assert_select "[data-plan-group-heading]", count: 2
     assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
     assert_equal [ "Inbox", "Inbox Plus", "Inbox Pro" ], css_select("[data-plan-group='inbox'] h3").map(&:text)

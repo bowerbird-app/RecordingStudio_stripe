@@ -505,6 +505,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes component, "align: :stretch"
     assert_includes component, "h-full"
     assert_includes component, "text-center"
+    assert_includes component, 'Copy.value(@subtitle, "plans.subtitle").presence'
     assert_includes component, "show_group_headings?"
     assert_includes component, "populated_groups"
     assert_includes component, "shared_interval_pills"

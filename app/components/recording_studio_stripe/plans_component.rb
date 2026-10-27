@@ -43,7 +43,7 @@ module RecordingStudioStripe
 
       title = render FlatPack::PageTitle::Component.new(
         title: Copy.value(@title, "plans.title"),
-        subtitle: Copy.value(@subtitle, "plans.subtitle"),
+        subtitle: Copy.value(@subtitle, "plans.subtitle").presence,
         variant: :h1,
         class: (@align == :center ? "mb-0 pb-0 w-full text-center" : "mb-0 pb-0"),
         data: { plans_heading: true }

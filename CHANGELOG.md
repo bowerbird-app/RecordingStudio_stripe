@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Requires `recording_studio` `>= 6.2.0` (was `>= 6.1.0`). Development and dummy pins are GitHub tag `v6.2.0`
 - Engine screens still use `recording_studio/default_layout`. That layout reads `content_for :background_image` and `content_for :page_width`
 - `/plans` centers its title and subtitle with `PlansComponent` (`align: :center`). It does not set `content_for :title`, so the layout does not draw a second heading
+- A blank `plans.subtitle` is omitted. `PlansComponent` passes `Copy.value(@subtitle, "plans.subtitle").presence` to `FlatPack::PageTitle`. The gem English subtitle stays "Monthly or yearly. You can switch later." The dummy English locale sets that key to an empty string
 
 ### Upgrade notes
 - Bump to **0.15.0**. Install Recording Studio **6.2.0** or newer. No database migration
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Call `recording_studio_page_width(:wide)`, or set `content_for :page_width, :wide`. Allowed values are `:narrow`, `:default`, `:wide`, and `:full`. A blank value stays `:default`
 - This repo does not copy `default_layout` into the dummy app. A host layout that replaces the default reads `content_for(:background_image)` and `content_for(:page_width)`
 - `/plans` draws the centered title in the page. The document title on that screen falls back to the app name, because the layout uses `content_for :title` for both the tab and the heading
+- Set `recording_studio.stripe.plans.subtitle` to `""` to hide that line. A host that keeps the gem translation still sees it
 
 ## [0.14.0] - 2026-10-27
 
