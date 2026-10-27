@@ -45,7 +45,7 @@ module RecordingStudioStripe
         title: Copy.value(@title, "plans.title"),
         subtitle: Copy.value(@subtitle, "plans.subtitle").presence,
         variant: :h1,
-        class: (@align == :center ? "mb-0 pb-0 w-full text-center" : "mb-0 pb-0"),
+        class: aligned_class("mb-0 pb-0 w-full text-center fp-on-backdrop", "mb-0 pb-0 fp-on-backdrop"),
         data: { plans_heading: true }
       )
       return title if pills.blank?
@@ -128,18 +128,24 @@ module RecordingStudioStripe
     def section_title(label)
       render FlatPack::SectionTitle::Component.new(
         title: label,
-        class: (@align == :center ? "my-0 text-center" : "my-0")
+        class: aligned_class("my-0 text-center fp-on-backdrop", "my-0 fp-on-backdrop")
       )
     end
 
     def cards_row(products, subscription, interval)
-      render FlatPack::Grid::Component.new(cols: 3, gap: :lg, align: :stretch, class: "w-full") do
+      render FlatPack::Grid::Component.new(
+        cols: 3,
+        gap: :lg,
+        align: :stretch,
+        class: "w-full",
+        style: "row-gap: 1rem"
+      ) do
         helpers.safe_join(products.map { |product| card_for(product, subscription, interval) })
       end
     end
 
     def card_for(product, subscription, interval)
-      helpers.tag.div(class: "h-full") do
+      helpers.tag.div(class: "h-full #{PlanCardComponent::SUBGRID_ROWS}") do
         render PlanCardComponent.new(
           product: product,
           interval: interval,

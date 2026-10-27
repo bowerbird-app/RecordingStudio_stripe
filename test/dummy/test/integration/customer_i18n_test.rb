@@ -38,9 +38,8 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Pricing"
-    refute_includes response.body, "Monthly or yearly. You can switch later."
+    assert_select "[data-plans-heading].fp-on-backdrop p", text: "Monthly or yearly. You can switch later."
     assert_select "[data-plans-heading].text-center h1", text: "Pricing"
-    assert_select "[data-plans-heading] p", count: 0
     assert_includes response.body, "Choose plan"
   end
 

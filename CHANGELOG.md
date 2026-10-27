@@ -13,9 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Requires `recording_studio` `>= 6.2.0` (was `>= 6.1.0`). Development and dummy pins are GitHub tag `v6.2.0`
 - Engine screens still use `recording_studio/default_layout`. That layout reads `content_for :background_image` and `content_for :page_width`
 - `/plans` centers its title and subtitle with `PlansComponent` (`align: :center`). It does not set `content_for :title`, so the layout does not draw a second heading
-- A blank `plans.subtitle` is omitted. `PlansComponent` passes `Copy.value(@subtitle, "plans.subtitle").presence` to `FlatPack::PageTitle`. The gem English subtitle stays "Monthly or yearly. You can switch later." The dummy English locale sets that key to an empty string
+- A blank `plans.subtitle` is omitted. `PlansComponent` passes `Copy.value(@subtitle, "plans.subtitle").presence` to `FlatPack::PageTitle`. The gem English subtitle stays "Monthly or yearly. You can switch later." Dummy English no longer overrides that key, so `/plans` shows the line
+- Requires `flat_pack` `>= 0.1.327`. Development and dummy pins are GitHub tag `v0.1.327`
+- The plans page heading and each group heading use `fp-on-backdrop`. FlatPack applies the backdrop text tokens only when `[data-flat-pack-layout-background]` is set. The title uses the backdrop content color. The subtitle uses the muted backdrop color through the remapped surface token. Plan cards sit outside that class and keep their surface text
 - `/plans` calls `recording_studio_background_image` with `RecordingStudioStripe.configuration.plans_background_image`. The setting defaults to nil, which leaves the backdrop unset. The dummy app sets it to `/plans-backdrop.svg`
-- Plan cards put the price and the action in the card body, under the title and above the feature list. The card no longer uses a footer for that block. `PlanCardPrice` drops the extra vertical padding the footer used
+- Plan cards in a group share four subgrid rows: name, price, button, then the feature list. The button row lines up across that row of cards. A trial badge sits in the price row above the amount, and the amount sits on the bottom of that row. `PlanCardPrice` does not add its own vertical padding. A card with no Price keeps the four rows and leaves the price and button rows empty
 
 ### Upgrade notes
 - Bump to **0.15.0**. Install Recording Studio **6.2.0** or newer. No database migration
@@ -25,8 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - This repo does not copy `default_layout` into the dummy app. A host layout that replaces the default reads `content_for(:background_image)` and `content_for(:page_width)`
 - `/plans` draws the centered title in the page. The document title on that screen falls back to the app name, because the layout uses `content_for :title` for both the tab and the heading
 - Set `recording_studio.stripe.plans.subtitle` to `""` to hide that line. A host that keeps the gem translation still sees it
+- Install FlatPack **0.1.327** or newer. Older FlatPack builds do not ship `.fp-on-backdrop`, so the plans title stays on the surface color over a photo
 - Set `config.plans_background_image` to a public path or URL when `/plans` should show a decorative backdrop. Leave it nil to keep that page plain
-- Hosts that replaced `PlanCardComponent` should render the price and the button in the card body, between the title and the feature list, and drop the footer. Drop `py-[var(--card-padding-md)]` on the price. The body stack's gap is the vertical space
+- Hosts that replaced `PlanCardComponent` should render the name, price, button, and feature list as four rows of one subgrid. The grid item and the card body use `grid row-span-4 grid-rows-subgrid`. Flatpack Card rejects `style:`, and its `flex` class beats a normal `grid` utility, so the card uses `[display:grid]! [grid-template-rows:subgrid]! [grid-row:span_4]!`. Put a trial badge inside the price row and align that row to the bottom. Drop the card footer and `py-[var(--card-padding-md)]` on the price
 
 ## [0.14.0] - 2026-10-27
 

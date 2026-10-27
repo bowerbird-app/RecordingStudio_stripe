@@ -39,8 +39,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "[data-plan-group='inbox'] p", text: "$90/mo"
     assert_select "[data-plan-group='studio'] p", text: "For a quiet start"
     refute_includes response.body, "py-[var(--card-padding-md)]"
-    assert_price_and_action_above_features("studio")
-    assert_price_and_action_above_features("inbox")
+    assert_plan_cards_share_subgrid_rows("studio")
+    assert_plan_cards_share_subgrid_rows("inbox")
     assert_select "[data-plan-group='studio'] p", text: "For the usual week"
     assert_select "[data-plan-group='studio'] p", text: "For the whole crew"
     assert_select "[data-plan-group='inbox'] p", text: "For what people send"
@@ -71,7 +71,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "h1", text: "Pricing", count: 1
     assert_select "[data-plans-heading].text-center", count: 1
     assert_select "[data-plans-heading].text-center h1", text: "Pricing"
-    assert_select "[data-plans-heading] p", count: 0
+    assert_select "[data-plans-heading].fp-on-backdrop p", text: "Monthly or yearly. You can switch later."
+    assert_backdrop_heading_leaves_cards_alone
     assert_select "[data-plan-group-heading]", count: 2
     assert_select "[data-plan-group-heading].items-center", count: 2
     assert_select "a[href='/'][aria-label='Close']"
@@ -104,8 +105,13 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     card_html = card.to_html
     refute_includes card_html, "Choose plan"
     refute_includes card_html, "py-[var(--card-padding-md)]"
-    assert_equal 1, card.element_children.size
-    assert_operator card_html.index("<h3"), :<, card_html.index("<li")
+    regions = card.element_children.first.element_children
+    assert_equal 4, regions.size
+    assert regions[0].at_css("h3")
+    assert_includes regions[0].text, "No month Price yet"
+    assert_empty regions[1].text.strip
+    assert_empty regions[2].text.strip
+    assert regions[3].at_css("li")
   end
 
   test "plans with no Prices show the empty state" do
@@ -138,7 +144,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='center']", count: 1
     assert_select "[data-plans-heading].text-center", count: 1
-    assert_select "[data-plans-heading] p", count: 0
+    assert_select "[data-plans-heading].fp-on-backdrop p", text: "Monthly or yearly. You can switch later."
+    assert_backdrop_heading_leaves_cards_alone
     assert_select "[data-plan-group-heading]", count: 2
     assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
     assert_equal [ "Inbox", "Inbox Plus", "Inbox Pro" ], css_select("[data-plan-group='inbox'] h3").map(&:text)
@@ -977,24 +984,38 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
   private
 
-  def assert_price_and_action_above_features(group)
+  def assert_plan_cards_share_subgrid_rows(group)
     cards = css_select("[data-plan-group='#{group}'] .fp-card")
-    assert_predicate cards, :any?
+    assert_operator cards.size, :>, 1
 
     cards.each do |card|
+      assert_includes card["class"].to_s, "grid-template-rows:subgrid"
+      assert_includes card["class"].to_s, "grid-row:span_4"
+      assert_includes card.parent["class"].to_s, "grid-rows-subgrid"
+      assert_includes card.parent["class"].to_s, "row-span-4"
+      body = card.element_children.first
       assert_equal 1, card.element_children.size
-      html = card.to_html
-      title_at = html.index("<h3")
-      price_at = html.index(/\$\d/)
-      action_at = html.index(/Choose plan|Try now|Current plan|Upgrade|Downgrade|Switch now/)
-      feature_at = html.index("<li")
-      assert title_at
-      assert price_at
-      assert action_at
-      assert feature_at
-      assert_operator title_at, :<, price_at
-      assert_operator price_at, :<, action_at
-      assert_operator action_at, :<, feature_at
+      assert_includes body["class"].to_s, "grid-rows-subgrid"
+      assert_includes body["class"].to_s, "row-span-4"
+      regions = body.element_children
+      assert_equal 4, regions.size
+      assert regions[0].at_css("h3")
+      assert_includes regions[1]["class"].to_s, "justify-end"
+      assert_match(/\$\d/, regions[1].text)
+      assert_match(/Choose plan|Try now|Current plan|Upgrade|Downgrade|Switch now/, regions[2].text)
+      assert regions[3].at_css("li")
+    end
+
+    grid = cards.first.parent.parent
+    assert_includes grid["style"].to_s, "row-gap: 1rem"
+  end
+
+  def assert_backdrop_heading_leaves_cards_alone
+    assert_select "[data-plans-heading].fp-on-backdrop", count: 1
+    assert_select "[data-plan-group-heading] .fp-section-title.fp-on-backdrop", count: 2
+    css_select(".fp-card").each do |card|
+      refute_includes card["class"].to_s, "fp-on-backdrop"
+      assert_nil card.ancestors.find { |node| node["class"].to_s.split.include?("fp-on-backdrop") }
     end
   end
 end

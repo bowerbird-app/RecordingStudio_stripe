@@ -14,7 +14,7 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_gemspec_pins_recording_studio_accessible_and_stripe
     gemspec = File.read(File.expand_path("../recording_studio_stripe.gemspec", __dir__))
 
-    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.315"'
+    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.327"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.2.0"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.22"'
     assert_includes gemspec, 'spec.add_dependency "view_component", ">= 4.14", "< 5"'
@@ -58,7 +58,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes gemfile, 'ref: "8dd47257db449120496ad64ed2ce68af600dd6cd"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.6.1"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.5.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", ref: "1fcbafe94f8eb118f0a22182f63f5110fcc97a56"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.327"'
     assert_includes gemfile, 'gem "view_component", "4.19.0"'
     assert_includes gemfile, "widen_recording_studio_requirement"
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.1.7"'
@@ -69,9 +69,18 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.2.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.22.0"'
-    assert_includes gemfile, 'ref: "1fcbafe94f8eb118f0a22182f63f5110fcc97a56"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.327"'
     assert_includes gemfile, 'gem "view_component", "4.19.0"'
     assert_includes gemfile, "widen_recording_studio_requirement"
+  end
+
+  def test_lockfiles_pin_flat_pack_0_1_327
+    ["../Gemfile.lock", "dummy/Gemfile.lock"].each do |path|
+      lock = File.read(File.expand_path(path, __dir__))
+
+      assert_includes lock, "flat_pack (0.1.327)"
+      assert_includes lock, "tag: v0.1.327"
+    end
   end
 
   def test_billing_application_controller_protects_forgery_before_controller_auth
@@ -478,7 +487,11 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes card, "stripe_plan_feature_lines"
     assert_includes card, "FlatPack::List::Component.new(spacing: :dense, divider: true)"
     assert_includes card, "FlatPack::List::Item"
-    assert_includes card, "stripe_card_stack(title, price_and_action, inclusions)"
+    assert_includes card, "SUBGRID_ROWS"
+    assert_includes card, "grid-rows-subgrid"
+    assert_includes card, "row-span-4"
+    assert_includes card, "[grid-template-rows:subgrid]!"
+    assert_includes card, "safe_join([title, price_row, action_row, inclusions])"
     refute_includes card, "card.footer"
     assert_includes card, "class: \"w-full\""
     assert_includes card, "subscription_change_path"
@@ -510,8 +523,11 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes component, "Grid::Component"
     assert_includes component, "align: :stretch"
     assert_includes component, "h-full"
+    assert_includes component, "PlanCardComponent::SUBGRID_ROWS"
+    assert_includes component, "row-gap: 1rem"
     assert_includes component, "text-center"
     assert_includes component, 'Copy.value(@subtitle, "plans.subtitle").presence'
+    assert_includes component, "fp-on-backdrop"
     assert_includes component, "show_group_headings?"
     assert_includes component, "populated_groups"
     assert_includes component, "shared_interval_pills"

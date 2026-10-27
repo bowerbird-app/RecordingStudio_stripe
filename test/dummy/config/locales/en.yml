@@ -29,7 +29,3 @@
 
 en:
   hello: "Hello world"
-  recording_studio:
-    stripe:
-      plans:
-        subtitle: ""
