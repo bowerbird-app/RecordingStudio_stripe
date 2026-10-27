@@ -106,12 +106,6 @@ module ApplicationHelper
     recordable.billing.active_lines.filter_map { |line| line.subscription.price&.product&.name }
   end
 
-  def dummy_language_selector
-    return unless respond_to?(:recording_studio_language_selector)
-
-    recording_studio_language_selector
-  end
-
   def dummy_locale_attributes
     return {} unless respond_to?(:recording_studio_locale_attributes)
 

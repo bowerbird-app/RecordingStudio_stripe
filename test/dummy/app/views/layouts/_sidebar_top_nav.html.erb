@@ -1,8 +1,5 @@
 <%= render FlatPack::TopNav::Component.new do |nav| %>
   <% nav.right do %>
-    <div class="flex items-center gap-2">
-      <%= dummy_language_selector %>
-      <%= recording_studio_root_switch_dropdown(style: :ghost, size: :md) %>
-    </div>
+    <%= recording_studio_root_switch_dropdown(style: :ghost, size: :md) %>
   <% end %>
 <% end %>

@@ -27,10 +27,21 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Products"
     assert_includes response.body, "Past due"
     assert_includes response.body, "Active subscriptions"
+    assert_includes response.body, "min-h-28 max-h-28"
+    assert_includes response.body, "widget_view_variant=compact"
     assert_includes response.body, "Paywalls"
     assert_includes response.body, "Products, Prices, meters, paywalls, and who is paying"
     assert_equal "Stripe", I18n.t("recording_studio.stripe.admin.definitions.section.title")
     assert_equal "New Product", I18n.t("recording_studio.stripe.admin.definitions.products.new_button")
+
+    get "/admin/sections/stripe/widgets/widgets.stripe.past_due", params: {
+      widget_usage_index: 0,
+      widget_view_variant: "compact"
+    }
+
+    assert_response :success
+    assert_includes response.body, "text-4xl"
+    assert_includes response.body, "min-h-28 max-h-28"
   end
 
   test "products screen lists the demo catalogue" do

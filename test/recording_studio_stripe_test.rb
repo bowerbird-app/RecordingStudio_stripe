@@ -118,28 +118,18 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes layout, 'data-theme="rounded"'
     assert_includes layout, 'data-dummy-sidebar-layout="true"'
     refute_includes layout, "data-recording-studio-default-layout"
-    assert_includes top_nav, "dummy_language_selector"
+    refute_includes top_nav, "dummy_language_selector"
+    refute_includes top_nav, "recording_studio_language_selector"
     assert_includes top_nav, "recording_studio_root_switch_dropdown"
-    language_at = top_nav.index("dummy_language_selector")
-    theme_at = top_nav.index("recording_studio_root_switch_dropdown")
-    assert language_at < theme_at, "language selector should sit left of the root switcher"
+    public_layout = File.read(File.expand_path("dummy/app/views/layouts/public.html.erb", __dir__))
+    refute_includes public_layout, "dummy_language_selector"
+    refute_includes public_layout, "recording_studio_language_selector"
   end
 
-  def test_dummy_default_layout_sets_rounded_theme_on_html
-    layout = File.read(File.expand_path("dummy/app/views/layouts/recording_studio/default_layout.html.erb", __dir__))
+  def test_dummy_does_not_override_the_recording_studio_default_layout
+    override = File.expand_path("dummy/app/views/layouts/recording_studio/default_layout.html.erb", __dir__)
 
-    assert_includes layout, 'data-theme="rounded"'
-    assert_includes layout, "dummy_locale_attributes"
-    assert_includes layout, "dummy_language_selector"
-    assert_includes layout, 'data-recording-studio-default-layout="true"'
-    assert_includes layout, "flat_pack_page_nav_tag"
-    assert_includes layout, "page_nav_button_group"
-    flatpack_at = layout.index('stylesheet_link_tag "flat_pack/application"')
-    tailwind_at = layout.index('stylesheet_link_tag "tailwind"')
-    assert flatpack_at < tailwind_at, "FlatPack stylesheets load before Tailwind"
-    refute_includes layout, "page_nav_options[:anchor_url]"
-    refute_includes layout, "recording_studio_page_nav"
-    refute_includes layout, "document.documentElement.setAttribute"
+    refute File.exist?(override), "dummy should render Recording Studio's default layout"
   end
 
   def test_customer_screens_set_close_to_home
@@ -187,10 +177,24 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_dummy_tailwind_scans_engine_components
     tailwind_source = File.read(File.expand_path("dummy/app/assets/tailwind/application.css", __dir__))
 
-    assert_includes tailwind_source, "bundler/gems/flatpack-*/app/components"
-    assert_includes tailwind_source, "usr/local/lib/ruby/gems"
-    assert_includes tailwind_source, "app/components/**/*.{rb,erb}"
+    assert_includes tailwind_source, '@source "./gem_sources/flat_pack/app/components"'
+    assert_includes tailwind_source, '@source "./gem_sources/recording_studio_admin/app/views"'
+    assert_includes tailwind_source, '@source "../../views"'
+    assert_includes tailwind_source, '@source "../../../../../app/components"'
+    refute_includes tailwind_source, "bundler/gems/flatpack-*"
     refute_includes tailwind_source, "@theme"
+    linker = File.read(File.expand_path("dummy/lib/tailwind_gem_sources.rb", __dir__))
+    gem_names = %w[
+      flat_pack
+      recording_studio
+      recording_studio_admin
+      recording_studio_accessible
+      recording_studio_root_switchable
+      recording_studio_logs
+    ]
+    gem_names.each do |gem_name|
+      assert_includes linker, gem_name
+    end
   end
 
   def test_recording_studio_keeps_strict_recordable_declarations_enabled

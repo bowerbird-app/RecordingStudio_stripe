@@ -342,6 +342,6 @@ Staff Admin form views, flashes, and resolvable Admin Definitions chrome (titles
 
 `test/dummy` is a host, not the product. Sign in at `/users/sign_in` with `admin@admin.com` / `Password`. Open `/plans` and `/pricing` for the centered plan cards. Dummy seeds Studio (Starter, Pro, Team) and Inbox (Inbox, Inbox Plus, Inbox Pro) so one workspace can hold two live plans. Pro offers a $1, 14-day trial. Cards sort cheapest first and list caps, included usage, and ticked features. Home is the workspace. `/billing` is the plan and Stripe portal. See usage appears after a live plan has recorded cap or meter use. `/billing/usage` shows the press kit cap with meters as full-width rows. `/press_kits` is where you add them; Starter caps them at 3. Admin is `/admin`.
 
-Dummy offers English and French. The language selector is in the top nav. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French.
+Dummy offers English and French. French keys live in `test/dummy/config/locales/fr.yml`. The engine does not ship French. Customer pages use Recording Studio's default layout and do not add a language selector to the top nav.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or put that key in `test/dummy/config/master.key` (gitignored). Keep the encrypted file; do not generate a per-repo dummy key. Stripe keys stay in `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`, not Rails credentials.
