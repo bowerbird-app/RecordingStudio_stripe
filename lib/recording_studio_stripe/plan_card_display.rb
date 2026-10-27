@@ -40,7 +40,12 @@ module RecordingStudioStripe
       )
       return if items.empty?
 
-      render FlatPack::Button::Pill::Component.new(items: items)
+      render FlatPack::Button::Pill::Component.new(
+        items: items,
+        track: true,
+        style: :primary,
+        class: RecordingStudioStripe::PlansComponent::PILL_TRACK_CLASS
+      )
     end
   end
 end

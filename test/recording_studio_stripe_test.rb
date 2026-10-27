@@ -531,6 +531,11 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes component, "show_group_headings?"
     assert_includes component, "populated_groups"
     assert_includes component, "shared_interval_pills"
+    assert_includes component, "PILL_TRACK_CLASS"
+    display = File.read(File.expand_path("../lib/recording_studio_stripe/plan_card_display.rb", __dir__))
+    assert_includes display, "track: true"
+    assert_includes display, "style: :primary"
+    assert_includes display, "PlansComponent::PILL_TRACK_CLASS"
     assert_includes component, "intervals:"
     assert_includes component, "Catalog.sorted_plans"
     assert_includes plans_view, "align: :center"

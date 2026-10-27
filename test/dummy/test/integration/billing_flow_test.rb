@@ -73,6 +73,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "[data-plans-heading].text-center h1", text: "Pricing"
     assert_select "[data-plans-heading].fp-on-backdrop p", text: "Monthly or yearly. You can switch later."
     assert_backdrop_heading_leaves_cards_alone
+    assert_interval_pill_track
     assert_select "[data-plan-group-heading]", count: 2
     assert_select "[data-plan-group-heading].items-center", count: 2
     assert_select "a[href='/'][aria-label='Close']"
@@ -146,6 +147,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "[data-plans-heading].text-center", count: 1
     assert_select "[data-plans-heading].fp-on-backdrop p", text: "Monthly or yearly. You can switch later."
     assert_backdrop_heading_leaves_cards_alone
+    assert_interval_pill_track
     assert_select "[data-plan-group-heading]", count: 2
     assert_equal %w[Starter Pro Team], css_select("[data-plan-group='studio'] h3").map(&:text)
     assert_equal [ "Inbox", "Inbox Plus", "Inbox Pro" ], css_select("[data-plan-group='inbox'] h3").map(&:text)
@@ -1008,6 +1010,20 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     grid = cards.first.parent.parent
     assert_includes grid["style"].to_s, "row-gap: 1rem"
+  end
+
+  def assert_interval_pill_track
+    pills = css_select("[data-fp-style='primary'].fp-pill-button-slots")
+    assert_equal 2, pills.size
+    pills.each do |pill|
+      classes = pill["class"].to_s
+      assert_includes classes, "bg-[var(--tabs-pill-list-background-color)]"
+      assert_includes classes, "border-[var(--tabs-pill-list-border-color)]"
+      assert_includes classes, "p-[var(--pill-padding)]"
+      assert_includes classes, RecordingStudioStripe::PlansComponent::PILL_TRACK_CLASS
+      assert_nil(pill.ancestors.find { |node| node["class"].to_s.split.include?("fp-on-backdrop") })
+      assert pill.at_css("a[aria-current='page']")
+    end
   end
 
   def assert_backdrop_heading_leaves_cards_alone
