@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.13.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.14.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -14,8 +14,10 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_gemspec_pins_recording_studio_accessible_and_stripe
     gemspec = File.read(File.expand_path("../recording_studio_stripe.gemspec", __dir__))
 
-    assert_includes gemspec, 'spec.add_dependency "recording_studio", "~> 4.1"'
-    assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.18"'
+    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.315"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.1.0"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.22"'
+    assert_includes gemspec, 'spec.add_dependency "view_component", ">= 4.14", "< 5"'
     assert_includes gemspec, 'spec.add_dependency "stripe"'
     refute_includes gemspec, "recording_studio_conversions"
     refute_includes gemspec, "attachable"
@@ -46,24 +48,30 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes install_script, "fetch-skills.sh"
   end
 
-  def test_dummy_gemfile_pins_verified_4x_github_tags
+  def test_dummy_gemfile_pins_recording_studio_6_1
     gemfile = File.read(File.expand_path("dummy/Gemfile", __dir__))
 
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v4.7.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.18.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.3.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.11.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.9.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.2.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.5.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.207"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.1.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.1.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.22.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.7.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.12.0"'
+    assert_includes gemfile, 'ref: "8dd47257db449120496ad64ed2ce68af600dd6cd"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.6.1"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.5.1"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", ref: "1fcbafe94f8eb118f0a22182f63f5110fcc97a56"'
+    assert_includes gemfile, 'gem "view_component", "4.19.0"'
+    assert_includes gemfile, "widen_recording_studio_requirement"
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.1.7"'
   end
 
-  def test_root_gemfile_pins_accessible_controller_auth_tag
+  def test_root_gemfile_pins_accessible_and_recording_studio_6_1
     gemfile = File.read(File.expand_path("../Gemfile", __dir__))
 
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.18.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.1.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.22.0"'
+    assert_includes gemfile, 'ref: "1fcbafe94f8eb118f0a22182f63f5110fcc97a56"'
+    assert_includes gemfile, 'gem "view_component", "4.19.0"'
+    assert_includes gemfile, "widen_recording_studio_requirement"
   end
 
   def test_billing_application_controller_protects_forgery_before_controller_auth
@@ -94,9 +102,9 @@ class RecordingStudioStripeTest < Minitest::Test
     application_controller_path = File.expand_path("dummy/app/controllers/application_controller.rb", __dir__)
     controller_source = File.read(application_controller_path)
 
-    assert_includes controller_source, "include RecordingStudio::UsesDefaultLayout"
-    assert_includes controller_source, '"recording_studio/default_layout"'
-    assert_includes controller_source, "devise_controller? ? \"application\""
+    assert_includes controller_source, "recording_studio_layout { RecordingStudioStripe.configuration.layout }"
+    refute_includes controller_source, "UsesDefaultLayout"
+    refute_includes controller_source, 'layout "recording_studio/default_layout"'
     refute_includes controller_source, "flat_pack_sidebar"
   end
 
@@ -110,23 +118,18 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes layout, 'data-theme="rounded"'
     assert_includes layout, 'data-dummy-sidebar-layout="true"'
     refute_includes layout, "data-recording-studio-default-layout"
-    assert_includes top_nav, "dummy_language_selector"
+    refute_includes top_nav, "dummy_language_selector"
+    refute_includes top_nav, "recording_studio_language_selector"
     assert_includes top_nav, "recording_studio_root_switch_dropdown"
-    language_at = top_nav.index("dummy_language_selector")
-    theme_at = top_nav.index("recording_studio_root_switch_dropdown")
-    assert language_at < theme_at, "language selector should sit left of the root switcher"
+    public_layout = File.read(File.expand_path("dummy/app/views/layouts/public.html.erb", __dir__))
+    refute_includes public_layout, "dummy_language_selector"
+    refute_includes public_layout, "recording_studio_language_selector"
   end
 
-  def test_dummy_default_layout_sets_rounded_theme_on_html
-    layout = File.read(File.expand_path("dummy/app/views/layouts/recording_studio/default_layout.html.erb", __dir__))
+  def test_dummy_does_not_override_the_recording_studio_default_layout
+    override = File.expand_path("dummy/app/views/layouts/recording_studio/default_layout.html.erb", __dir__)
 
-    assert_includes layout, 'data-theme="rounded"'
-    assert_includes layout, "dummy_locale_attributes"
-    assert_includes layout, "dummy_language_selector"
-    assert_includes layout, 'data-recording-studio-default-layout="true"'
-    assert_includes layout, "page_nav_options[:anchor_href]"
-    refute_includes layout, "page_nav_options[:anchor_url]"
-    refute_includes layout, "document.documentElement.setAttribute"
+    refute File.exist?(override), "dummy should render Recording Studio's default layout"
   end
 
   def test_customer_screens_set_close_to_home
@@ -135,13 +138,20 @@ class RecordingStudioStripeTest < Minitest::Test
     plans = File.read(File.expand_path("../app/views/recording_studio_stripe/plans/index.html.erb", __dir__))
     change = File.read(File.expand_path("../app/views/recording_studio_stripe/subscriptions/edit.html.erb", __dir__))
 
-    assert_includes billing, "page_nav_anchor_url: main_app.root_path"
-    refute_includes billing, "page_nav_back_url"
-    assert_includes usage, "page_nav_anchor_url: main_app.root_path"
-    refute_includes usage, "page_nav_back_url"
-    assert_includes plans, "page_nav_anchor_url: main_app.root_path"
-    refute_includes plans, "page_nav_back_url"
-    assert_includes change, "page_nav_anchor_url: main_app.root_path"
+    assert_includes billing, "anchor_href: main_app.root_path"
+    assert_includes billing, "content_for :title"
+    refute_includes billing, "back_href:"
+    refute_includes billing, "PageTitle::Component"
+    assert_includes usage, "anchor_href: main_app.root_path"
+    assert_includes usage, "title: nil"
+    refute_includes usage, "back_href:"
+    assert_includes plans, "anchor_href: main_app.root_path"
+    assert_includes plans, "title: nil"
+    refute_includes plans, "back_href:"
+    assert_includes change, "anchor_href: main_app.root_path"
+    assert_includes change, "back_href: main_app.plans_path"
+    assert_includes change, "@change.title"
+    assert_includes change, "@change.subtitle"
   end
 
   def test_dummy_login_layout_keeps_flatpack_assets_without_tight_main_offset
@@ -167,10 +177,24 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_dummy_tailwind_scans_engine_components
     tailwind_source = File.read(File.expand_path("dummy/app/assets/tailwind/application.css", __dir__))
 
-    assert_includes tailwind_source, "bundler/gems/flatpack-*/app/components"
-    assert_includes tailwind_source, "usr/local/lib/ruby/gems"
-    assert_includes tailwind_source, "app/components/**/*.{rb,erb}"
+    assert_includes tailwind_source, '@source "./gem_sources/flat_pack/app/components"'
+    assert_includes tailwind_source, '@source "./gem_sources/recording_studio_admin/app/views"'
+    assert_includes tailwind_source, '@source "../../views"'
+    assert_includes tailwind_source, '@source "../../../../../app/components"'
+    refute_includes tailwind_source, "bundler/gems/flatpack-*"
     refute_includes tailwind_source, "@theme"
+    linker = File.read(File.expand_path("dummy/lib/tailwind_gem_sources.rb", __dir__))
+    gem_names = %w[
+      flat_pack
+      recording_studio
+      recording_studio_admin
+      recording_studio_accessible
+      recording_studio_root_switchable
+      recording_studio_logs
+    ]
+    gem_names.each do |gem_name|
+      assert_includes linker, gem_name
+    end
   end
 
   def test_recording_studio_keeps_strict_recordable_declarations_enabled
@@ -199,6 +223,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "/billing/usage"
     assert_includes readme, "UsageComponent"
     assert_includes readme, "recording_studio.stripe"
+    assert_includes readme, "config.layout"
+    assert_includes readme, ">= 6.1.0"
     refute_includes readme, "ExampleService"
   end
 
@@ -334,7 +360,8 @@ class RecordingStudioStripeTest < Minitest::Test
     rescue_source = File.read(File.expand_path("../lib/recording_studio_stripe/plan_limit_rescue.rb", __dir__))
 
     assert_includes view_source, "UsageComponent"
-    assert_includes view_source, "page_nav_anchor_url: main_app.root_path"
+    assert_includes view_source, "anchor_href: main_app.root_path"
+    assert_includes view_source, "content_for :title"
     refute_includes view_source, "CurrentPlanComponent"
     refute_includes view_source, "Manage billing on Stripe"
     assert_includes component, "LimitCardComponent"
@@ -440,7 +467,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes source, "usage_in_use?"
     assert_includes source, "line_has_recorded_usage?"
     assert_includes card, "stripe_plan_feature_lines"
-    assert_includes card, "FlatPack::List::Component"
+    assert_includes card, "FlatPack::List::Component.new(spacing: :dense, divider: true)"
     assert_includes card, "FlatPack::List::Item"
     assert_includes card, "footer(divider: false)"
     assert_includes card, "class: \"w-full\""
@@ -456,7 +483,7 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_plan_change_confirms_price_without_the_old_plan
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/plan_change_component.rb", __dir__))
 
-    assert_includes source, "@change.subtitle"
+    refute_includes source, "PageTitle::Component"
     refute_includes source, "Grid::Component"
     refute_includes source, "from_price"
   end

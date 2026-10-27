@@ -38,6 +38,9 @@ module RecordingStudioStripe
     end
 
     def heading
+      pills = shared_interval_pills
+      return pills if @title.nil?
+
       title = render FlatPack::PageTitle::Component.new(
         title: Copy.value(@title, "plans.title"),
         subtitle: Copy.value(@subtitle, "plans.subtitle"),
@@ -45,7 +48,6 @@ module RecordingStudioStripe
         class: (@align == :center ? "mb-0 pb-0 w-full text-center" : "mb-0 pb-0"),
         data: { plans_heading: true }
       )
-      pills = shared_interval_pills
       return title if pills.blank?
 
       helpers.tag.div(helpers.safe_join([title, pills]), class: heading_stack_class)

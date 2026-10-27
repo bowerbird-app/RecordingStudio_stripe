@@ -20,7 +20,7 @@
       description: "Pick a plan when you want included usage.",
       icon: :inbox
     ) do |empty| %>
-      <% empty.slot do %>
+      <% empty.item do %>
         <%= render FlatPack::Button::Component.new(text: "See pricing", style: :primary, size: :md, href: plans_path) %>
       <% end %>
     <% end %>

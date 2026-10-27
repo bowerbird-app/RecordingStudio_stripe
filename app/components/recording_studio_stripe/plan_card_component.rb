@@ -12,7 +12,12 @@ module RecordingStudioStripe
     end
 
     def call
-      render FlatPack::Card::Component.new(style: current? ? :elevated : :outlined, class: "h-full") do |card|
+      render FlatPack::Card::Component.new(
+        background: :default,
+        border: current? ? :default : :strong,
+        shadow: current? ? :md : :none,
+        class: "h-full"
+      ) do |card|
         card.body { helpers.stripe_card_stack(title, inclusions) }
         card.footer(divider: false) { footer } if price
       end
@@ -54,7 +59,7 @@ module RecordingStudioStripe
     end
 
     def inclusions
-      render FlatPack::List::Component.new(spacing: :dense) do
+      render FlatPack::List::Component.new(spacing: :dense, divider: true) do
         safe_join(feature_lines.map { |line| feature_item(line) })
       end
     end

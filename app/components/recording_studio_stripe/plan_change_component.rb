@@ -9,19 +9,11 @@ module RecordingStudioStripe
 
     def call
       helpers.tag.div(class: "flex w-full flex-col gap-6") do
-        helpers.safe_join([heading, actions])
+        actions
       end
     end
 
     private
-
-    def heading
-      render FlatPack::PageTitle::Component.new(
-        title: @change.title,
-        subtitle: @change.subtitle,
-        variant: :h1
-      )
-    end
 
     def actions
       helpers.tag.div(class: "flex flex-wrap gap-2") do

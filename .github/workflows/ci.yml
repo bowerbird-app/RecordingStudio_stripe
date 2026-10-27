@@ -13,9 +13,10 @@ concurrency:
 permissions:
   contents: read
 
+# ubuntu-24.04 still publishes Ruby 3.3.6. ubuntu-latest (26.04) only has the newest 3.3 patch.
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       RUBOCOP_CACHE_ROOT: tmp/rubocop
@@ -44,7 +45,7 @@ jobs:
         run: bundle exec rubocop --format github
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     services:

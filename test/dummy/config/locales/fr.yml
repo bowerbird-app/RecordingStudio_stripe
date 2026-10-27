@@ -27,6 +27,8 @@ fr:
         label: Langue
         submit: Changer de langue
     stripe:
+      nav:
+        close: Fermer
       intervals:
         names:
           week: semaine

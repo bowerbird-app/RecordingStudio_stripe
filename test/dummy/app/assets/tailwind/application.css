@@ -1,40 +1,28 @@
 @import "tailwindcss" source(none);
 
-/* Dummy views */
-@source "../../views/**/*.erb";
-@source "../../helpers/**/*.rb";
+/* Design tokens live in flat_pack/variables, loaded before this sheet.
+ * Do not add --color-fp-*, and do not re-declare --font-* or --radius-* here.
+ *
+ * Tailwind 4.3 does not expand * or ** in @source. tailwindcss:build links the
+ * installed gems into ./gem_sources first, wherever Bundler put them.
+ */
 
-/* This engine */
-@source "../../../../../app/views/**/*.erb";
-@source "../../../../../app/components/**/*.{rb,erb}";
-@source "../../../../../app/helpers/**/*.rb";
+@source "./gem_sources/flat_pack/app/components";
+@source "./gem_sources/flat_pack/app/helpers";
+@source "./gem_sources/recording_studio/app/views";
+@source "./gem_sources/recording_studio/app/helpers";
+@source "./gem_sources/recording_studio_admin/app/views";
+@source "./gem_sources/recording_studio_admin/app/helpers";
+@source "./gem_sources/recording_studio_accessible/app/views";
+@source "./gem_sources/recording_studio_accessible/app/helpers";
+@source "./gem_sources/recording_studio_root_switchable/app/views";
+@source "./gem_sources/recording_studio_root_switchable/app/components";
+@source "./gem_sources/recording_studio_root_switchable/app/helpers";
+@source "./gem_sources/recording_studio_logs/app/views";
 
-/* FlatPack, vendor and system gem paths used by dummy, CI, and Codespaces */
-@source "../../../vendor/bundle/**/bundler/gems/flatpack-*/app/components/**/*.rb";
-@source "../../../vendor/bundle/**/bundler/gems/flatpack-*/app/components/**/*.erb";
-@source "../../../../../vendor/bundle/**/bundler/gems/flatpack-*/app/components/**/*.rb";
-@source "../../../../../vendor/bundle/**/bundler/gems/flatpack-*/app/components/**/*.erb";
-@source "../../../../../../usr/local/bundle/**/bundler/gems/flatpack-*/app/components/**/*.rb";
-@source "../../../../../../usr/local/bundle/**/bundler/gems/flatpack-*/app/components/**/*.erb";
-@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/flatpack-*/app/components/**/*.rb";
-@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/flatpack-*/app/components/**/*.erb";
-@source "../../../../../../home/*/.rbenv/**/bundler/gems/flatpack-*/app/components/**/*.rb";
-@source "../../../../../../home/*/.rbenv/**/bundler/gems/flatpack-*/app/components/**/*.erb";
-
-/* Recording Studio Internationalization language selector */
-@source "../../../vendor/bundle/**/bundler/gems/recording_studio_internationalization-*/app/views/**/*.erb";
-@source "../../../../../vendor/bundle/**/bundler/gems/recording_studio_internationalization-*/app/views/**/*.erb";
-@source "../../../../../../usr/local/bundle/**/bundler/gems/recording_studio_internationalization-*/app/views/**/*.erb";
-@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/recording_studio_internationalization-*/app/views/**/*.erb";
-
-/* Recording Studio and addons */
-@source "../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
-@source "../../../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
-@source "../../../../../../usr/local/bundle/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
-@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
-@source "../../../../../../home/*/.rbenv/**/bundler/gems/RecordingStudio*/app/views/**/*.erb";
-@source "../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/components/**/*.{rb,erb}";
-@source "../../../../../vendor/bundle/**/bundler/gems/RecordingStudio*/app/components/**/*.{rb,erb}";
-@source "../../../../../../usr/local/bundle/**/bundler/gems/RecordingStudio*/app/components/**/*.{rb,erb}";
-@source "../../../../../../usr/local/lib/ruby/gems/**/bundler/gems/RecordingStudio*/app/components/**/*.{rb,erb}";
-@source "../../../../../../home/*/.rbenv/**/bundler/gems/RecordingStudio*/app/components/**/*.{rb,erb}";
+@source "../../views";
+@source "../../helpers";
+@source "../../components";
+@source "../../../../../app/views";
+@source "../../../../../app/helpers";
+@source "../../../../../app/components";

@@ -19,14 +19,18 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     switch_to_root!(@root)
   end
 
-  test "language selector sits in the dummy top nav" do
+  test "customer pages do not render a language selector" do
     get "/"
 
     assert_response :success
-    assert_select "form[action='/recording_studio_internationalization/locale']"
-    assert_includes response.body, "English"
-    assert_includes response.body, "Français"
-    assert_select "html[lang='en']"
+    assert_select "form[action='/recording_studio_internationalization/locale']", count: 0
+
+    get "/plans"
+
+    assert_response :success
+    assert_select "form[action='/recording_studio_internationalization/locale']", count: 0
+    refute_includes response.body, ">English<"
+    refute_includes response.body, ">Français<"
   end
 
   test "plans page stays English until the host locale changes" do
@@ -36,7 +40,6 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Pricing"
     assert_includes response.body, "Monthly or yearly. You can switch later."
     assert_includes response.body, "Choose plan"
-    assert_select "html[lang='en']"
   end
 
   test "dummy French locale renders customer billing copy" do
@@ -49,7 +52,6 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Mensuel ou annuel. Vous pourrez changer plus tard."
     assert_includes response.body, "Choisir"
     refute_includes response.body, "Monthly or yearly. You can switch later."
-    assert_select "html[lang='fr']"
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"
   end

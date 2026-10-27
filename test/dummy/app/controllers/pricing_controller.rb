@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class PricingController < ApplicationController
+  layout "public"
   skip_before_action :authenticate_user!
 
   def show
@@ -22,9 +23,5 @@ class PricingController < ApplicationController
     return unless current_root_recording
 
     RecordingStudioStripe::Billing.for_recording(current_root_recording)
-  end
-
-  def application_layout
-    "public"
   end
 end

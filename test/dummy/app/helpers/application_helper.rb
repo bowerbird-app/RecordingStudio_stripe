@@ -22,26 +22,32 @@ module ApplicationHelper
     request.path.start_with?(dummy_billing_path)
   end
 
-  def dummy_page_nav(title:, back_url: nil, back_label: "Home")
-    recording_studio_page_nav(
-      title: title,
-      page_nav_back_url: back_url,
-      page_nav_back_label: back_label,
-      page_nav_anchor_url: root_path
+  def dummy_page_nav(title:, subtitle: nil, back_url: nil, back_label: "Home")
+    content_for(:title, title)
+    content_for(:subtitle, subtitle) if subtitle.present?
+
+    flat_pack_page_nav(
+      round: true,
+      style: :default,
+      back_href: back_url,
+      back_tooltip: back_label,
+      anchor_href: root_path,
+      anchor_tooltip: t("recording_studio.stripe.nav.close")
     )
 
-    recording_studio_page_nav_right do
-      concat dummy_language_selector
-      concat recording_studio_root_switch_dropdown(style: :ghost, size: :md)
-      concat render(
-        FlatPack::Button::Component.new(
-          text: "Sign out",
-          style: :ghost,
-          size: :md,
-          href: main_app.destroy_user_session_path,
-          data: { turbo_method: :delete }
+    content_for :page_nav_right do
+      safe_join([
+        recording_studio_root_switch_dropdown(style: :ghost, size: :md),
+        render(
+          FlatPack::Button::Component.new(
+            text: "Sign out",
+            style: :ghost,
+            size: :md,
+            href: main_app.destroy_user_session_path,
+            data: { turbo_method: :delete }
+          )
         )
-      )
+      ].compact)
     end
   end
 
@@ -98,12 +104,6 @@ module ApplicationHelper
     return [] unless recordable.respond_to?(:billing)
 
     recordable.billing.active_lines.filter_map { |line| line.subscription.price&.product&.name }
-  end
-
-  def dummy_language_selector
-    return unless respond_to?(:recording_studio_language_selector)
-
-    recording_studio_language_selector
   end
 
   def dummy_locale_attributes

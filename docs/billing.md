@@ -50,6 +50,12 @@ Empty trial days in Admin clears the trial and deactivates fee Prices. Stripe Pr
 
 A workspace that already has a live plan in that group still upgrades or downgrades. Dummy Pro is 14 days and 100 cents.
 
+## Layout
+
+`config.layout` is the layout for this engine. `nil` follows `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. A String names a layout. `false` skips the layout. A callable takes `controller:` and returns a String, `nil`, or `false`.
+
+Engine controllers call `recording_studio_layout { RecordingStudioStripe.configuration.layout }`. The default template reads `content_for :title` and `content_for :subtitle` and draws one page heading. `flat_pack_page_nav` sets back and close. `register_page_nav` and `content_for :page_nav_right` fill the right side of the top nav.
+
 ## Plan cards
 
 Customer chrome on `/plans`, `/billing`, `/billing/usage`, change, and cancel is `recording_studio.stripe.*` I18n. Staff Admin form views, flashes, and resolvable Definitions chrome (titles, buttons, link text, widget titles/info) use `recording_studio.stripe.admin.*`. The gem ships English. Hosts add other languages. Product names, prices, card subtitles, and `plan_line` text stay as stored. Admin screen/section subtitles, table column headers, and cell values stay English literals. This gem never shipped a top-level `recording_studio_stripe.*` locale namespace.

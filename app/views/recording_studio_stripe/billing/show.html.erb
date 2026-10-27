@@ -1,15 +1,16 @@
 <% content_for :head do %>
   <%= stylesheet_link_tag "recording_studio_stripe/button", "data-turbo-track": "reload" %>
 <% end %>
-<% recording_studio_page_nav(title: t("recording_studio.stripe.billing.title"), page_nav_anchor_url: main_app.root_path) %>
+<% content_for :title, t("recording_studio.stripe.billing.title") %>
+<% content_for :subtitle, billing_subtitle(@lines) %>
+<% flat_pack_page_nav(
+  round: true,
+  style: :default,
+  anchor_href: main_app.root_path,
+  anchor_tooltip: t("recording_studio.stripe.nav.close")
+) %>
 
 <div class="flex w-full flex-col gap-6">
-  <%= render FlatPack::PageTitle::Component.new(
-    title: t("recording_studio.stripe.billing.title"),
-    subtitle: billing_subtitle(@lines),
-    variant: :h1
-  ) %>
-
   <% if @waiting_on_stripe %>
     <%= render FlatPack::Alert::Component.new(
       description: t("recording_studio.stripe.billing.confirming_plan"),
@@ -63,7 +64,7 @@
       description: t("recording_studio.stripe.billing.empty_description"),
       icon: :inbox
     ) do |empty| %>
-      <% empty.slot do %>
+      <% empty.item do %>
         <%= render FlatPack::Button::Component.new(
           text: t("recording_studio.stripe.billing.see_pricing"),
           style: :primary,

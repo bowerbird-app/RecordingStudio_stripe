@@ -46,8 +46,8 @@ module RecordingStudioStripe
         klass.link :subscriptions,
                    text: ->(_context) { Copy.t("admin.definitions.section.link_subscriptions", default: "Subscriptions") }, # rubocop:disable Layout/LineLength
                    url: ->(context) { context.admin_screen_path("subscriptions") }
-        klass.widget "widgets.stripe.past_due"
-        klass.widget "widgets.stripe.active_subscriptions"
+        klass.widget "widgets.stripe.past_due", view_variant: :compact
+        klass.widget "widgets.stripe.active_subscriptions", view_variant: :compact
         RecordingStudioStripe::Admin::Definitions.const_set(:StripeSection, klass)
       end
       # rubocop:enable Metrics/AbcSize

@@ -11,7 +11,7 @@ module RecordingStudioStripe
     end
 
     def call
-      render FlatPack::Card::Component.new(style: :default) do |card|
+      render FlatPack::Card::Component.new(background: :default, border: :default, shadow: :none) do |card|
         card.body { helpers.stripe_card_stack(badges, title, actions) }
       end
     end
