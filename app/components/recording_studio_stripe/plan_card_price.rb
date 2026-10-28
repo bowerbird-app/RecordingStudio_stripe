@@ -2,8 +2,9 @@
 
 module RecordingStudioStripe
   class PlanCardPrice
-    ROOT_CLASS = "flex h-full flex-col items-start justify-end gap-2"
-    OFFER_SPACE = "md:py-2"
+    ROOT_CLASS = "flex h-full flex-col items-start justify-start gap-2"
+    PRICE_SPACE = "md:pt-4 md:pb-4"
+    OFFER_SPACE = "md:pt-8 md:pb-8 md:gap-4"
     AMOUNT_CLASS = "leading-none text-[length:var(--page-title-h2-size)]"
     UNIT_CLASS = "leading-none text-[length:var(--text-lg)]"
 
@@ -38,9 +39,7 @@ module RecordingStudioStripe
     private
 
     def root_classes
-      return @root_class unless @offer
-
-      [@root_class, OFFER_SPACE].join(" ")
+      [@root_class, @offer ? OFFER_SPACE : PRICE_SPACE].join(" ")
     end
 
     def badge

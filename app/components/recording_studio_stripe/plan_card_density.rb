@@ -64,8 +64,7 @@ module RecordingStudioStripe
       md:h-full
       md:flex-col
       md:items-start
-      md:justify-end
-      md:gap-2
+      md:justify-start
     ].join(" ").freeze
     AUTO_AMOUNT = "leading-none text-[length:var(--text-xl)] md:text-[length:var(--page-title-h2-size)]!"
     AUTO_UNIT = "leading-none text-[length:var(--text-sm)] md:text-[length:var(--text-lg)]!"
