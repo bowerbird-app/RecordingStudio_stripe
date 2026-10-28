@@ -52,6 +52,7 @@ class CustomerI18nTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Tarifs"
     assert_includes response.body, "Mensuel ou annuel. Vous pourrez changer plus tard."
     assert_includes response.body, "Choisir"
+    assert_includes response.body, "Ce qui est inclus"
     refute_includes response.body, "Monthly or yearly. You can switch later."
     assert_includes response.body, "Pro"
     assert_includes response.body, "Starter"

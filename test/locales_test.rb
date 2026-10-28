@@ -96,6 +96,7 @@ class LocalesTest < Minitest::Test
       assert_equal "Pricing", Copy.t("plans.title")
       assert_equal "Monthly or yearly. You can switch later.", Copy.t("plans.subtitle")
       assert_equal "Current plan", Copy.t("plans.current_plan")
+      assert_equal "What\u2019s included", Copy.t("plans.included")
       assert_equal "You’re on the new plan.", Copy.t("notices.on_new_plan")
       assert_equal "Pick a plan from the list.", Copy.t("alerts.pick_plan")
       assert_equal "You keep it until October 12, 2026.",

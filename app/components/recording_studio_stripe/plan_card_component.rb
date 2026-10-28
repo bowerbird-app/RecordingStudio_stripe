@@ -3,16 +3,20 @@
 module RecordingStudioStripe
   class PlanCardComponent < ViewComponent::Base
     include RecordingStudioStripe::ApplicationHelper
+    include PlanCardLayout
 
+    DENSITIES = %i[auto cards rows].freeze
     SUBGRID_ROWS = "grid row-span-4 grid-rows-subgrid"
     # Flatpack Card rejects style:, and its own flex class wins a normal grid utility.
     CARD_SUBGRID_ROWS = "h-full [display:grid]! [grid-template-rows:subgrid]! [grid-row:span_4]!"
 
-    def initialize(product:, interval:, subscription:)
+    def initialize(product:, interval:, subscription:, density: :cards)
       super()
       @product = product
       @interval = interval
       @subscription = subscription
+      @density = density.to_sym
+      validate_density!
     end
 
     def call
@@ -20,9 +24,10 @@ module RecordingStudioStripe
         background: :default,
         border: current? ? :default : :strong,
         shadow: current? ? :md : :none,
-        class: CARD_SUBGRID_ROWS
+        class: card_class,
+        data: { plan_density: @density.to_s }
       ) do |card|
-        card.body(class: SUBGRID_ROWS) { safe_join([title, price_row, action_row, inclusions]) }
+        card.body(**body_options) { safe_join([title, price_row, action_row, inclusions]) }
       end
     end
 
@@ -33,6 +38,15 @@ module RecordingStudioStripe
     end
 
     def title
+      return page_title if cards?
+
+      # PageTitle sets an inline font-size, so a phone utility cannot shrink the name.
+      helpers.tag.div(class: slot(:title)) do
+        safe_join([name_heading, subtitle_paragraph].compact)
+      end
+    end
+
+    def page_title
       render FlatPack::PageTitle::Component.new(
         title: @product.name,
         subtitle: title_subtitle,
@@ -49,16 +63,25 @@ module RecordingStudioStripe
 
     def price_row
       return rendered_price if price
+      return helpers.tag.div if cards?
 
-      helpers.tag.div
+      helpers.tag.div(class: slot(:price))
     end
 
     def action_row
-      helpers.tag.div(class: "w-full") { action }
+      return helpers.tag.div(class: "w-full") { action } if cards?
+
+      helpers.tag.div(class: slot(:action)) { action }
     end
 
     def rendered_price
-      PlanCardPrice.render(view: helpers, price: price, trial: @product.trial, offer: trial_offer?)
+      PlanCardPrice.render(
+        view: helpers,
+        price: price,
+        trial: @product.trial,
+        offer: trial_offer?,
+        **price_options
+      )
     end
 
     def trial_offer?
@@ -66,6 +89,14 @@ module RecordingStudioStripe
     end
 
     def inclusions
+      return feature_list if cards?
+
+      helpers.tag.div(class: slot(:inclusions)) do
+        safe_join([disclosure, feature_frame])
+      end
+    end
+
+    def feature_list
       render FlatPack::List::Component.new(spacing: :dense, divider: true) do
         safe_join(feature_lines.map { |line| feature_item(line) })
       end
@@ -99,21 +130,21 @@ module RecordingStudioStripe
         style: :secondary,
         size: :md,
         type: "button",
-        class: "w-full"
+        class: control_width
       )
     end
 
     def checkout_button
       helpers.button_to recording_studio_stripe.checkout_path,
                         params: { price_id: price.id },
-                        class: "block w-full",
-                        form: { data: { turbo: false } } do
+                        class: checkout_outer_class,
+                        form: checkout_form do
         render FlatPack::Button::Component.new(
           text: checkout_label,
           style: :primary,
           size: :md,
           type: "submit",
-          class: "w-full"
+          class: control_width
         )
       end
     end
@@ -128,7 +159,7 @@ module RecordingStudioStripe
         style: :primary,
         size: :md,
         href: recording_studio_stripe.subscription_change_path(price_id: price.id),
-        class: "w-full"
+        class: control_width
       )
     end
 
