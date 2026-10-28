@@ -69,6 +69,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='center'][data-plan-density='auto']", count: 1
     assert_includes response.body, "What\u2019s included"
+    assert_select "[data-plan-density='auto'] [data-controller='flat-pack--collapse'] button[aria-expanded='false']",
+                  text: "What\u2019s included"
     assert_select "h1", text: "Pricing", count: 1
     assert_select "[data-plans-heading].text-center", count: 1
     assert_select "[data-plans-heading].text-center h1", text: "Pricing"
@@ -1114,10 +1116,10 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
       assert_match(/Choose plan|Try now|Current plan|Upgrade|Downgrade|Switch now/, regions[2].text)
       assert_equal 1, regions[2].css("button, a.fp-button").size
       inclusions = regions[3]
-      details = inclusions.at_css("details")
-      assert details
-      assert_nil details["open"]
-      assert_empty details.css("li")
+      collapse = inclusions.at_css("[data-controller='flat-pack--collapse']")
+      assert collapse
+      assert_equal "false", collapse["data-flat-pack--collapse-open-value"]
+      assert_equal "false", collapse.at_css("button")["aria-expanded"]
       assert_equal 1, inclusions.css("ul").size
       assert inclusions.at_css("li")
       forms = card.css("form[action*='checkout']")

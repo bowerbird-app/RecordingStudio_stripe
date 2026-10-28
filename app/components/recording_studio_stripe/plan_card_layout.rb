@@ -54,19 +54,15 @@ module RecordingStudioStripe
     end
 
     def disclosure
-      helpers.tag.details(class: slot(:disclosure)) do
-        helpers.tag.summary(class: PlanCardDensity::SUMMARY) do
-          safe_join([Copy.t("plans.included"), chevron])
-        end
+      render FlatPack::Collapse::Component.new(
+        id: "plan-included-#{@product.id}",
+        title: Copy.t("plans.included"),
+        open: false,
+        border: false,
+        class: slot(:disclosure)
+      ) do
+        feature_frame
       end
-    end
-
-    def chevron
-      render FlatPack::Shared::IconComponent.new(
-        name: "chevron-down",
-        size: :sm,
-        class: PlanCardDensity::CHEVRON
-      )
     end
 
     def cards?

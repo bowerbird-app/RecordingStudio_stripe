@@ -1,21 +1,10 @@
 # frozen_string_literal: true
 
 module RecordingStudioStripe
-  # The feature list is the next sibling of details, not a child. A closed
-  # details element hides its children, so the list would vanish inside it from
-  # md. FlatPack::Collapse sets hidden on connect, and preflight turns [hidden]
-  # into display:none !important, so one Collapse cannot be a closed phone
-  # disclosure and a visible subgrid row.
+  # What’s included is a FlatPack Collapse. Phone stays closed (`open: false`).
+  # From md the trigger hides and the panel shows, so the feature list can stay
+  # the fourth subgrid row while the Collapse still owns the markup.
   module PlanCardDensity
-    SUMMARY = %w[
-      flex cursor-pointer list-none items-center gap-1 py-1
-      text-[length:var(--text-sm)] font-medium
-      text-[var(--surface-muted-content-color)]
-      [&::-webkit-details-marker]:hidden
-    ].join(" ").freeze
-
-    CHEVRON = "shrink-0 transition-transform group-open:rotate-180"
-
     def self.slot(density, name)
       TABLE.fetch(density).fetch(name)
     end
@@ -82,8 +71,15 @@ module RecordingStudioStripe
     AUTO_FORM = "m-0 flex flex-col max-md:w-auto md:w-full"
     AUTO_CONTROL = "max-md:w-auto md:w-full"
     AUTO_INCLUSIONS = "min-w-0 max-md:col-span-2 max-md:col-start-1 max-md:row-start-3"
-    AUTO_DISCLOSURE = "peer group m-0 md:hidden"
-    AUTO_LIST_FRAME = "max-md:hidden peer-open:block! md:block"
+    AUTO_DISCLOSURE = %w[
+      peer
+      group
+      m-0
+      md:[&>button]:hidden
+      md:[&_[data-flat-pack--collapse-target=content]]:block!
+      md:[&_[data-flat-pack--collapse-target=content][hidden]]:block!
+    ].join(" ").freeze
+    AUTO_LIST_FRAME = "md:block"
 
     ROWS_SHELL = "min-w-0 w-full"
     ROWS_CARD = "h-full"
@@ -114,7 +110,7 @@ module RecordingStudioStripe
     ROWS_CONTROL = "w-auto"
     ROWS_INCLUSIONS = "min-w-0 col-span-2 col-start-1 row-start-3"
     ROWS_DISCLOSURE = "peer group m-0"
-    ROWS_LIST_FRAME = "hidden peer-open:block!"
+    ROWS_LIST_FRAME = "min-w-0"
 
     TABLE = {
       auto: {

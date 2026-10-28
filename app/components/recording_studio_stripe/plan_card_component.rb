@@ -93,9 +93,7 @@ module RecordingStudioStripe
     def inclusions
       return feature_list if cards?
 
-      helpers.tag.div(class: slot(:inclusions)) do
-        safe_join([disclosure, feature_frame])
-      end
+      helpers.tag.div(class: slot(:inclusions)) { disclosure }
     end
 
     def feature_list
