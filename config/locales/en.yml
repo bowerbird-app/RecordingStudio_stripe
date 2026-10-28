@@ -65,6 +65,14 @@ en:
         past_due: "The card for %{name} did not go through."
         trial_until: "Trial until %{date}."
         trial_until_then: "Trial until %{date}. Then %{amount}."
+        trial_ends_in:
+          one: "Trial ends in %{count} day"
+          other: "Trial ends in %{count} days"
+        trial_ends_today: Trial ends today
+        renews_in:
+          one: "Renews in %{count} day"
+          other: "Renews in %{count} days"
+        renews_today: Renews today
         scheduled: "Next period switches to %{name}."
         current: Current
         past_due_badge: Past due

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-28
+
+### Changed
+- On `/billing`, a trialing plan uses FlatPack's primary badge (`style: :primary`) instead of info. Current stays success. Type, past due, scheduled change, and ending badges are unchanged
+- The live plan name on `/billing` uses FlatPack `PageTitle` `variant: :h2` (`--page-title-h2-size`). Price copy under the name is still the subtitle. `/plans` cards stay `h3`
+- The current-plan card puts the group name (Studio, Inbox) as muted `--text-xs` text above the plan name when more than one subscription type is configured. Trial, Current, and the other status badges sit top-right
+- A live card shows relative timing from `current_period_end` in brackets after the price. Trialing is "$29/month (Trial ends in 2 days)", "$29/month (Trial ends in 1 day)", or "$29/month (Trial ends today)". A current paid plan is "$29/month (Renews in 21 days)", "$29/month (Renews in 1 day)", or "$29/month (Renews today)". Past due and canceling omit the brackets
+
+### Upgrade notes
+- Bump to **0.17.0**. No database migration. No webhook change
+- Hosts that replaced `CurrentPlanComponent` should paint Trial with `FlatPack::Badge` `style: :primary` and the plan name with `FlatPack::PageTitle` `variant: :h2`. Current stays `style: :success`. Show the group as muted `--text-xs` text above the name, not as an info badge. Put status badges top-right. Put relative timing from `current_period_end` in brackets after the price subtitle. `/plans` density and `PlanCardComponent` are unchanged
+- Translate `recording_studio.stripe.billing.trial_ends_in`, `trial_ends_today`, `renews_in`, and `renews_today` in host locale files. Dummy French already has them
+
 ## [0.16.0] - 2026-10-28
 
 ### Changed
@@ -545,7 +558,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.16.0...v0.17.0
 [0.14.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.0...v0.12.1

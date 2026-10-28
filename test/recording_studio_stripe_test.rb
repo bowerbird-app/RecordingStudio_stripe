@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.16.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.17.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -405,16 +405,28 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes css, "--fp-button-border"
   end
 
-  def test_current_plan_puts_status_badges_above_the_name
+  def test_current_plan_puts_status_badges_top_right
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/current_plan_component.rb", __dir__))
 
-    assert_includes source, "stripe_card_stack(badges, title, actions)"
+    assert_includes source, "stripe_card_stack(heading, actions)"
+    refute_includes source, "stripe_card_stack(heading, timing, actions)"
+    assert_includes source, "\#{amount} (\#{extra})"
     assert_includes source, 'Copy.t("billing.current")'
-    assert_includes source, "show_type_badge?"
+    refute_includes source, "show_type_badge?"
+    refute_includes source, "show_group_label?"
     assert_includes source, "SubscriptionTypes.keys.size > 1"
+    assert_includes source, "text-[length:var(--text-xs)]"
+    assert_includes source, "justify-between"
+    assert_includes source, "justify-end"
     refute_includes source, "badge(\"Active\", :primary)"
     assert_includes source, 'Copy.t("billing.past_due_badge")'
-    assert_includes source, 'Copy.t("billing.trial_badge")'
+    assert_includes source, 'badge(Copy.t("billing.trial_badge"), :primary)'
+    assert_includes source, "variant: :h2"
+    refute_includes source, "variant: :h3"
+    refute_includes source, 'badge(Copy.t("billing.trial_badge"), :info)'
+    refute_includes source, "subscription_type_label, :info"
+    assert_includes source, 'Copy.t("billing.renews_in"'
+    assert_includes source, 'Copy.t("billing.trial_ends_in"'
     assert_includes source, 'Copy.t("billing.update_card")'
     assert_includes source, "stay_on_named"
     assert_includes source, "subscription_cancel_confirm_path"

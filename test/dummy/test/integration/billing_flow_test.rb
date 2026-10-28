@@ -612,7 +612,20 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, ">Active</"
     assert_includes response.body, "badge-success-background-color"
     refute_includes response.body, "badge-primary-background-color"
-    assert_match(/Current.*Studio/m, response.body)
+    refute_includes response.body, "badge-info-background-color"
+    assert_select "h2", text: "Pro"
+    assert_includes response.body, "text-[length:var(--text-xs)]"
+    assert_includes response.body, "justify-between"
+    assert_includes response.body, "justify-end"
+    studio_at = response.body.index(">Studio</")
+    current_at = response.body.index(">Current</")
+    name_at = response.body.index(">Pro</")
+
+    assert studio_at
+    assert current_at
+    assert name_at
+    assert_operator studio_at, :<, name_at
+    assert_operator name_at, :<, current_at
     assert_includes response.body, "md:grid-cols-2"
   end
 
@@ -898,27 +911,112 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select '[data-fp-style="stripe"]', text: /Manage billing on Stripe/
     assert_select '[data-fp-style="primary"]', text: /Update card/
     assert_includes response.body, "The card for Pro did not go through."
+    refute_includes response.body, "Trial ends"
+    refute_includes response.body, "Renews in"
+    refute_includes response.body, "Renews today"
     assert_includes response.body, "badge-danger-background-color"
     refute_includes response.body, ">Active</"
     assert_select "a[href*='subscription/cancel']", text: "Cancel"
   end
 
   test "trialing billing shows a trial badge" do
-    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
-    RecordingStudioStripe::ApplySubscription.call(
-      root_recording: @root,
-      price: pro,
-      current_period_end: Time.utc(2026, 10, 12)
-    )
-    @workspace.billing.subscription.update!(status: "trialing")
+    travel_to Time.utc(2026, 10, 10, 12, 0, 0) do
+      pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+      RecordingStudioStripe::ApplySubscription.call(
+        root_recording: @root,
+        price: pro,
+        current_period_end: Time.utc(2026, 10, 12)
+      )
+      @workspace.billing.subscription.update!(status: "trialing")
 
-    get recording_studio_stripe.root_path
+      get recording_studio_stripe.root_path
 
-    assert_response :success
-    assert_includes response.body, "Trial"
-    assert_includes response.body, "Trial until October 12, 2026. Then $29/month."
-    refute_includes response.body, "Trial runs until"
-    refute_includes response.body, ">Active</"
+      assert_response :success
+      assert_includes response.body, "Trial"
+      assert_includes response.body, "Trial until October 12, 2026. Then $29/month."
+      assert_includes response.body, "$29/month (Trial ends in 2 days)"
+      refute_includes response.body, "Trial runs until"
+      refute_includes response.body, ">Active</"
+      refute_includes response.body, ">Current</"
+      assert_includes response.body, "badge-primary-background-color"
+      refute_includes response.body, "badge-success-background-color"
+      refute_includes response.body, "badge-info-background-color"
+      assert_select "h2", text: "Pro"
+      assert_includes response.body, "text-[length:var(--text-xs)]"
+      assert_includes response.body, "justify-between"
+      assert_includes response.body, "justify-end"
+      studio_at = response.body.index(">Studio</")
+      trial_at = response.body.index(">Trial</")
+      name_at = response.body.index(">Pro</")
+
+      assert studio_at
+      assert trial_at
+      assert name_at
+      assert_operator studio_at, :<, name_at
+      assert_operator name_at, :<, trial_at
+    end
+  end
+
+  test "current plan card names days until renewal" do
+    travel_to Time.utc(2026, 10, 1, 12, 0, 0) do
+      pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+      RecordingStudioStripe::ApplySubscription.call(
+        root_recording: @root,
+        price: pro,
+        current_period_end: Time.utc(2026, 10, 22)
+      )
+
+      get recording_studio_stripe.root_path
+
+      assert_response :success
+      assert_includes response.body, "$29/month (Renews in 21 days)"
+      refute_includes response.body, "Trial ends"
+    end
+  end
+
+  test "current plan card uses one day and today copy" do
+    travel_to Time.utc(2026, 10, 21, 12, 0, 0) do
+      pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+      RecordingStudioStripe::ApplySubscription.call(
+        root_recording: @root,
+        price: pro,
+        current_period_end: Time.utc(2026, 10, 22)
+      )
+
+      get recording_studio_stripe.root_path
+
+      assert_includes response.body, "$29/month (Renews in 1 day)"
+      refute_includes response.body, "Renews in 1 days"
+    end
+
+    travel_to Time.utc(2026, 10, 22, 12, 0, 0) do
+      get recording_studio_stripe.root_path
+
+      assert_includes response.body, "$29/month (Renews today)"
+    end
+  end
+
+  test "trial plan card uses one day and today copy" do
+    travel_to Time.utc(2026, 10, 11, 12, 0, 0) do
+      pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+      RecordingStudioStripe::ApplySubscription.call(
+        root_recording: @root,
+        price: pro,
+        current_period_end: Time.utc(2026, 10, 12)
+      )
+      @workspace.billing.subscription.update!(status: "trialing")
+
+      get recording_studio_stripe.root_path
+
+      assert_includes response.body, "$29/month (Trial ends in 1 day)"
+      refute_includes response.body, "Trial ends in 1 days"
+    end
+
+    travel_to Time.utc(2026, 10, 12, 12, 0, 0) do
+      get recording_studio_stripe.root_path
+
+      assert_includes response.body, "$29/month (Trial ends today)"
+    end
   end
 
   test "cancel confirm names the plan then ends it at period end" do
@@ -947,6 +1045,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_predicate @workspace.billing.subscription, :canceling?
     assert_includes response.body, "This plan stays on until the period ends."
+    refute_includes response.body, "(Renews"
+    refute_includes response.body, "(Trial ends"
   end
 
   test "stay on plan clears a scheduled switch" do
