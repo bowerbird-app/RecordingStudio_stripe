@@ -169,24 +169,40 @@ module RecordingStudioStripe
       assert_nil amount["style"]
       assert_includes amount["class"].to_s, "text-[length:var(--text-xl)]"
       assert_includes amount["class"].to_s, "md:text-[length:var(--page-title-h2-size)]!"
-      assert_includes regions[1]["class"].to_s, "justify-start"
-      refute_includes regions[1]["class"].to_s, "justify-end"
+      assert_includes regions[1]["class"].to_s, "justify-end"
+      refute_includes regions[1]["class"].to_s, "justify-start"
       assert_includes regions[1]["class"].to_s, "md:pt-8"
-      assert_includes regions[1]["class"].to_s, "md:pb-8"
+      assert_includes regions[1]["class"].to_s, "md:pb-4"
+      refute_includes regions[1]["class"].to_s, "md:pb-8"
+      name_badge = regions[0].css("span").find { |node| node.text.include?("14 day trial") }
+      assert name_badge
+      assert_includes name_badge["class"].to_s, "md:hidden"
+      assert regions[1].at_css("[class*='max-md:hidden']")
       assert_includes regions[2]["class"].to_s, "justify-start"
     end
 
     test "a card without a trial offer keeps the shared price padding" do
       html = render_plans(products: [RecordingStudioStripe::Product.find_by!(name: "Starter")])
       fragment = Nokogiri::HTML.fragment(html)
-      price = fragment.at_css(".fp-card").element_children.first.element_children[1]
+      regions = fragment.at_css(".fp-card").element_children.first.element_children
+      price = regions[1]
 
-      assert_includes price["class"].to_s, "justify-start"
-      refute_includes price["class"].to_s, "justify-end"
-      assert_includes price["class"].to_s, "md:pt-4"
+      assert_includes price["class"].to_s, "justify-end"
+      refute_includes price["class"].to_s, "justify-start"
       assert_includes price["class"].to_s, "md:pb-4"
       refute_includes price["class"].to_s, "md:pt-8"
-      refute_includes price["class"].to_s, "md:pb-8"
+      refute_includes regions[0].text, "14 day trial"
+    end
+
+    test "rows put the trial badge after the plan name" do
+      html = render_plans(products: [RecordingStudioStripe::Product.find_by!(name: "Pro")], density: :rows)
+      fragment = Nokogiri::HTML.fragment(html)
+      regions = fragment.at_css(".fp-card").element_children.first.element_children
+      title = regions[0]
+      price = regions[1]
+
+      assert_includes title.at_css("h3").next_element.text, "14 day trial"
+      refute_includes price.text, "14 day trial"
     end
 
     test "current and upgrade wrap in the same outer box as checkout" do
