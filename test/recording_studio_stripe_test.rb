@@ -408,7 +408,9 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_current_plan_puts_status_badges_top_right
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/current_plan_component.rb", __dir__))
 
-    assert_includes source, "stripe_card_stack(heading, timing, actions)"
+    assert_includes source, "stripe_card_stack(heading, actions)"
+    refute_includes source, "stripe_card_stack(heading, timing, actions)"
+    assert_includes source, '#{amount} (#{extra})'
     assert_includes source, 'Copy.t("billing.current")'
     refute_includes source, "show_type_badge?"
     refute_includes source, "show_group_label?"

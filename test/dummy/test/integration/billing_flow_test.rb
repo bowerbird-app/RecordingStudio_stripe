@@ -911,6 +911,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select '[data-fp-style="stripe"]', text: /Manage billing on Stripe/
     assert_select '[data-fp-style="primary"]', text: /Update card/
     assert_includes response.body, "The card for Pro did not go through."
+    refute_includes response.body, "Trial ends"
+    refute_includes response.body, "Renews in"
+    refute_includes response.body, "Renews today"
     assert_includes response.body, "badge-danger-background-color"
     refute_includes response.body, ">Active</"
     assert_select "a[href*='subscription/cancel']", text: "Cancel"
@@ -931,7 +934,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
       assert_response :success
       assert_includes response.body, "Trial"
       assert_includes response.body, "Trial until October 12, 2026. Then $29/month."
-      assert_includes response.body, "Trial ends in 2 days"
+      assert_includes response.body, "$29/month (Trial ends in 2 days)"
       refute_includes response.body, "Trial runs until"
       refute_includes response.body, ">Active</"
       refute_includes response.body, ">Current</"
@@ -966,7 +969,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
       get recording_studio_stripe.root_path
 
       assert_response :success
-      assert_includes response.body, "Renews in 21 days"
+      assert_includes response.body, "$29/month (Renews in 21 days)"
       refute_includes response.body, "Trial ends"
     end
   end
@@ -982,14 +985,14 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
       get recording_studio_stripe.root_path
 
-      assert_includes response.body, "Renews in 1 day"
+      assert_includes response.body, "$29/month (Renews in 1 day)"
       refute_includes response.body, "Renews in 1 days"
     end
 
     travel_to Time.utc(2026, 10, 22, 12, 0, 0) do
       get recording_studio_stripe.root_path
 
-      assert_includes response.body, "Renews today"
+      assert_includes response.body, "$29/month (Renews today)"
     end
   end
 
@@ -1005,14 +1008,14 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
       get recording_studio_stripe.root_path
 
-      assert_includes response.body, "Trial ends in 1 day"
+      assert_includes response.body, "$29/month (Trial ends in 1 day)"
       refute_includes response.body, "Trial ends in 1 days"
     end
 
     travel_to Time.utc(2026, 10, 12, 12, 0, 0) do
       get recording_studio_stripe.root_path
 
-      assert_includes response.body, "Trial ends today"
+      assert_includes response.body, "$29/month (Trial ends today)"
     end
   end
 
@@ -1042,6 +1045,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_predicate @workspace.billing.subscription, :canceling?
     assert_includes response.body, "This plan stays on until the period ends."
+    refute_includes response.body, "(Renews"
+    refute_includes response.body, "(Trial ends"
   end
 
   test "stay on plan clears a scheduled switch" do

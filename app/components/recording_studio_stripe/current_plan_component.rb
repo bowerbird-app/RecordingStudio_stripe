@@ -12,7 +12,7 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(background: :default, border: :default, shadow: :none) do |card|
-        card.body { helpers.stripe_card_stack(heading, timing, actions) }
+        card.body { helpers.stripe_card_stack(heading, actions) }
       end
     end
 
@@ -45,7 +45,9 @@ module RecordingStudioStripe
       price = @subscription.price
       return Copy.t("billing.catching_up") unless price
 
-      Copy.t("intervals.amount", amount: price.formatted_amount, interval: stripe_interval_label(price.interval))
+      amount = Copy.t("intervals.amount", amount: price.formatted_amount, interval: stripe_interval_label(price.interval))
+      extra = timing_copy
+      extra.blank? ? amount : "#{amount} (#{extra})"
     end
 
     def badges
@@ -71,13 +73,6 @@ module RecordingStudioStripe
 
     def badge(text, style)
       render FlatPack::Badge::Component.new(text: text, style: style, size: :sm)
-    end
-
-    def timing
-      text = timing_copy
-      return if text.blank?
-
-      helpers.tag.p(text, class: "m-0 text-sm text-[var(--surface-muted-content-color)]")
     end
 
     def timing_copy
