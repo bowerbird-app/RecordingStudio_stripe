@@ -4,6 +4,12 @@ ENV["RAILS_ENV"] = "test"
 require_relative "../../dummy/test/test_helper"
 
 module RecordingStudioStripe
+  PlanSubscriptionStub = Struct.new(:price_id, :price, keyword_init: true) do
+    def active?
+      true
+    end
+  end
+
   class PlansComponentTest < ActiveSupport::TestCase
     setup do
       RecordingStudioStripe::SeedDemoCatalog.call
@@ -136,8 +142,14 @@ module RecordingStudioStripe
       assert_empty details.css("li")
       assert_equal 1, inclusions.css("ul").size
       assert_equal 1, card.css("form[action*='checkout']").size
-      assert_includes card.at_css("form")["class"].to_s.split, "max-md:w-auto"
-      assert_includes card.at_css("form")["class"].to_s.split, "md:w-full"
+      form = card.at_css("form")
+      assert_includes form["class"].to_s.split, "max-md:w-auto"
+      assert_includes form["class"].to_s.split, "md:w-full"
+      assert_includes form["class"].to_s.split, "flex"
+      assert_includes form["class"].to_s.split, "flex-col"
+      assert_equal 1, form.css("button").size
+      regions = body.element_children
+      assert_includes regions[2]["class"].to_s, "justify-start"
     end
 
     test "auto cards hide the marketing subtitle on a phone and shrink the price" do
@@ -157,6 +169,54 @@ module RecordingStudioStripe
       assert_includes amount["class"].to_s, "text-[length:var(--text-xl)]"
       assert_includes amount["class"].to_s, "md:text-[length:var(--page-title-h2-size)]!"
       assert_includes regions[1]["class"].to_s, "justify-end"
+      assert_includes regions[1]["class"].to_s, "md:py-2"
+      assert_includes regions[2]["class"].to_s, "justify-start"
+    end
+
+    test "a card without a trial offer does not pad the price block" do
+      html = render_plans(products: [RecordingStudioStripe::Product.find_by!(name: "Starter")])
+      fragment = Nokogiri::HTML.fragment(html)
+      price = fragment.at_css(".fp-card").element_children.first.element_children[1]
+
+      refute_includes price["class"].to_s, "md:py-2"
+    end
+
+    test "current and upgrade wrap in the same outer box as checkout" do
+      pro = RecordingStudioStripe::Product.find_by!(name: "Pro")
+      starter = RecordingStudioStripe::Product.find_by!(name: "Starter")
+      subscription = PlanSubscriptionStub.new(price_id: pro.price_for("month").id, price: pro.price_for("month"))
+
+      current_html = ApplicationController.render(
+        RecordingStudioStripe::PlanCardComponent.new(
+          product: pro,
+          interval: "month",
+          subscription: subscription,
+          density: :auto
+        ),
+        layout: false
+      )
+      upgrade_html = ApplicationController.render(
+        RecordingStudioStripe::PlanCardComponent.new(
+          product: starter,
+          interval: "month",
+          subscription: subscription,
+          density: :auto
+        ),
+        layout: false
+      )
+
+      current_action = Nokogiri::HTML.fragment(current_html).at_css(".fp-card").element_children.first.element_children[2]
+      upgrade_action = Nokogiri::HTML.fragment(upgrade_html).at_css(".fp-card").element_children.first.element_children[2]
+      box = current_action.element_children.first
+
+      assert_equal "DIV", box.name.upcase
+      assert_includes box["class"].to_s.split, "flex"
+      assert_includes box["class"].to_s.split, "flex-col"
+      assert_includes box["class"].to_s.split, "md:w-full"
+      assert_equal 1, box.css("button").size
+      assert_nil current_action.at_css("form")
+      assert_equal box["class"], upgrade_action.element_children.first["class"]
+      assert_equal 1, upgrade_action.css("button, a").size
     end
 
     test "density cards keep four regions and no disclosure" do

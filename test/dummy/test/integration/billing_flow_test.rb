@@ -1008,7 +1008,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
       assert regions[0].at_css("h3")
       assert_includes regions[1]["class"].to_s, "justify-end"
       assert_match(/\$\d/, regions[1].text)
+      assert_includes regions[2]["class"].to_s, "justify-start"
       assert_match(/Choose plan|Try now|Current plan|Upgrade|Downgrade|Switch now/, regions[2].text)
+      assert_equal 1, regions[2].css("button, a.fp-button").size
       inclusions = regions[3]
       details = inclusions.at_css("details")
       assert details
