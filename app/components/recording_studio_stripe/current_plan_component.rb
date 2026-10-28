@@ -19,28 +19,17 @@ module RecordingStudioStripe
     private
 
     def heading
-      helpers.tag.div(class: "flex items-start justify-between gap-3") do
-        safe_join([name_column, badges].compact)
-      end
-    end
-
-    def name_column
-      helpers.tag.div(class: "min-w-0") do
-        safe_join([group_label, title].compact)
-      end
+      name = helpers.tag.div(class: "min-w-0") { safe_join([group_label, title].compact) }
+      helpers.tag.div(class: "flex items-start justify-between gap-3") { safe_join([name, badges].compact) }
     end
 
     def group_label
-      return unless show_group_label?
+      return unless RecordingStudioStripe::SubscriptionTypes.keys.size > 1
 
       helpers.tag.p(
         @subscription.subscription_type_label,
         class: "m-0 text-[length:var(--text-xs)] text-[var(--surface-muted-content-color)]"
       )
-    end
-
-    def show_group_label?
-      RecordingStudioStripe::SubscriptionTypes.keys.size > 1
     end
 
     def title

@@ -410,8 +410,8 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes source, "stripe_card_stack(heading, timing, actions)"
     assert_includes source, 'Copy.t("billing.current")'
-    assert_includes source, "show_group_label?"
     refute_includes source, "show_type_badge?"
+    refute_includes source, "show_group_label?"
     assert_includes source, "SubscriptionTypes.keys.size > 1"
     assert_includes source, "text-[length:var(--text-xs)]"
     assert_includes source, "justify-between"
