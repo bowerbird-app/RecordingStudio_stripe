@@ -27,7 +27,7 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Customer pricing page, billing page, and usage page
 - Manage billing on Stripe on `/billing` opens the Stripe Customer Portal for invoices and cards
 - Usage at `/billing/usage` for standing caps and period meters
-- `PlansComponent` for those cards, centered by default (`align: :center`). Cards in a group share four subgrid rows, so the name, the price, the button, and the feature list line up across the row
+- `PlansComponent` for those cards, centered by default (`align: :center`). Default `density: :auto` draws a compact row on a phone and, from the `md` breakpoint, four subgrid rows so the name, the price, the button, and the feature list line up. `density: :cards` keeps the tall card on a phone. `density: :rows` keeps the compact row at every width
 - `UsageComponent` for caps and meters on a host screen
 - Recording Studio Admin section for Products, Prices, Meters, Paywalls, Customers, and Subscriptions
 - Named paywalls on a Product, checked with Accessible `authorized_action?`
@@ -97,11 +97,12 @@ Render the same plan cards on a host screen. Pass `groups:` from `Catalog.plan_g
       **intervals.hrefs_for(key) { |query| plans_path(**query) }
     )
   },
-  align: :center
+  align: :center,
+  density: :auto
 ) %>
 ```
 
-A single-type host can still pass `products:`, `subscription:`, `weekly_href`, `monthly_href`, and `yearly_href`. `hrefs_for` already includes `weekly_href`. A pill shows only when that group has a Price for it. `stripe_plan_intervals(products)` returns those intervals. Pass `intervals:` to limit them, for example `%w[month year]`. When the requested interval is not in that list, the cards use the first interval that is. The card row keeps Products that have a Price for the interval on screen. `align: :center` is the default and centers the title, subtitle, and interval pills. Pass `align: :left` if the host screen needs that. Copy inside each card stays left either way. Group titles such as Studio and Inbox only render when more than one type has Products. Week is `/wk` on the card. `?interval=week` and `?interval[studio]=week` select it. Default view stays monthly.
+A single-type host can still pass `products:`, `subscription:`, `weekly_href`, `monthly_href`, and `yearly_href`. `hrefs_for` already includes `weekly_href`. A pill shows only when that group has a Price for it. `stripe_plan_intervals(products)` returns those intervals. Pass `intervals:` to limit them, for example `%w[month year]`. When the requested interval is not in that list, the cards use the first interval that is. The card row keeps Products that have a Price for the interval on screen. `align: :center` is the default and centers the title, subtitle, and interval pills. Pass `align: :left` if the host screen needs that. Copy inside each card stays left either way. `density: :auto` is the default. On a phone each plan is a compact row. The name stays on one line, the marketing subtitle hides, the price is smaller, and the features sit behind What’s included. From the `md` breakpoint those cards share four subgrid rows again, and the feature list stays open. The grid is one column on a phone, two from `md`, and three from `lg`. Pass `density: :cards` to keep the tall card on a phone. Pass `density: :rows` to keep the compact row at every width. That stacks the plans in a list with a small gap. `PlanCardComponent` defaults to `density: :cards`. Pass `density:` when a host renders that card itself. `config.layout` is the engine layout. It does not choose density. An unknown density raises `ArgumentError`. Group titles such as Studio and Inbox only render when more than one type has Products. Week is `/wk` on the card. `?interval=week` and `?interval[studio]=week` select it. Default view stays monthly.
 
 Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave them blank in dummy to click through locally.
 
