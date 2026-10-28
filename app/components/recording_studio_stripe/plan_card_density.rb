@@ -58,6 +58,7 @@ module RecordingStudioStripe
       max-md:items-baseline
       max-md:gap-x-2
       max-md:gap-y-0.5
+      max-md:py-2
       md:h-full
       md:flex-col
       md:items-start
@@ -105,7 +106,7 @@ module RecordingStudioStripe
     ].join(" ").freeze
     ROWS_SUBTITLE = "m-0 mt-2 text-lg fp-text-pretty text-[var(--surface-muted-content-color)]"
     ROWS_SUBTITLE_QUIET = "m-0 mt-2 text-lg fp-text-pretty text-[var(--surface-muted-content-color)] hidden"
-    ROWS_PRICE = "min-w-0 col-start-1 row-start-2 flex flex-row flex-wrap items-baseline gap-x-2 gap-y-0.5"
+    ROWS_PRICE = "min-w-0 col-start-1 row-start-2 flex flex-row flex-wrap items-baseline gap-x-2 gap-y-0.5 py-2"
     ROWS_AMOUNT = "leading-none text-[length:var(--text-xl)]"
     ROWS_UNIT = "leading-none text-[length:var(--text-sm)]"
     ROWS_ACTION = "col-start-2 row-start-1 row-span-2 w-auto shrink-0 self-center justify-self-end"

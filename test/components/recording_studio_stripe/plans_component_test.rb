@@ -174,6 +174,7 @@ module RecordingStudioStripe
       assert_includes regions[1]["class"].to_s, "md:pt-8"
       assert_includes regions[1]["class"].to_s, "md:pb-4"
       refute_includes regions[1]["class"].to_s, "md:pb-8"
+      assert_includes regions[1]["class"].to_s, "max-md:py-2"
       name_badge = regions[0].css("span").find { |node| node.text.include?("14 day trial") }
       assert name_badge
       assert_includes name_badge["class"].to_s, "md:hidden"
@@ -203,6 +204,7 @@ module RecordingStudioStripe
 
       assert_includes title.at_css("h3").next_element.text, "14 day trial"
       refute_includes price.text, "14 day trial"
+      assert_includes price["class"].to_s.split, "py-2"
     end
 
     test "current and upgrade wrap in the same outer box as checkout" do
