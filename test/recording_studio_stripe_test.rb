@@ -405,7 +405,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes css, "--fp-button-border"
   end
 
-  def test_current_plan_puts_status_badges_above_the_name
+  def test_current_plan_puts_status_badges_top_right
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/current_plan_component.rb", __dir__))
 
     assert_includes source, "stripe_card_stack(heading, timing, actions)"
