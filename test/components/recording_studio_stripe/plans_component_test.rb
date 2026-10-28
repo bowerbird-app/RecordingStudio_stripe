@@ -133,14 +133,15 @@ module RecordingStudioStripe
       assert_includes body["class"].to_s, "md:grid-rows-subgrid"
       assert_equal 4, body.element_children.size
       inclusions = body.element_children[3]
-      collapse = inclusions.at_css("[data-controller='flat-pack--collapse']")
-      assert collapse
-      assert_equal "false", collapse["data-flat-pack--collapse-open-value"]
-      assert_includes collapse["class"].to_s, "peer"
-      assert_equal "What\u2019s included", collapse.at_css("button").text.squish
-      assert_equal "false", collapse.at_css("button")["aria-expanded"]
-      assert_equal "chevron-down", collapse.at_css("svg")["data-flat-pack--icon-name-value"]
+      details = inclusions.at_css("details")
+      assert details
+      assert_nil details["open"]
+      assert_includes details["class"].to_s, "peer"
+      assert_equal "What\u2019s included", details.at_css("summary").text.squish
+      assert_equal "chevron-down", details.at_css("svg")["data-flat-pack--icon-name-value"]
+      assert_empty details.css("li")
       assert_equal 1, inclusions.css("ul").size
+      refute inclusions.at_css("[data-controller='flat-pack--collapse']")
       assert_equal 1, card.css("form[action*='checkout']").size
       form = card.at_css("form")
       assert_includes form["class"].to_s.split, "max-md:w-auto"
@@ -253,6 +254,7 @@ module RecordingStudioStripe
       fragment = Nokogiri::HTML.fragment(html)
 
       assert_equal "cards", fragment.at_css("[data-plans-align]")["data-plan-density"]
+      refute fragment.at_css("details")
       refute fragment.at_css("[data-controller='flat-pack--collapse']")
       card = fragment.at_css(".fp-card")
       regions = card.element_children.first.element_children
@@ -279,9 +281,15 @@ module RecordingStudioStripe
       refute_includes html, "grid-rows-subgrid"
       assert_includes list["class"].to_s, "flex-col"
       assert_includes list["class"].to_s, "gap-2"
+      starter = RecordingStudioStripe::Product.find_by!(name: "Starter")
+      panel_id = "plan-included-#{starter.id}-month-content"
       collapse = fragment.at_css("[data-controller='flat-pack--collapse']")
       assert collapse
       assert_equal "false", collapse["data-flat-pack--collapse-open-value"]
+      assert_equal "false", collapse.at_css("button")["aria-expanded"]
+      assert_equal panel_id, collapse.at_css("button")["aria-controls"]
+      assert fragment.at_css("##{panel_id}[hidden]")
+      refute fragment.at_css("details")
       assert_equal 1, fragment.css(".fp-card ul").size
       assert_equal 1, fragment.css("form[action*='checkout']").size
     end

@@ -1,10 +1,21 @@
 # frozen_string_literal: true
 
 module RecordingStudioStripe
-  # What’s included is a FlatPack Collapse. Phone stays closed (`open: false`).
-  # From md the trigger hides and the panel shows, so the feature list can stay
-  # the fourth subgrid row while the Collapse still owns the markup.
+  # :auto keeps a native details sibling of the feature list. Collapse hides
+  # its panel with [hidden] (preflight !important), so one Collapse cannot stay
+  # closed on a phone and always-visible from md without a second list or a
+  # [hidden] override. :rows is closed until opened, so that density uses
+  # FlatPack Collapse instead.
   module PlanCardDensity
+    SUMMARY = %w[
+      flex cursor-pointer list-none items-center gap-1 py-1
+      text-[length:var(--text-sm)] font-medium
+      text-[var(--surface-muted-content-color)]
+      [&::-webkit-details-marker]:hidden
+    ].join(" ").freeze
+
+    CHEVRON = "shrink-0 transition-transform group-open:rotate-180"
+
     def self.slot(density, name)
       TABLE.fetch(density).fetch(name)
     end
@@ -71,15 +82,8 @@ module RecordingStudioStripe
     AUTO_FORM = "m-0 flex flex-col max-md:w-auto md:w-full"
     AUTO_CONTROL = "max-md:w-auto md:w-full"
     AUTO_INCLUSIONS = "min-w-0 max-md:col-span-2 max-md:col-start-1 max-md:row-start-3"
-    AUTO_DISCLOSURE = %w[
-      peer
-      group
-      m-0
-      md:[&>button]:hidden
-      md:[&_[data-flat-pack--collapse-target=content]]:block!
-      md:[&_[data-flat-pack--collapse-target=content][hidden]]:block!
-    ].join(" ").freeze
-    AUTO_LIST_FRAME = "md:block"
+    AUTO_DISCLOSURE = "peer group m-0 md:hidden"
+    AUTO_LIST_FRAME = "max-md:hidden peer-open:block! md:block"
 
     ROWS_SHELL = "min-w-0 w-full"
     ROWS_CARD = "h-full"
@@ -109,7 +113,7 @@ module RecordingStudioStripe
     ROWS_FORM = "m-0 flex w-auto flex-col"
     ROWS_CONTROL = "w-auto"
     ROWS_INCLUSIONS = "min-w-0 col-span-2 col-start-1 row-start-3"
-    ROWS_DISCLOSURE = "peer group m-0"
+    ROWS_DISCLOSURE = "m-0"
     ROWS_LIST_FRAME = "min-w-0"
 
     TABLE = {

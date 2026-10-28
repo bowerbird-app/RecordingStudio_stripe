@@ -54,15 +54,33 @@ module RecordingStudioStripe
     end
 
     def disclosure
+      return rows_collapse if @density == :rows
+
+      helpers.tag.details(class: slot(:disclosure)) do
+        helpers.tag.summary(class: PlanCardDensity::SUMMARY) do
+          safe_join([Copy.t("plans.included"), chevron])
+        end
+      end
+    end
+
+    def rows_collapse
       render FlatPack::Collapse::Component.new(
-        id: "plan-included-#{@product.id}",
+        id: "plan-included-#{@product.id}-#{@interval}",
         title: Copy.t("plans.included"),
         open: false,
         border: false,
         class: slot(:disclosure)
       ) do
-        feature_frame
+        feature_list
       end
+    end
+
+    def chevron
+      render FlatPack::Shared::IconComponent.new(
+        name: "chevron-down",
+        size: :sm,
+        class: PlanCardDensity::CHEVRON
+      )
     end
 
     def cards?

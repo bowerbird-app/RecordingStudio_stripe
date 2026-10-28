@@ -93,7 +93,11 @@ module RecordingStudioStripe
     def inclusions
       return feature_list if cards?
 
-      helpers.tag.div(class: slot(:inclusions)) { disclosure }
+      helpers.tag.div(class: slot(:inclusions)) do
+        next disclosure if @density == :rows
+
+        safe_join([disclosure, feature_frame])
+      end
     end
 
     def feature_list
