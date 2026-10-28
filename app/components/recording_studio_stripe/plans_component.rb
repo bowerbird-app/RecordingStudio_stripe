@@ -11,6 +11,10 @@ module RecordingStudioStripe
     # Tailwind scans this file. The pill track reads this token (the default is transparent).
     # mb-4 is the space under the Monthly / Yearly switch, above the plan cards.
     PILL_TRACK_CLASS = "[--tabs-pill-list-background-color:var(--surface-background-color)] mb-4"
+    GROUP_DIVIDER_CLASS = [
+      "fp-on-backdrop",
+      "in-data-[flat-pack-layout-background]:[--surface-border-color:var(--backdrop-muted-content-color)]"
+    ].join(" ")
 
     def initialize(interval: "month", weekly_href: nil, monthly_href: nil, yearly_href: nil, intervals: nil,
                    products: [], subscription: nil, groups: nil, align: :center, title: Copy::UNSET,
@@ -48,6 +52,7 @@ module RecordingStudioStripe
         title: Copy.value(@title, "plans.title"),
         subtitle: Copy.value(@subtitle, "plans.subtitle").presence,
         variant: :h1,
+        size: :display,
         class: aligned_class("mb-0 pb-0 w-full text-center fp-on-backdrop", "mb-0 pb-0 fp-on-backdrop"),
         data: { plans_heading: true }
       )
@@ -94,7 +99,7 @@ module RecordingStudioStripe
       return if title.blank? && pills.blank?
 
       helpers.tag.div(
-        helpers.safe_join([title, pills].compact),
+        helpers.safe_join([render(FlatPack::Divider::Component.new(class: GROUP_DIVIDER_CLASS)), title, pills].compact),
         class: heading_stack_class,
         data: { plan_group_heading: true }
       )

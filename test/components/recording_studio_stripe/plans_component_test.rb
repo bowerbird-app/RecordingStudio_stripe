@@ -74,9 +74,44 @@ module RecordingStudioStripe
       refute fragment.at_css("[data-plan-group-heading]")
       heading = fragment.at_css("[data-plans-heading]")
       assert_includes heading["class"].to_s.split, "fp-on-backdrop"
+      assert_includes heading["class"].to_s.split, "text-center"
+      assert_includes heading.at_css("h1")["class"].to_s.split, "fp-display"
+      assert_nil fragment.at_css("[role='separator']")
       pill = fragment.at_css("[data-fp-style='primary']")
       assert_includes pill["class"].to_s.split, "mb-4"
       assert_nil(pill.ancestors.find { |node| node["class"].to_s.split.include?("fp-on-backdrop") })
+    end
+
+    test "each plan group starts with a backdrop rule under a display title" do
+      studio = RecordingStudioStripe::Product.find_by!(name: "Pro")
+      inbox = RecordingStudioStripe::Product.find_by!(name: "Inbox")
+      html = ApplicationController.render(
+        RecordingStudioStripe::PlansComponent.new(
+          groups: [
+            { key: "studio", label: "Studio", products: [studio] },
+            { key: "inbox", label: "Inbox", products: [inbox] }
+          ]
+        ),
+        layout: false
+      )
+
+      fragment = Nokogiri::HTML.fragment(html)
+      heading = fragment.at_css("[data-plans-heading]")
+      assert_includes heading["class"].to_s.split, "text-center"
+      assert_includes heading["class"].to_s.split, "fp-on-backdrop"
+      assert_includes heading.at_css("h1")["class"].to_s.split, "fp-display"
+      assert_equal "Pricing", heading.at_css("h1").text
+
+      headings = fragment.css("[data-plan-group-heading]")
+      titles = headings.map { |node| node.at_css(".fp-section-title").text.squish }
+      assert_equal %w[Studio Inbox], titles
+      headings.each do |group_heading|
+        divider = group_heading.element_children.first
+        assert_equal "separator", divider["role"]
+        divider_classes = divider["class"].to_s.split
+        assert_empty(RecordingStudioStripe::PlansComponent::GROUP_DIVIDER_CLASS.split - divider_classes)
+        assert_includes divider.next_element["class"].to_s.split, "fp-section-title"
+      end
     end
   end
 end
