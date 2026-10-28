@@ -7,7 +7,7 @@
 - Recording Studio `>= 6.2.0` (gemspec). Development pin is GitHub tag `v6.2.0`
 - Accessible `~> 0.22` (GitHub tag `v0.22.0`)
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
-- FlatPack `>= 0.1.327`. This repo pins GitHub tag `v0.1.327`
+- FlatPack `>= 0.1.329`. This repo pins GitHub tag `v0.1.329`
 - Trashable GitHub tag `v0.12.0` (`require: false`)
 - Admin dummy tag `v2.7.0` and Logs dummy tag `v0.7.0`
 - Root Switchable commit `8dd47257db449120496ad64ed2ce68af600dd6cd` (`0.11.0`, Recording Studio 6.1 layout, still resolves with 6.2.0)
@@ -31,7 +31,7 @@ Engine controllers call `recording_studio_layout { RecordingStudioStripe.configu
 
 `PlansComponent` takes `density:` (`:auto`, `:cards`, or `:rows`). The default `:auto` is a compact row below `md` and the four-row subgrid card from `md`. `:cards` keeps the tall card at every width. `:rows` keeps the compact row at every width. `PlanCardComponent` defaults to `:cards`. Checkout on a plan card is one `form_with` around a single Flatpack submit button. Desktop amounts sit on one baseline. Extra trial padding sits above the amount. On a phone the trial badge sits after the plan name. `config.layout` does not set density. Anything else raises `ArgumentError`. No database migration. No webhook change.
 
-`CurrentPlanComponent` on `/billing` paints Trial with FlatPack badge `style: :primary` and the plan name with `PageTitle` `variant: :h2`. Current stays `style: :success`. The group name is muted `--text-xs` text above the plan name when more than one subscription type is configured. Status badges sit top-right. Relative timing from `current_period_end` sits in brackets after the price ("$29/month (Trial ends in 2 days)", "$29/month (Renews in 21 days)", or today). `/plans` cards stay `h3`.
+`CurrentPlanComponent` on `/billing` paints Trial with FlatPack badge `style: :primary` and the plan name with `PageTitle` `variant: :h2`. Current stays `style: :success`. The group name is muted `--text-xs` text above the plan name when more than one subscription type is configured. Status badges sit top-right. Relative timing from `current_period_end` sits in brackets after the price ("$29/month (Trial ends in 2 days)", "$29/month (Renews in 21 days)", or today). `/plans` cards stay `h3`. `stripe_card_stack` lays those card bodies out with FlatPack `Collection` (`as: :list`, `layout: :stack`, `gap: :md`). Admin pricing-card headings use `SectionTitle`. The `/plans` What’s included disclosure is still a native `details` element.
 
 Page titles use `content_for :title` and `content_for :subtitle`. Back and close use `flat_pack_page_nav`. The right side of the top nav uses `register_page_nav` or `content_for :page_nav_right`. `/plans` centers its title and subtitle in `PlansComponent` and does not set `content_for :title`. Those headings, and each group heading, use `fp-on-backdrop`. That class changes text only when the layout has a background image. Plan cards are outside it. Interval pills use `track: true` and `style: :primary`, and set the pill list background token to the surface background. The track class includes `mb-4`, so the switch stays clear of the plan cards. The page title uses `size: :display`. Each group title on a multi-group page has a divider above it. Over a layout photo the rule uses `--backdrop-muted-content-color`. Without a photo it keeps the surface border.
 

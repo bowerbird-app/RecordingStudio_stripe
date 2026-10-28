@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.17.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.17.1", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -14,7 +14,7 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_gemspec_pins_recording_studio_accessible_and_stripe
     gemspec = File.read(File.expand_path("../recording_studio_stripe.gemspec", __dir__))
 
-    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.327"'
+    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.329"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.2.0"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.22"'
     assert_includes gemspec, 'spec.add_dependency "view_component", ">= 4.14", "< 5"'
@@ -58,7 +58,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes gemfile, 'ref: "8dd47257db449120496ad64ed2ce68af600dd6cd"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.6.1"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.5.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.327"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.329"'
     assert_includes gemfile, 'gem "view_component", "4.19.0"'
     assert_includes gemfile, "widen_recording_studio_requirement"
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.1.7"'
@@ -69,17 +69,17 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.2.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.22.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.327"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.329"'
     assert_includes gemfile, 'gem "view_component", "4.19.0"'
     assert_includes gemfile, "widen_recording_studio_requirement"
   end
 
-  def test_lockfiles_pin_flat_pack_0_1_327
+  def test_lockfiles_pin_flat_pack_0_1_329
     ["../Gemfile.lock", "dummy/Gemfile.lock"].each do |path|
       lock = File.read(File.expand_path(path, __dir__))
 
-      assert_includes lock, "flat_pack (0.1.327)"
-      assert_includes lock, "tag: v0.1.327"
+      assert_includes lock, "flat_pack (0.1.329)"
+      assert_includes lock, "tag: v0.1.329"
     end
   end
 
@@ -586,5 +586,13 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes card, "label: \"Key\""
     assert_includes helper, "stripe_plan_card_open?"
     assert_includes helper, "stripe_plan_card_extra_rows"
+    assert_includes helper, "Collection::Component.new(as: :list, layout: :stack, gap: :md, class: \"h-full\")"
+    refute_includes helper, "flex h-full flex-col gap-4"
+    assert_includes card, "Collection::Component.new(as: :list, layout: :stack, gap: :md)"
+    assert_includes card, "SectionTitle::Component"
+    assert_includes card, "with_trailing"
+    assert_includes card, 't("recording_studio.stripe.admin.plan_card.extra_line_help")'
+    refute_includes card, "<p "
+    refute_includes card, "flex flex-col gap-4"
   end
 end

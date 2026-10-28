@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-10-28
+
+### Changed
+- Billing and usage cards stack their body through FlatPack `Collection` (`as: :list`, `layout: :stack`, `gap: :md`) instead of a custom flex column. `stripe_card_stack` still takes the same parts
+- The Admin pricing-card disclosure uses that Collection for its fields. Hide-on-the-card and Extra line are FlatPack `SectionTitle` (`size: :sm`, `spacing: :none`). Extra line help is the subtitle. The hide tooltip stays on `SectionTitle` `trailing`. Copy is unchanged
+- Requires `flat_pack` `>= 0.1.329`. Development and dummy pins are GitHub tag `v0.1.329`. `view_component` stays `4.19.0`
+- The `/plans` phone disclosure for What’s included is unchanged. It still needs a FlatPack Collapse that can stay visible from `md`
+
+### Upgrade notes
+- Bump to **0.17.1**. Install FlatPack **0.1.329** or newer. No database migration. No webhook change
+- Hosts that call `stripe_card_stack` get a Collection list. Hosts that copied the old `flex h-full flex-col gap-4` wrapper should render `FlatPack::Collection::Component` with `as: :list`, `layout: :stack`, `gap: :md`, and `class: "h-full"`
+- Hosts that replaced the Admin `_plan_card` partial should drop the raw `<p>` headings and use `SectionTitle` for Hide on the card and Extra line
+
 ## [0.17.0] - 2026-10-28
 
 ### Changed
@@ -558,7 +571,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.1...HEAD
+[0.17.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.16.0...v0.17.0
 [0.14.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.1...v0.13.0
