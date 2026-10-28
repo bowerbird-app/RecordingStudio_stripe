@@ -6,6 +6,8 @@ module RecordingStudioStripe
     include PlanCardLayout
 
     DENSITIES = %i[auto cards rows].freeze
+    CARDS_CONTROL = "m-0 flex w-full flex-col"
+    CARDS_ACTION = "flex w-full flex-col justify-start"
     SUBGRID_ROWS = "grid row-span-4 grid-rows-subgrid"
     # Flatpack Card rejects style:, and its own flex class wins a normal grid utility.
     CARD_SUBGRID_ROWS = "h-full [display:grid]! [grid-template-rows:subgrid]! [grid-row:span_4]!"
@@ -69,7 +71,7 @@ module RecordingStudioStripe
     end
 
     def action_row
-      return helpers.tag.div(class: "w-full") { action } if cards?
+      return helpers.tag.div(class: CARDS_ACTION) { action } if cards?
 
       helpers.tag.div(class: slot(:action)) { action }
     end
@@ -125,27 +127,26 @@ module RecordingStudioStripe
     end
 
     def current_button
-      render FlatPack::Button::Component.new(
-        text: Copy.t("plans.current_plan"),
-        style: :secondary,
-        size: :md,
-        type: "button",
-        class: control_width
-      )
+      plan_button(text: Copy.t("plans.current_plan"), style: :secondary)
     end
 
     def checkout_button
-      helpers.button_to recording_studio_stripe.checkout_path,
-                        params: { price_id: price.id },
-                        class: checkout_outer_class,
-                        form: checkout_form do
-        render FlatPack::Button::Component.new(
-          text: checkout_label,
-          style: :primary,
-          size: :md,
-          type: "submit",
-          class: control_width
-        )
+      helpers.form_with(
+        url: recording_studio_stripe.checkout_path,
+        method: :post,
+        class: checkout_outer_class,
+        data: { turbo: false }
+      ) do
+        helpers.safe_join([
+                            helpers.hidden_field_tag(:price_id, price.id),
+                            render(FlatPack::Button::Component.new(
+                                     text: checkout_label,
+                                     style: :primary,
+                                     size: :md,
+                                     type: "submit",
+                                     class: control_width
+                                   ))
+                          ])
       end
     end
 
@@ -154,12 +155,10 @@ module RecordingStudioStripe
     end
 
     def change_button
-      render FlatPack::Button::Component.new(
+      plan_button(
         text: change_label,
         style: :primary,
-        size: :md,
-        href: recording_studio_stripe.subscription_change_path(price_id: price.id),
-        class: control_width
+        href: recording_studio_stripe.subscription_change_path(price_id: price.id)
       )
     end
 

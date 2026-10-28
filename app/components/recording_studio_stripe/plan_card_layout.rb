@@ -71,15 +71,19 @@ module RecordingStudioStripe
     end
 
     def checkout_outer_class
-      return "block w-full" if cards?
+      return PlanCardComponent::CARDS_CONTROL if cards?
 
       slot(:form)
     end
 
-    def checkout_form
-      form = { data: { turbo: false } }
-      form[:class] = slot(:form) unless cards?
-      form
+    def control_box(&)
+      helpers.tag.div(class: checkout_outer_class, &)
+    end
+
+    def plan_button(text:, style:, type: "button", href: nil)
+      options = { text: text, style: style, size: :md, type: type, class: control_width }
+      options[:href] = href if href
+      control_box { render FlatPack::Button::Component.new(**options) }
     end
 
     def slot(name)
