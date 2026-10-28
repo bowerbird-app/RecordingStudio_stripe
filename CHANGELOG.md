@@ -16,8 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `/plans` phone disclosure for What’s included is unchanged. It still needs a FlatPack Collapse that can stay visible from `md`
 
 ### Upgrade notes
-- Bump to **0.17.1**. Install FlatPack **0.1.329** or newer. No database migration. No webhook change
-- Hosts that call `stripe_card_stack` get a Collection list. Hosts that copied the old `flex h-full flex-col gap-4` wrapper should render `FlatPack::Collection::Component` with `as: :list`, `layout: :stack`, `gap: :md`, and `class: "h-full"`
+- Bump to **0.17.1**. No database migration. No webhook change
+- The gemspec runtime floor is now `flat_pack >= 0.1.329` (was `>= 0.1.327`). Development and dummy pins are GitHub tag `v0.1.329`
+- `stripe_card_stack` now renders a FlatPack Collection list (`ul`/`li`) instead of a `div`. Hosts that styled the old flex wrapper may need to update. Hosts that copied `flex h-full flex-col gap-4` should render `FlatPack::Collection::Component` with `as: :list`, `layout: :stack`, `gap: :md`, and `class: "h-full"`
 - Hosts that replaced the Admin `_plan_card` partial should drop the raw `<p>` headings and use `SectionTitle` for Hide on the card and Extra line
 
 ## [0.17.0] - 2026-10-28

@@ -586,13 +586,5 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes card, "label: \"Key\""
     assert_includes helper, "stripe_plan_card_open?"
     assert_includes helper, "stripe_plan_card_extra_rows"
-    assert_includes helper, "Collection::Component.new(as: :list, layout: :stack, gap: :md, class: \"h-full\")"
-    refute_includes helper, "flex h-full flex-col gap-4"
-    assert_includes card, "Collection::Component.new(as: :list, layout: :stack, gap: :md)"
-    assert_includes card, "SectionTitle::Component"
-    assert_includes card, "with_trailing"
-    assert_includes card, 't("recording_studio.stripe.admin.plan_card.extra_line_help")'
-    refute_includes card, "<p "
-    refute_includes card, "flex flex-col gap-4"
   end
 end

@@ -614,6 +614,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "badge-primary-background-color"
     refute_includes response.body, "badge-info-background-color"
     assert_select "h2", text: "Pro"
+    assert_select ".fp-card ul > li"
     assert_includes response.body, "text-[length:var(--text-xs)]"
     assert_includes response.body, "justify-between"
     assert_includes response.body, "justify-end"
