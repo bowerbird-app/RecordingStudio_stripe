@@ -35,6 +35,7 @@ en:
         switch_now: Switch now
         upgrade: Upgrade
         downgrade: Downgrade
+        included: "What’s included"
         features:
           no_price: This plan is a seat. Usage limits show up once a Price is attached.
           empty: A seat. Standing caps show on billing.

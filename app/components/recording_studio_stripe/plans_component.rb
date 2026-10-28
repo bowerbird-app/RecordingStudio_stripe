@@ -4,6 +4,7 @@ module RecordingStudioStripe
   class PlansComponent < ViewComponent::Base
     include RecordingStudioStripe::ApplicationHelper
     include RecordingStudioStripe::PlanCardDisplay
+    include PlansDensity
 
     private(*RecordingStudioStripe::PlanCardDisplay.instance_methods(false))
 
@@ -18,10 +19,11 @@ module RecordingStudioStripe
 
     def initialize(interval: "month", weekly_href: nil, monthly_href: nil, yearly_href: nil, intervals: nil,
                    products: [], subscription: nil, groups: nil, align: :center, title: Copy::UNSET,
-                   subtitle: Copy::UNSET)
+                   subtitle: Copy::UNSET, density: :auto)
       super()
       @interval = interval
       @align = align.to_sym
+      @density = density.to_sym
       @intervals = intervals
       @weekly_href = weekly_href
       @monthly_href = monthly_href
@@ -30,10 +32,11 @@ module RecordingStudioStripe
       @subtitle = subtitle
       @groups = Array(groups.presence || [{ products: products, subscription: subscription, label: nil }])
       validate_align!
+      validate_density!
     end
 
     def call
-      helpers.tag.div(class: stack_class, data: { plans_align: @align }) do
+      helpers.tag.div(class: stack_class, data: { plans_align: @align, plan_density: @density.to_s }) do
         helpers.safe_join([heading, groups, empty_state].compact)
       end
     end
@@ -141,6 +144,8 @@ module RecordingStudioStripe
     end
 
     def cards_row(products, subscription, interval)
+      return rows_list(products, subscription, interval) if @density == :rows
+
       render FlatPack::Grid::Component.new(
         cols: 3,
         gap: :lg,
@@ -152,14 +157,10 @@ module RecordingStudioStripe
       end
     end
 
-    def card_for(product, subscription, interval)
-      helpers.tag.div(class: "h-full #{PlanCardComponent::SUBGRID_ROWS}") do
-        render PlanCardComponent.new(
-          product: product,
-          interval: interval,
-          subscription: subscription
-        )
-      end
+    def card_shell_class
+      return "h-full #{PlanCardComponent::SUBGRID_ROWS}" if @density == :cards
+
+      PlanCardDensity.slot(@density, :shell)
     end
 
     def empty_state

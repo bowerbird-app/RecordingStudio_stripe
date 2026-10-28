@@ -67,7 +67,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "border-t border-[var(--card-border-color)]"
     assert_select "body[data-recording-studio-default-layout='true']", count: 1
     assert_select "html[data-theme='rounded']", count: 1
-    assert_select "[data-plans-align='center']", count: 1
+    assert_select "[data-plans-align='center'][data-plan-density='auto']", count: 1
+    assert_includes response.body, "What\u2019s included"
     assert_select "h1", text: "Pricing", count: 1
     assert_select "[data-plans-heading].text-center", count: 1
     assert_select "[data-plans-heading].text-center h1", text: "Pricing"
@@ -102,7 +103,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_includes html, "No month Price yet"
     refute_includes html, "For a quiet start"
+    refute_includes html, "<details"
     card = Nokogiri::HTML(html).at_css(".fp-card")
+    assert_equal "cards", card["data-plan-density"]
     card_html = card.to_html
     refute_includes card_html, "Choose plan"
     refute_includes card_html, "py-[var(--card-padding-md)]"
@@ -991,21 +994,37 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_operator cards.size, :>, 1
 
     cards.each do |card|
+      assert_equal "auto", card["data-plan-density"]
       assert_includes card["class"].to_s, "grid-template-rows:subgrid"
       assert_includes card["class"].to_s, "grid-row:span_4"
-      assert_includes card.parent["class"].to_s, "grid-rows-subgrid"
+      assert_includes card.parent["class"].to_s, "md:grid-rows-subgrid"
       assert_includes card.parent["class"].to_s, "row-span-4"
       body = card.element_children.first
       assert_equal 1, card.element_children.size
-      assert_includes body["class"].to_s, "grid-rows-subgrid"
+      assert_includes body["class"].to_s, "md:grid-rows-subgrid"
       assert_includes body["class"].to_s, "row-span-4"
       regions = body.element_children
       assert_equal 4, regions.size
       assert regions[0].at_css("h3")
       assert_includes regions[1]["class"].to_s, "justify-end"
+      refute_includes regions[1]["class"].to_s, "justify-start"
       assert_match(/\$\d/, regions[1].text)
+      assert_includes regions[2]["class"].to_s, "justify-start"
       assert_match(/Choose plan|Try now|Current plan|Upgrade|Downgrade|Switch now/, regions[2].text)
-      assert regions[3].at_css("li")
+      assert_equal 1, regions[2].css("button, a.fp-button").size
+      inclusions = regions[3]
+      details = inclusions.at_css("details")
+      assert details
+      assert_nil details["open"]
+      assert_empty details.css("li")
+      assert_equal 1, inclusions.css("ul").size
+      assert inclusions.at_css("li")
+      forms = card.css("form[action*='checkout']")
+      if regions[2].text.match?(/Choose plan|Try now/)
+        assert_equal 1, forms.size
+      else
+        assert_equal 0, forms.size
+      end
     end
 
     grid = cards.first.parent.parent

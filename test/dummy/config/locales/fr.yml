@@ -61,6 +61,7 @@ fr:
         switch_now: Changer maintenant
         upgrade: Passer au-dessus
         downgrade: Passer en dessous
+        included: Ce qui est inclus
         features:
           no_price: Cette offre est une place. Les plafonds apparaissent une fois un tarif attaché.
           empty: Une place. Les plafonds se voient sur la facturation.

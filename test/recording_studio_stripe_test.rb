@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.15.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.16.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -493,7 +493,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes card, "[grid-template-rows:subgrid]!"
     assert_includes card, "safe_join([title, price_row, action_row, inclusions])"
     refute_includes card, "card.footer"
-    assert_includes card, "class: \"w-full\""
+    assert_includes card, "CARDS_ACTION"
     assert_includes card, "subscription_change_path"
     assert_includes card, 'Copy.t("plans.downgrade")'
     refute_includes card, "Switch at renewal"
