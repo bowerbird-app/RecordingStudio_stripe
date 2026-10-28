@@ -43,7 +43,8 @@ module RecordingStudioStripe
         assert_includes classes, "bg-[var(--tabs-pill-list-background-color)]"
         assert_includes classes, "border-[var(--tabs-pill-list-border-color)]"
         assert_includes classes, "p-[var(--pill-padding)]"
-        assert_includes classes, RecordingStudioStripe::PlansComponent::PILL_TRACK_CLASS
+        assert_empty(RecordingStudioStripe::PlansComponent::PILL_TRACK_CLASS.split - classes)
+        assert_includes classes, "mb-4"
         refute_includes classes, "bg-[var(--surface-background-color)]"
         assert_nil(pill.ancestors.find { |node| node["class"].to_s.split.include?("fp-on-backdrop") })
         assert_equal "primary", pill["data-fp-style"]
@@ -74,6 +75,7 @@ module RecordingStudioStripe
       heading = fragment.at_css("[data-plans-heading]")
       assert_includes heading["class"].to_s.split, "fp-on-backdrop"
       pill = fragment.at_css("[data-fp-style='primary']")
+      assert_includes pill["class"].to_s.split, "mb-4"
       assert_nil(pill.ancestors.find { |node| node["class"].to_s.split.include?("fp-on-backdrop") })
     end
   end

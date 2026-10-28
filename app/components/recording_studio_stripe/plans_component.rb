@@ -8,8 +8,9 @@ module RecordingStudioStripe
     private(*RecordingStudioStripe::PlanCardDisplay.instance_methods(false))
 
     ALIGNS = %i[left center].freeze
-    # Tailwind scans this file. The pill track reads this token, and the default is transparent.
-    PILL_TRACK_CLASS = "[--tabs-pill-list-background-color:var(--surface-background-color)]"
+    # Tailwind scans this file. The pill track reads this token (the default is transparent).
+    # mb-4 is the space under the Monthly / Yearly switch, above the plan cards.
+    PILL_TRACK_CLASS = "[--tabs-pill-list-background-color:var(--surface-background-color)] mb-4"
 
     def initialize(interval: "month", weekly_href: nil, monthly_href: nil, yearly_href: nil, intervals: nil,
                    products: [], subscription: nil, groups: nil, align: :center, title: Copy::UNSET,
