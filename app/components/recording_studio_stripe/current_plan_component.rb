@@ -12,7 +12,7 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(background: :default, border: :default, shadow: :none) do |card|
-        card.body { helpers.stripe_card_stack(badges, title, actions) }
+        card.body { helpers.stripe_card_stack(title, badges, timing, actions) }
       end
     end
 
@@ -39,8 +39,9 @@ module RecordingStudioStripe
     end
 
     def badge_parts
-      parts = status_badges
+      parts = []
       parts << badge(@subscription.subscription_type_label, :info) if show_type_badge?
+      parts.concat(status_badges)
       parts
     end
 
@@ -64,6 +65,36 @@ module RecordingStudioStripe
 
     def badge(text, style)
       render FlatPack::Badge::Component.new(text: text, style: style, size: :sm)
+    end
+
+    def timing
+      text = timing_copy
+      return if text.blank?
+
+      helpers.tag.p(text, class: "m-0 text-sm text-[var(--surface-muted-content-color)]")
+    end
+
+    def timing_copy
+      days = days_until(@subscription.current_period_end)
+      return if days.nil?
+
+      if @subscription.trialing?
+        return Copy.t("billing.trial_ends_today") if days.zero?
+
+        return Copy.t("billing.trial_ends_in", count: days)
+      end
+
+      return if @subscription.canceling? || @subscription.past_due?
+      return Copy.t("billing.renews_today") if days.zero?
+
+      Copy.t("billing.renews_in", count: days)
+    end
+
+    def days_until(time)
+      return unless time
+
+      remaining = (time.in_time_zone.to_date - Time.zone.today).to_i
+      remaining.negative? ? 0 : remaining
     end
 
     def actions

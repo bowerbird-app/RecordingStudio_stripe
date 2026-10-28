@@ -91,6 +91,14 @@ fr:
         past_due: "La carte pour %{name} n’est pas passée."
         trial_until: "Essai jusqu’au %{date}."
         trial_until_then: "Essai jusqu’au %{date}. Ensuite %{amount}."
+        trial_ends_in:
+          one: "L’essai se termine dans %{count} jour"
+          other: "L’essai se termine dans %{count} jours"
+        trial_ends_today: L’essai se termine aujourd’hui
+        renews_in:
+          one: "Se renouvelle dans %{count} jour"
+          other: "Se renouvelle dans %{count} jours"
+        renews_today: Se renouvelle aujourd’hui
         scheduled: "La période suivante passe à %{name}."
         current: Actuelle
         past_due_badge: Impayée

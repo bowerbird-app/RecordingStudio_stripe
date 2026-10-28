@@ -613,7 +613,12 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "badge-success-background-color"
     refute_includes response.body, "badge-primary-background-color"
     assert_select "h2", text: "Pro"
-    assert_match(/Current.*Studio/m, response.body)
+    studio_at = response.body.index(">Studio</")
+    current_at = response.body.index(">Current</")
+
+    assert studio_at
+    assert current_at
+    assert_operator studio_at, :<, current_at
     assert_includes response.body, "md:grid-cols-2"
   end
 
@@ -905,25 +910,96 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
   end
 
   test "trialing billing shows a trial badge" do
-    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
-    RecordingStudioStripe::ApplySubscription.call(
-      root_recording: @root,
-      price: pro,
-      current_period_end: Time.utc(2026, 10, 12)
-    )
-    @workspace.billing.subscription.update!(status: "trialing")
+    travel_to Time.utc(2026, 10, 10, 12, 0, 0) do
+      pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+      RecordingStudioStripe::ApplySubscription.call(
+        root_recording: @root,
+        price: pro,
+        current_period_end: Time.utc(2026, 10, 12)
+      )
+      @workspace.billing.subscription.update!(status: "trialing")
 
-    get recording_studio_stripe.root_path
+      get recording_studio_stripe.root_path
 
-    assert_response :success
-    assert_includes response.body, "Trial"
-    assert_includes response.body, "Trial until October 12, 2026. Then $29/month."
-    refute_includes response.body, "Trial runs until"
-    refute_includes response.body, ">Active</"
-    refute_includes response.body, ">Current</"
-    assert_includes response.body, "badge-primary-background-color"
-    refute_includes response.body, "badge-success-background-color"
-    assert_select "h2", text: "Pro"
+      assert_response :success
+      assert_includes response.body, "Trial"
+      assert_includes response.body, "Trial until October 12, 2026. Then $29/month."
+      assert_includes response.body, "Trial ends in 2 days"
+      refute_includes response.body, "Trial runs until"
+      refute_includes response.body, ">Active</"
+      refute_includes response.body, ">Current</"
+      assert_includes response.body, "badge-primary-background-color"
+      refute_includes response.body, "badge-success-background-color"
+      assert_select "h2", text: "Pro"
+      studio_at = response.body.index(">Studio</")
+      trial_at = response.body.index(">Trial</")
+
+      assert studio_at
+      assert trial_at
+      assert_operator studio_at, :<, trial_at
+    end
+  end
+
+  test "current plan card names days until renewal" do
+    travel_to Time.utc(2026, 10, 1, 12, 0, 0) do
+      pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+      RecordingStudioStripe::ApplySubscription.call(
+        root_recording: @root,
+        price: pro,
+        current_period_end: Time.utc(2026, 10, 22)
+      )
+
+      get recording_studio_stripe.root_path
+
+      assert_response :success
+      assert_includes response.body, "Renews in 21 days"
+      refute_includes response.body, "Trial ends"
+    end
+  end
+
+  test "current plan card uses one day and today copy" do
+    travel_to Time.utc(2026, 10, 21, 12, 0, 0) do
+      pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+      RecordingStudioStripe::ApplySubscription.call(
+        root_recording: @root,
+        price: pro,
+        current_period_end: Time.utc(2026, 10, 22)
+      )
+
+      get recording_studio_stripe.root_path
+
+      assert_includes response.body, "Renews in 1 day"
+      refute_includes response.body, "Renews in 1 days"
+    end
+
+    travel_to Time.utc(2026, 10, 22, 12, 0, 0) do
+      get recording_studio_stripe.root_path
+
+      assert_includes response.body, "Renews today"
+    end
+  end
+
+  test "trial plan card uses one day and today copy" do
+    travel_to Time.utc(2026, 10, 11, 12, 0, 0) do
+      pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+      RecordingStudioStripe::ApplySubscription.call(
+        root_recording: @root,
+        price: pro,
+        current_period_end: Time.utc(2026, 10, 12)
+      )
+      @workspace.billing.subscription.update!(status: "trialing")
+
+      get recording_studio_stripe.root_path
+
+      assert_includes response.body, "Trial ends in 1 day"
+      refute_includes response.body, "Trial ends in 1 days"
+    end
+
+    travel_to Time.utc(2026, 10, 12, 12, 0, 0) do
+      get recording_studio_stripe.root_path
+
+      assert_includes response.body, "Trial ends today"
+    end
   end
 
   test "cancel confirm names the plan then ends it at period end" do
