@@ -45,7 +45,11 @@ module RecordingStudioStripe
       price = @subscription.price
       return Copy.t("billing.catching_up") unless price
 
-      amount = Copy.t("intervals.amount", amount: price.formatted_amount, interval: stripe_interval_label(price.interval))
+      amount = Copy.t(
+        "intervals.amount",
+        amount: price.formatted_amount,
+        interval: stripe_interval_label(price.interval)
+      )
       extra = timing_copy
       extra.blank? ? amount : "#{amount} (#{extra})"
     end
