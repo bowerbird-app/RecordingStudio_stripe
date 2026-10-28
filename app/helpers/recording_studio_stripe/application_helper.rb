@@ -24,7 +24,9 @@ module RecordingStudioStripe
     end
 
     def stripe_card_stack(*parts)
-      tag.div(safe_join(parts.compact), class: "flex h-full flex-col gap-4")
+      render FlatPack::Collection::Component.new(as: :list, layout: :stack, gap: :md, class: "h-full") do |stack|
+        parts.compact.each { |part| stack.with_item { part } }
+      end
     end
 
     def billing_subtitle(lines)

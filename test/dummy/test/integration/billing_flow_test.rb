@@ -69,6 +69,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "html[data-theme='rounded']", count: 1
     assert_select "[data-plans-align='center'][data-plan-density='auto']", count: 1
     assert_includes response.body, "What\u2019s included"
+    assert_select "[data-plan-density='auto'] details summary", text: "What\u2019s included"
     assert_select "h1", text: "Pricing", count: 1
     assert_select "[data-plans-heading].text-center", count: 1
     assert_select "[data-plans-heading].text-center h1", text: "Pricing"
@@ -83,6 +84,21 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_select "form[action*='checkout'][data-turbo=false]"
     refute_includes response.body, "Unlimited vibes"
     refute_includes response.body, "Add included usage on the Price"
+
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro")
+    rows_html = ApplicationController.render(
+      RecordingStudioStripe::PlanCardComponent.new(
+        product: pro,
+        interval: "month",
+        subscription: nil,
+        density: :rows
+      )
+    )
+    panel_id = "plan-included-#{pro.id}-month-content"
+    rows = Nokogiri::HTML(rows_html)
+    assert_select rows, "button[aria-expanded='false'][aria-controls='#{panel_id}']",
+                  text: "What\u2019s included"
+    assert_select rows, "##{panel_id}[hidden]"
   end
 
   test "a missing Price leaves that plan off the interval" do
@@ -614,6 +630,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "badge-primary-background-color"
     refute_includes response.body, "badge-info-background-color"
     assert_select "h2", text: "Pro"
+    assert_select ".fp-card ul > li"
     assert_includes response.body, "text-[length:var(--text-xs)]"
     assert_includes response.body, "justify-between"
     assert_includes response.body, "justify-end"

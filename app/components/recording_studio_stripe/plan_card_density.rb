@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 module RecordingStudioStripe
-  # The feature list is the next sibling of details, not a child. A closed
-  # details element hides its children, so the list would vanish inside it from
-  # md. FlatPack::Collapse sets hidden on connect, and preflight turns [hidden]
-  # into display:none !important, so one Collapse cannot be a closed phone
-  # disclosure and a visible subgrid row.
+  # :auto keeps a native details sibling of the feature list. Collapse hides
+  # its panel with [hidden] (preflight !important), so one Collapse cannot stay
+  # closed on a phone and always-visible from md without a second list or a
+  # [hidden] override. :rows is closed until opened, so that density uses
+  # FlatPack Collapse instead.
   module PlanCardDensity
     SUMMARY = %w[
       flex cursor-pointer list-none items-center gap-1 py-1
@@ -113,8 +113,8 @@ module RecordingStudioStripe
     ROWS_FORM = "m-0 flex w-auto flex-col"
     ROWS_CONTROL = "w-auto"
     ROWS_INCLUSIONS = "min-w-0 col-span-2 col-start-1 row-start-3"
-    ROWS_DISCLOSURE = "peer group m-0"
-    ROWS_LIST_FRAME = "hidden peer-open:block!"
+    ROWS_DISCLOSURE = "m-0"
+    ROWS_LIST_FRAME = "min-w-0"
 
     TABLE = {
       auto: {
