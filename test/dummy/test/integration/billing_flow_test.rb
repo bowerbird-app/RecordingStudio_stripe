@@ -612,13 +612,20 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, ">Active</"
     assert_includes response.body, "badge-success-background-color"
     refute_includes response.body, "badge-primary-background-color"
+    refute_includes response.body, "badge-info-background-color"
     assert_select "h2", text: "Pro"
+    assert_includes response.body, "text-[length:var(--text-xs)]"
+    assert_includes response.body, "justify-between"
+    assert_includes response.body, "justify-end"
     studio_at = response.body.index(">Studio</")
     current_at = response.body.index(">Current</")
+    name_at = response.body.index(">Pro</")
 
     assert studio_at
     assert current_at
-    assert_operator studio_at, :<, current_at
+    assert name_at
+    assert_operator studio_at, :<, name_at
+    assert_operator name_at, :<, current_at
     assert_includes response.body, "md:grid-cols-2"
   end
 
@@ -930,13 +937,20 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
       refute_includes response.body, ">Current</"
       assert_includes response.body, "badge-primary-background-color"
       refute_includes response.body, "badge-success-background-color"
+      refute_includes response.body, "badge-info-background-color"
       assert_select "h2", text: "Pro"
+      assert_includes response.body, "text-[length:var(--text-xs)]"
+      assert_includes response.body, "justify-between"
+      assert_includes response.body, "justify-end"
       studio_at = response.body.index(">Studio</")
       trial_at = response.body.index(">Trial</")
+      name_at = response.body.index(">Pro</")
 
       assert studio_at
       assert trial_at
-      assert_operator studio_at, :<, trial_at
+      assert name_at
+      assert_operator studio_at, :<, name_at
+      assert_operator name_at, :<, trial_at
     end
   end
 

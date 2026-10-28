@@ -408,16 +408,21 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_current_plan_puts_status_badges_above_the_name
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/current_plan_component.rb", __dir__))
 
-    assert_includes source, "stripe_card_stack(title, badges, timing, actions)"
+    assert_includes source, "stripe_card_stack(heading, timing, actions)"
     assert_includes source, 'Copy.t("billing.current")'
-    assert_includes source, "show_type_badge?"
+    assert_includes source, "show_group_label?"
+    refute_includes source, "show_type_badge?"
     assert_includes source, "SubscriptionTypes.keys.size > 1"
+    assert_includes source, "text-[length:var(--text-xs)]"
+    assert_includes source, "justify-between"
+    assert_includes source, "justify-end"
     refute_includes source, "badge(\"Active\", :primary)"
     assert_includes source, 'Copy.t("billing.past_due_badge")'
     assert_includes source, 'badge(Copy.t("billing.trial_badge"), :primary)'
     assert_includes source, "variant: :h2"
     refute_includes source, "variant: :h3"
     refute_includes source, 'badge(Copy.t("billing.trial_badge"), :info)'
+    refute_includes source, "subscription_type_label, :info"
     assert_includes source, 'Copy.t("billing.renews_in"'
     assert_includes source, 'Copy.t("billing.trial_ends_in"'
     assert_includes source, 'Copy.t("billing.update_card")'

@@ -12,12 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - On `/billing`, a trialing plan uses FlatPack's primary badge (`style: :primary`) instead of info. Current stays success. Type, past due, scheduled change, and ending badges are unchanged
 - The live plan name on `/billing` uses FlatPack `PageTitle` `variant: :h2` (`--page-title-h2-size`). Price copy under the name is still the subtitle. `/plans` cards stay `h3`
-- The current-plan card puts the group badge (Studio, Inbox) before Trial, Current, and the other status badges. The name sits above that row
+- The current-plan card puts the group name (Studio, Inbox) as muted `--text-xs` text above the plan name when more than one subscription type is configured. Trial, Current, and the other status badges sit top-right
 - A live card shows relative timing from `current_period_end`. Trialing is "Trial ends in 2 days", "Trial ends in 1 day", or "Trial ends today". A current paid plan is "Renews in 21 days", "Renews in 1 day", or "Renews today". Past due and canceling omit that line
 
 ### Upgrade notes
 - Bump to **0.17.0**. No database migration. No webhook change
-- Hosts that replaced `CurrentPlanComponent` should paint Trial with `FlatPack::Badge` `style: :primary` and the plan name with `FlatPack::PageTitle` `variant: :h2`. Current stays `style: :success`. Put the group badge before the status badge. Add the relative timing line from `current_period_end`. `/plans` density and `PlanCardComponent` are unchanged
+- Hosts that replaced `CurrentPlanComponent` should paint Trial with `FlatPack::Badge` `style: :primary` and the plan name with `FlatPack::PageTitle` `variant: :h2`. Current stays `style: :success`. Show the group as muted `--text-xs` text above the name, not as an info badge. Put status badges top-right. Add the relative timing line from `current_period_end`. `/plans` density and `PlanCardComponent` are unchanged
 - Translate `recording_studio.stripe.billing.trial_ends_in`, `trial_ends_today`, `renews_in`, and `renews_today` in host locale files. Dummy French already has them
 
 ## [0.16.0] - 2026-10-28

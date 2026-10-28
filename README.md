@@ -221,7 +221,7 @@ pro.trial.duration_label # "14 day trial"
 pro.trial.amount_label # "$1"
 ```
 
-Checkout starts the real plan Price with Stripe `trial_period_days`. A one-time fee Price on the same Product (`kind=trial_fee`) is the charge now. 0 cents is a free trial on that same path. `Product#monthly_price` stays the paid monthly Price. Empty days clears the trial and deactivates fee Prices. A workspace that already has a live plan in that group still upgrades or downgrades. Dummy Pro is $1 for 14 days. On `/billing`, Trial uses the primary badge and the plan name is a FlatPack `h2`. The group badge sits before Trial or Current. A trial card says when the trial ends in relative days. A current paid card says when it renews. `/plans` cards stay `h3`.
+Checkout starts the real plan Price with Stripe `trial_period_days`. A one-time fee Price on the same Product (`kind=trial_fee`) is the charge now. 0 cents is a free trial on that same path. `Product#monthly_price` stays the paid monthly Price. Empty days clears the trial and deactivates fee Prices. A workspace that already has a live plan in that group still upgrades or downgrades. Dummy Pro is $1 for 14 days. On `/billing`, Trial uses the primary badge and the plan name is a FlatPack `h2`. The group name is muted text above the plan name. Trial and Current sit top-right. A trial card says when the trial ends in relative days. A current paid card says when it renews. `/plans` cards stay `h3`.
 
 ### Admin
 

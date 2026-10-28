@@ -12,11 +12,36 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(background: :default, border: :default, shadow: :none) do |card|
-        card.body { helpers.stripe_card_stack(title, badges, timing, actions) }
+        card.body { helpers.stripe_card_stack(heading, timing, actions) }
       end
     end
 
     private
+
+    def heading
+      helpers.tag.div(class: "flex items-start justify-between gap-3") do
+        safe_join([name_column, badges].compact)
+      end
+    end
+
+    def name_column
+      helpers.tag.div(class: "min-w-0") do
+        safe_join([group_label, title].compact)
+      end
+    end
+
+    def group_label
+      return unless show_group_label?
+
+      helpers.tag.p(
+        @subscription.subscription_type_label,
+        class: "m-0 text-[length:var(--text-xs)] text-[var(--surface-muted-content-color)]"
+      )
+    end
+
+    def show_group_label?
+      RecordingStudioStripe::SubscriptionTypes.keys.size > 1
+    end
 
     def title
       render FlatPack::PageTitle::Component.new(
@@ -35,18 +60,10 @@ module RecordingStudioStripe
     end
 
     def badges
-      helpers.tag.div(safe_join(badge_parts), class: "flex flex-wrap gap-2")
-    end
+      parts = status_badges
+      return if parts.empty?
 
-    def badge_parts
-      parts = []
-      parts << badge(@subscription.subscription_type_label, :info) if show_type_badge?
-      parts.concat(status_badges)
-      parts
-    end
-
-    def show_type_badge?
-      RecordingStudioStripe::SubscriptionTypes.keys.size > 1
+      helpers.tag.div(safe_join(parts), class: "flex shrink-0 flex-wrap justify-end gap-2")
     end
 
     def status_badges
