@@ -4,6 +4,10 @@ module RecordingStudioStripe
   class PlanCardComponent < ViewComponent::Base
     include RecordingStudioStripe::ApplicationHelper
 
+    SUBGRID_ROWS = "grid row-span-4 grid-rows-subgrid"
+    # Flatpack Card rejects style:, and its own flex class wins a normal grid utility.
+    CARD_SUBGRID_ROWS = "h-full [display:grid]! [grid-template-rows:subgrid]! [grid-row:span_4]!"
+
     def initialize(product:, interval:, subscription:)
       super()
       @product = product
@@ -16,10 +20,9 @@ module RecordingStudioStripe
         background: :default,
         border: current? ? :default : :strong,
         shadow: current? ? :md : :none,
-        class: "h-full"
+        class: CARD_SUBGRID_ROWS
       ) do |card|
-        card.body { helpers.stripe_card_stack(title, inclusions) }
-        card.footer(divider: false) { footer } if price
+        card.body(class: SUBGRID_ROWS) { safe_join([title, price_row, action_row, inclusions]) }
       end
     end
 
@@ -44,10 +47,14 @@ module RecordingStudioStripe
       @product.card_subtitle
     end
 
-    def footer
-      helpers.tag.div(class: "flex w-full flex-col gap-3") do
-        safe_join([rendered_price, action].compact)
-      end
+    def price_row
+      return rendered_price if price
+
+      helpers.tag.div
+    end
+
+    def action_row
+      helpers.tag.div(class: "w-full") { action }
     end
 
     def rendered_price

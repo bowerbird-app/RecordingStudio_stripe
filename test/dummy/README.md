@@ -10,7 +10,7 @@ Dummy credentials (`config/credentials.yml.enc`) use the shared RecordingStudio_
 
 - `/` — current workspace on Flatpack’s sidebar shell. Pricing, billing, and usage live on their own pages
 - `/press_kits` — list and add press kits for the workspace
-- `/plans` — Products and Prices, titled Pricing, centered, with an interval toggle under each plan group name when dummy seeds more than one type. A pill appears only when that group has a Price for it. Pass `intervals:` to keep the page on a shorter list. Upgrade and Downgrade open a confirmation page first
+- `/plans` — Products and Prices, titled Pricing, centered, with the dummy backdrop `/plans-backdrop.svg` in the default layout background slot, and an interval toggle under each plan group name when dummy seeds more than one type. A pill appears only when that group has a Price for it. Pass `intervals:` to keep the page on a shorter list. Upgrade and Downgrade open a confirmation page first
 - `/pricing` — the same cards, centered title, subtitle, and interval pills, no login
 - `/billing` — one card per live plan group, and Manage billing on Stripe (Customer Portal). See usage only when a live plan has recorded cap or meter use
 - `/billing/usage` — one full-width card per standing cap or period meter. Breakdown appears when extra packs add to a meter.
@@ -20,7 +20,7 @@ Dummy credentials (`config/credentials.yml.enc`) use the shared RecordingStudio_
 
 Local mode (no `STRIPE_SECRET_KEY`) writes Customers and Subscriptions in the dummy database so you can click through. Dummy seeds Studio (Starter, Pro, Team) and Inbox (Inbox, Inbox Plus, Inbox Pro). Each plan has a monthly Price and a yearly Price. Dummy does not seed a weekly Price. Pro also has a $1, 14-day trial. With keys, Checkout and webhooks talk to Stripe.
 
-Dummy home uses Flatpack `SidebarLayout` with `html data-theme="rounded"`. Pricing, billing, usage, and docs stay on a dummy copy of Recording Studio `default_layout`. Recording Studio puts that theme attribute on `body`, which does not override Flatpack `:root` tokens, so the dummy copy sets it on `html`. The copy passes `page_nav_anchor_url` as Flatpack `anchor_href` so Close can leave `/plans`, `/billing`, and `/billing/usage` for home. Dummy `config/importmap.rb` pins Turbo and Recording Studio Admin screen controllers so product tables load.
+Dummy home uses Flatpack `SidebarLayout` with `html data-theme="rounded"`. `/plans`, `/billing`, `/billing/usage`, and the docs pages use Recording Studio `default_layout`. That layout sets `html data-theme="rounded"` and reads `content_for :background_image` and `content_for :page_width`. Close on those billing pages is `flat_pack_page_nav` `anchor_href` on the engine views. `/pricing` uses the public layout. Dummy `config/importmap.rb` pins Turbo and Recording Studio Admin screen controllers so product tables load.
 
 Dummy registers `generate_image` and `export_csv` paywalls. Pro and Team open image generation. Inbox Plus and Inbox Pro open CSV export. Staff tick those on the Product in Admin.
 

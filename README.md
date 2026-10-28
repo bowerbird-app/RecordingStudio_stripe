@@ -27,7 +27,7 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Customer pricing page, billing page, and usage page
 - Manage billing on Stripe on `/billing` opens the Stripe Customer Portal for invoices and cards
 - Usage at `/billing/usage` for standing caps and period meters
-- `PlansComponent` for those cards, centered by default (`align: :center`). Cards in a group share height, with the action in the footer
+- `PlansComponent` for those cards, centered by default (`align: :center`). Cards in a group share four subgrid rows, so the name, the price, the button, and the feature list line up across the row
 - `UsageComponent` for caps and meters on a host screen
 - Recording Studio Admin section for Products, Prices, Meters, Paywalls, Customers, and Subscriptions
 - Named paywalls on a Product, checked with Accessible `authorized_action?`
@@ -37,14 +37,14 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 
 ```ruby
 # Gemfile
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.1.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.2.0"
 gem "recording_studio_stripe", github: "bowerbird-app/RecordingStudio_stripe"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.22.0"
-gem "flat_pack", github: "bowerbird-app/flatpack", ref: "1fcbafe94f8eb118f0a22182f63f5110fcc97a56"
+gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.327"
 gem "view_component", "4.19.0"
 ```
 
-This gem requires `recording_studio` `>= 6.1.0`, Accessible `~> 0.22`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.315`. The pin above loads FlatPack `0.1.319`.
+This gem requires `recording_studio` `>= 6.2.0`, Accessible `~> 0.22`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.327`. The pin above loads FlatPack `0.1.327`.
 
 `config.layout` chooses the screen chrome for this engine. `nil` uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. A String is a layout name. `false` renders with no layout. A callable must take `controller:` and return a String, `nil`, or `false`.
 
@@ -54,9 +54,11 @@ RecordingStudioStripe.configure do |config|
 end
 ```
 
-Page titles are `content_for :title` and `content_for :subtitle`. The default layout draws one heading above the page. Back and close go through `flat_pack_page_nav`. Extra actions go through `register_page_nav` or `content_for :page_nav_right`.
+Page titles are `content_for :title` and `content_for :subtitle`. The default layout draws one heading above the page. Back and close go through `flat_pack_page_nav`. Extra actions go through `register_page_nav` or `content_for :page_nav_right`. `/plans` centers its title and subtitle in `PlansComponent` and does not set `content_for :title`, so the layout does not draw a second heading. That heading and each group heading use `fp-on-backdrop`. FlatPack changes their color only when the layout has a background image. Plan cards sit outside the class and keep their surface text.
 
-Logs, Metrics, Cache, Internationalization, and Root Switchable may still declare `recording_studio` below 6. This repo loads `test/support/widen_recording_studio_requirement.rb` from the Gemfile so Bundler can resolve `6.1.0`. A host that bundles those gems needs the same widen until they publish a 6.1 requirement.
+`recording_studio_background_image(url)` sets `content_for :background_image`. The default layout passes that URL to `FlatPack::PageLayout` as a decorative image (`alt=""`, `loading="lazy"`). A blank URL leaves the page unchanged. `/plans` passes `config.plans_background_image`. That setting defaults to nil. `recording_studio_page_width(:wide)` sets `content_for :page_width`. Allowed values are `:narrow`, `:default`, `:wide`, and `:full`. A blank value stays `:default`.
+
+Logs, Metrics, Cache, Internationalization, and Root Switchable may still declare `recording_studio` below 6. This repo loads `test/support/widen_recording_studio_requirement.rb` from the Gemfile so Bundler can resolve `6.2.0`. The widened floor stays `>= 6.1.0`, which `6.2.0` satisfies. A host that bundles those gems needs the same widen until they publish a 6.2 requirement.
 
 ```bash
 bin/rails generate recording_studio_stripe:install

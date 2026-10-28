@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-27
+
+### Changed
+- Requires `recording_studio` `>= 6.2.0` (was `>= 6.1.0`). Development and dummy pins are GitHub tag `v6.2.0`
+- Engine screens still use `recording_studio/default_layout`. That layout reads `content_for :background_image` and `content_for :page_width`
+- `/plans` centers its title and subtitle with `PlansComponent` (`align: :center`). It does not set `content_for :title`, so the layout does not draw a second heading
+- A blank `plans.subtitle` is omitted. `PlansComponent` passes `Copy.value(@subtitle, "plans.subtitle").presence` to `FlatPack::PageTitle`. The gem English subtitle stays "Monthly or yearly. You can switch later." Dummy English no longer overrides that key, so `/plans` shows the line
+- Requires `flat_pack` `>= 0.1.327`. Development and dummy pins are GitHub tag `v0.1.327`
+- The plans page heading and each group heading use `fp-on-backdrop`. FlatPack applies the backdrop text tokens only when `[data-flat-pack-layout-background]` is set. The title uses the backdrop content color. The subtitle uses the muted backdrop color through the remapped surface token. Plan cards sit outside that class and keep their surface text
+- Interval pills use FlatPack's pill track with `style: :primary`. The track sets `--tabs-pill-list-background-color` to `--surface-background-color`, so Monthly and Yearly sit on a light surface over a photo. The active pill uses the primary button colors. A plain `bg-` class on the pill is removed by Tailwind merge because the track's own background class comes later. The same class includes `mb-4`, so the switch stays clear of the plan cards under the page title and under each group heading
+- The plans page title uses FlatPack `size: :display`. When more than one plan group is shown, a `FlatPack::Divider` sits above each group title. Over a layout photo that rule uses `--backdrop-muted-content-color`. Without a photo it keeps the surface border
+- `/plans` calls `recording_studio_background_image` with `RecordingStudioStripe.configuration.plans_background_image`. The setting defaults to nil, which leaves the backdrop unset. The dummy app sets it to `/plans-backdrop.svg`
+- Plan cards in a group share four subgrid rows: name, price, button, then the feature list. The button row lines up across that row of cards. A trial badge sits in the price row above the amount, and the amount sits on the bottom of that row. `PlanCardPrice` does not add its own vertical padding. A card with no Price keeps the four rows and leaves the price and button rows empty
+
+### Upgrade notes
+- Bump to **0.15.0**. Install Recording Studio **6.2.0** or newer. No database migration
+- A host on Recording Studio 6.1.0 has to upgrade before this gem. Screens that set neither slot look the same
+- Call `recording_studio_background_image(url)`, or set `content_for :background_image, url`. The default layout passes that URL to `FlatPack::PageLayout` as a decorative image (`alt=""`, `loading="lazy"`). A blank URL leaves the page unchanged
+- Call `recording_studio_page_width(:wide)`, or set `content_for :page_width, :wide`. Allowed values are `:narrow`, `:default`, `:wide`, and `:full`. A blank value stays `:default`
+- This repo does not copy `default_layout` into the dummy app. A host layout that replaces the default reads `content_for(:background_image)` and `content_for(:page_width)`
+- `/plans` draws the centered title in the page. The document title on that screen falls back to the app name, because the layout uses `content_for :title` for both the tab and the heading
+- Set `recording_studio.stripe.plans.subtitle` to `""` to hide that line. A host that keeps the gem translation still sees it
+- Install FlatPack **0.1.327** or newer. Older FlatPack builds do not ship `.fp-on-backdrop`, so the plans title stays on the surface color over a photo
+- Set `config.plans_background_image` to a public path or URL when `/plans` should show a decorative backdrop. Leave it nil to keep that page plain
+- Hosts that replaced `PlanCardComponent` should render the name, price, button, and feature list as four rows of one subgrid. The grid item and the card body use `grid row-span-4 grid-rows-subgrid`. Flatpack Card rejects `style:`, and its `flex` class beats a normal `grid` utility, so the card uses `[display:grid]! [grid-template-rows:subgrid]! [grid-row:span_4]!`. Put a trial badge inside the price row and align that row to the bottom. Drop the card footer and `py-[var(--card-padding-md)]` on the price
+- Hosts that replaced the interval pills should render `FlatPack::Button::Pill` with `track: true` and `style: :primary`, and set `--tabs-pill-list-background-color` to `var(--surface-background-color)` on that element. Add `mb-4` on that element so the switch stays clear of the cards. Passing `class: "bg-[var(--surface-background-color)]"` does not paint the track
+
 ## [0.14.0] - 2026-10-27
 
 ### Changed

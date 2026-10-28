@@ -8,6 +8,13 @@ module RecordingStudioStripe
     private(*RecordingStudioStripe::PlanCardDisplay.instance_methods(false))
 
     ALIGNS = %i[left center].freeze
+    # Tailwind scans this file. The pill track reads this token (the default is transparent).
+    # mb-4 is the space under the Monthly / Yearly switch, above the plan cards.
+    PILL_TRACK_CLASS = "[--tabs-pill-list-background-color:var(--surface-background-color)] mb-4"
+    GROUP_DIVIDER_CLASS = [
+      "fp-on-backdrop",
+      "in-data-[flat-pack-layout-background]:[--surface-border-color:var(--backdrop-muted-content-color)]"
+    ].join(" ")
 
     def initialize(interval: "month", weekly_href: nil, monthly_href: nil, yearly_href: nil, intervals: nil,
                    products: [], subscription: nil, groups: nil, align: :center, title: Copy::UNSET,
@@ -43,9 +50,10 @@ module RecordingStudioStripe
 
       title = render FlatPack::PageTitle::Component.new(
         title: Copy.value(@title, "plans.title"),
-        subtitle: Copy.value(@subtitle, "plans.subtitle"),
+        subtitle: Copy.value(@subtitle, "plans.subtitle").presence,
         variant: :h1,
-        class: (@align == :center ? "mb-0 pb-0 w-full text-center" : "mb-0 pb-0"),
+        size: :display,
+        class: aligned_class("mb-0 pb-0 w-full text-center fp-on-backdrop", "mb-0 pb-0 fp-on-backdrop"),
         data: { plans_heading: true }
       )
       return title if pills.blank?
@@ -91,7 +99,7 @@ module RecordingStudioStripe
       return if title.blank? && pills.blank?
 
       helpers.tag.div(
-        helpers.safe_join([title, pills].compact),
+        helpers.safe_join([render(FlatPack::Divider::Component.new(class: GROUP_DIVIDER_CLASS)), title, pills].compact),
         class: heading_stack_class,
         data: { plan_group_heading: true }
       )
@@ -128,18 +136,24 @@ module RecordingStudioStripe
     def section_title(label)
       render FlatPack::SectionTitle::Component.new(
         title: label,
-        class: (@align == :center ? "my-0 text-center" : "my-0")
+        class: aligned_class("my-0 text-center fp-on-backdrop", "my-0 fp-on-backdrop")
       )
     end
 
     def cards_row(products, subscription, interval)
-      render FlatPack::Grid::Component.new(cols: 3, gap: :lg, align: :stretch, class: "w-full") do
+      render FlatPack::Grid::Component.new(
+        cols: 3,
+        gap: :lg,
+        align: :stretch,
+        class: "w-full",
+        style: "row-gap: 1rem"
+      ) do
         helpers.safe_join(products.map { |product| card_for(product, subscription, interval) })
       end
     end
 
     def card_for(product, subscription, interval)
-      helpers.tag.div(class: "h-full") do
+      helpers.tag.div(class: "h-full #{PlanCardComponent::SUBGRID_ROWS}") do
         render PlanCardComponent.new(
           product: product,
           interval: interval,

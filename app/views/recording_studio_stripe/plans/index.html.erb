@@ -1,5 +1,5 @@
-<% content_for :title, t("recording_studio.stripe.plans.title") %>
-<% content_for :subtitle, t("recording_studio.stripe.plans.subtitle") %>
+<% recording_studio_background_image(RecordingStudioStripe.configuration.plans_background_image) %>
+
 <% flat_pack_page_nav(
   round: true,
   style: :default,
@@ -10,6 +10,6 @@
 <%= render RecordingStudioStripe::PlansComponent.new(
   groups: @groups,
   align: :center,
-  title: nil,
-  subtitle: nil
+  title: t("recording_studio.stripe.plans.title"),
+  subtitle: t("recording_studio.stripe.plans.subtitle")
 ) %>

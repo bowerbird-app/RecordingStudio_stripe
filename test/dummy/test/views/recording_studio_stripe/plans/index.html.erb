@@ -1,0 +1,10 @@
+<%# Prepended only by DefaultLayoutBackgroundTest so the engine plans template stays the real /plans page. %>
+<% if params[:slot] == "content_for" %>
+  <% content_for :background_image, params[:background_image] %>
+  <% content_for :page_width, params[:page_width] %>
+<% else %>
+  <% recording_studio_background_image(params[:background_image]) %>
+  <% recording_studio_page_width(params[:page_width]) %>
+<% end %>
+<% engine_plans = RecordingStudioStripe::Engine.root.join("app/views/recording_studio_stripe/plans/index.html.erb") %>
+<%= render inline: File.read(engine_plans) %>
