@@ -22,7 +22,7 @@ module RecordingStudioStripe
       render FlatPack::PageTitle::Component.new(
         title: @subscription.price&.product&.name || Copy.t("plans.current_plan"),
         subtitle: period_copy,
-        variant: :h3,
+        variant: :h2,
         class: "mb-0 pb-0"
       )
     end
@@ -51,7 +51,7 @@ module RecordingStudioStripe
     def status_badges
       parts = []
       parts << badge(Copy.t("billing.past_due_badge"), :danger) if @subscription.past_due?
-      parts << badge(Copy.t("billing.trial_badge"), :info) if @subscription.trialing?
+      parts << badge(Copy.t("billing.trial_badge"), :primary) if @subscription.trialing?
       if @subscription.canceling?
         parts << badge(Copy.t("billing.ends_this_period"), :warning)
       elsif @subscription.scheduled_downgrade?

@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.16.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.17.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -414,7 +414,10 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes source, "SubscriptionTypes.keys.size > 1"
     refute_includes source, "badge(\"Active\", :primary)"
     assert_includes source, 'Copy.t("billing.past_due_badge")'
-    assert_includes source, 'Copy.t("billing.trial_badge")'
+    assert_includes source, 'badge(Copy.t("billing.trial_badge"), :primary)'
+    assert_includes source, "variant: :h2"
+    refute_includes source, "variant: :h3"
+    refute_includes source, 'badge(Copy.t("billing.trial_badge"), :info)'
     assert_includes source, 'Copy.t("billing.update_card")'
     assert_includes source, "stay_on_named"
     assert_includes source, "subscription_cancel_confirm_path"

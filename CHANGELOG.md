@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-28
+
+### Changed
+- On `/billing`, a trialing plan uses FlatPack's primary badge (`style: :primary`) instead of info. Current stays success. Type, past due, scheduled change, and ending badges are unchanged
+- The live plan name on `/billing` uses FlatPack `PageTitle` `variant: :h2` (`--page-title-h2-size`). Price copy under the name is still the subtitle. `/plans` cards stay `h3`
+
+### Upgrade notes
+- Bump to **0.17.0**. No database migration. No webhook change
+- Hosts that replaced `CurrentPlanComponent` should paint Trial with `FlatPack::Badge` `style: :primary` and the plan name with `FlatPack::PageTitle` `variant: :h2`. Current stays `style: :success`. `/plans` density and `PlanCardComponent` are unchanged
+
 ## [0.16.0] - 2026-10-28
 
 ### Changed
@@ -545,7 +555,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.16.0...v0.17.0
 [0.14.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.0...v0.12.1

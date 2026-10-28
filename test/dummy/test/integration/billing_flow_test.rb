@@ -612,6 +612,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, ">Active</"
     assert_includes response.body, "badge-success-background-color"
     refute_includes response.body, "badge-primary-background-color"
+    assert_select "h2", text: "Pro"
     assert_match(/Current.*Studio/m, response.body)
     assert_includes response.body, "md:grid-cols-2"
   end
@@ -919,6 +920,10 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Trial until October 12, 2026. Then $29/month."
     refute_includes response.body, "Trial runs until"
     refute_includes response.body, ">Active</"
+    refute_includes response.body, ">Current</"
+    assert_includes response.body, "badge-primary-background-color"
+    refute_includes response.body, "badge-success-background-color"
+    assert_select "h2", text: "Pro"
   end
 
   test "cancel confirm names the plan then ends it at period end" do
