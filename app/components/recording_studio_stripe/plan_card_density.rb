@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
 module RecordingStudioStripe
-  # Class strings for plan density. Tailwind scans these literals. Do not build a
-  # class by interpolating pieces. An unprefixed size that must lose from md is
-  # paired with an md: utility marked !. Otherwise stylesheet order can keep the
-  # phone size on the desktop card.
-  #
   # The feature list is the next sibling of details, not a child. A closed
   # details element hides its children, so the list would vanish inside it from
   # md. FlatPack::Collapse sets hidden on connect, and preflight turns [hidden]
