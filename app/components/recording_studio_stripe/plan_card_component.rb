@@ -44,7 +44,7 @@ module RecordingStudioStripe
 
       # PageTitle sets an inline font-size, so a phone utility cannot shrink the name.
       helpers.tag.div(class: slot(:title)) do
-        safe_join([name_heading, subtitle_paragraph].compact)
+        safe_join([name_row, subtitle_paragraph].compact)
       end
     end
 

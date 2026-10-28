@@ -2,13 +2,14 @@
 
 module RecordingStudioStripe
   class PlanCardPrice
-    ROOT_CLASS = "flex h-full flex-col items-start justify-start gap-2"
-    PRICE_SPACE = "md:pt-4 md:pb-4"
-    OFFER_SPACE = "md:pt-8 md:pb-8 md:gap-4"
+    ROOT_CLASS = "flex h-full flex-col items-start justify-end gap-2"
+    PRICE_SPACE = "md:pb-4"
+    OFFER_SPACE = "md:pt-8 md:pb-4 md:gap-4"
     AMOUNT_CLASS = "leading-none text-[length:var(--page-title-h2-size)]"
     UNIT_CLASS = "leading-none text-[length:var(--text-lg)]"
 
-    def self.render(view:, price:, trial:, offer:, root_class: nil, amount_class: nil, unit_class: nil)
+    def self.render(view:, price:, trial:, offer:, root_class: nil, amount_class: nil, unit_class: nil,
+                    show_badge: true, badge_class: nil)
       new(
         view: view,
         price: price,
@@ -16,11 +17,14 @@ module RecordingStudioStripe
         offer: offer,
         root_class: root_class,
         amount_class: amount_class,
-        unit_class: unit_class
+        unit_class: unit_class,
+        show_badge: show_badge,
+        badge_class: badge_class
       ).render
     end
 
-    def initialize(view:, price:, trial:, offer:, root_class: nil, amount_class: nil, unit_class: nil)
+    def initialize(view:, price:, trial:, offer:, root_class: nil, amount_class: nil, unit_class: nil,
+                   show_badge: true, badge_class: nil)
       @view = view
       @price = price
       @trial = trial
@@ -28,6 +32,8 @@ module RecordingStudioStripe
       @root_class = root_class || ROOT_CLASS
       @amount_class = amount_class || AMOUNT_CLASS
       @unit_class = unit_class || UNIT_CLASS
+      @show_badge = show_badge
+      @badge_class = badge_class
     end
 
     def render
@@ -43,9 +49,12 @@ module RecordingStudioStripe
     end
 
     def badge
-      return unless @offer
+      return unless @offer && @show_badge
 
-      @view.render FlatPack::Badge::Component.new(text: @trial.duration_label, style: :success, size: :sm)
+      node = @view.render FlatPack::Badge::Component.new(text: @trial.duration_label, style: :success, size: :sm)
+      return node if @badge_class.blank?
+
+      @view.tag.div(class: @badge_class) { node }
     end
 
     def line

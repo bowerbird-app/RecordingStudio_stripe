@@ -37,18 +37,15 @@ module RecordingStudioStripe
       md:p-[var(--card-padding-md)]!
     }.join(" ").freeze
     AUTO_TITLE = "min-w-0 max-md:col-start-1 max-md:row-start-1"
-    AUTO_NAME = %w{
-      m-0
-      font-bold
-      leading-tight
-      fp-text-balance
+    AUTO_NAME_ROW = "flex min-w-0 items-center gap-2"
+    AUTO_NAME_BADGE = "shrink-0 md:hidden"
+    AUTO_NAME = %w[
+      m-0 font-bold leading-tight fp-text-balance
       text-[var(--surface-content-color)]
       text-[length:var(--text-base)]
-      max-md:overflow-hidden!
-      max-md:text-ellipsis!
-      max-md:whitespace-nowrap!
+      max-md:overflow-hidden! max-md:text-ellipsis! max-md:whitespace-nowrap!
       md:text-[length:var(--page-title-h3-size)]!
-    }.join(" ").freeze
+    ].join(" ").freeze
     AUTO_SUBTITLE = "m-0 mt-2 text-lg fp-text-pretty text-[var(--surface-muted-content-color)]"
     AUTO_SUBTITLE_QUIET = "m-0 mt-2 text-lg fp-text-pretty text-[var(--surface-muted-content-color)] max-md:hidden"
     AUTO_PRICE = %w[
@@ -64,7 +61,7 @@ module RecordingStudioStripe
       md:h-full
       md:flex-col
       md:items-start
-      md:justify-start
+      md:justify-end
     ].join(" ").freeze
     AUTO_AMOUNT = "leading-none text-[length:var(--text-xl)] md:text-[length:var(--page-title-h2-size)]!"
     AUTO_UNIT = "leading-none text-[length:var(--text-sm)] md:text-[length:var(--text-lg)]!"
@@ -98,17 +95,14 @@ module RecordingStudioStripe
       p-[var(--card-padding-sm)]
     }.join(" ").freeze
     ROWS_TITLE = "min-w-0 col-start-1 row-start-1"
-    ROWS_NAME = %w{
-      m-0
-      font-bold
-      leading-tight
-      fp-text-balance
+    ROWS_NAME_ROW = "flex min-w-0 items-center gap-2"
+    ROWS_NAME_BADGE = "shrink-0"
+    ROWS_NAME = %w[
+      m-0 font-bold leading-tight fp-text-balance
       text-[var(--surface-content-color)]
       text-[length:var(--text-base)]
-      overflow-hidden!
-      text-ellipsis!
-      whitespace-nowrap!
-    }.join(" ").freeze
+      overflow-hidden! text-ellipsis! whitespace-nowrap!
+    ].join(" ").freeze
     ROWS_SUBTITLE = "m-0 mt-2 text-lg fp-text-pretty text-[var(--surface-muted-content-color)]"
     ROWS_SUBTITLE_QUIET = "m-0 mt-2 text-lg fp-text-pretty text-[var(--surface-muted-content-color)] hidden"
     ROWS_PRICE = "min-w-0 col-start-1 row-start-2 flex flex-row flex-wrap items-baseline gap-x-2 gap-y-0.5"
@@ -127,6 +121,8 @@ module RecordingStudioStripe
         card: AUTO_CARD,
         body: AUTO_BODY,
         title: AUTO_TITLE,
+        name_row: AUTO_NAME_ROW,
+        name_badge: AUTO_NAME_BADGE,
         name: AUTO_NAME,
         subtitle: AUTO_SUBTITLE,
         subtitle_quiet: AUTO_SUBTITLE_QUIET,
@@ -145,6 +141,8 @@ module RecordingStudioStripe
         card: ROWS_CARD,
         body: ROWS_BODY,
         title: ROWS_TITLE,
+        name_row: ROWS_NAME_ROW,
+        name_badge: ROWS_NAME_BADGE,
         name: ROWS_NAME,
         subtitle: ROWS_SUBTITLE,
         subtitle_quiet: ROWS_SUBTITLE_QUIET,

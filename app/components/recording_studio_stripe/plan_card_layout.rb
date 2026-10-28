@@ -8,6 +8,23 @@ module RecordingStudioStripe
       helpers.tag.h3(@product.name, class: slot(:name))
     end
 
+    def name_row
+      helpers.tag.div(class: slot(:name_row)) do
+        helpers.safe_join([name_heading, phone_trial_badge].compact)
+      end
+    end
+
+    def phone_trial_badge
+      return unless trial_offer?
+
+      render FlatPack::Badge::Component.new(
+        text: @product.trial.duration_label,
+        style: :success,
+        size: :sm,
+        class: slot(:name_badge)
+      )
+    end
+
     def subtitle_paragraph
       text = title_subtitle
       return if text.blank?
@@ -26,8 +43,10 @@ module RecordingStudioStripe
       {
         root_class: slot(:price),
         amount_class: slot(:amount),
-        unit_class: slot(:unit)
-      }
+        unit_class: slot(:unit),
+        show_badge: @density != :rows,
+        badge_class: ("max-md:hidden" if @density == :auto)
+      }.compact
     end
 
     def feature_frame

@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `density: :cards` keeps that tall card at every width, including a phone. `density: :rows` keeps the compact row at every width and lays the plans out with `FlatPack::Collection` (`as: :list`, `layout: :stack`, `gap: :sm`)
 - `PlanCardComponent` takes the same `density:`. Its default stays `:cards`, so a host that renders one card still gets the tall card. `PlansComponent` passes its density through. `PlanCardComponent::DENSITIES` is the allowed list. An unknown density raises `ArgumentError`
 - `PlanCardPrice` sizes the amount and the unit with classes. `:cards` keeps the h2 amount and the large unit. `:auto` and `:rows` use a smaller amount on a phone. `:auto` restores the h2 amount from `md`. `render(view:, price:, trial:, offer:)` still works
-- On the desktop card, the primary action sits at the top of the shared button row. Checkout is one `form_with` around the Flatpack submit button. Current, Upgrade, and Downgrade wrap in the same outer box, so Choose, Try, Current, and Upgrade share one Y. The price stack starts at the top of that row (`justify-start`). Every card uses `md:pt-4 md:pb-4` under the subtitle and above the CTA. A trial offer uses `md:pt-8 md:pb-8 md:gap-4` instead
+- On the desktop card, the primary action sits at the top of the shared button row. Checkout is one `form_with` around the Flatpack submit button. Current, Upgrade, and Downgrade wrap in the same outer box, so Choose, Try, Current, and Upgrade share one Y. Amounts sit at the bottom of the price row (`justify-end`) with shared `md:pb-4`. A trial offer adds `md:pt-8 md:gap-4` above the amount. On a phone the trial badge sits after the plan name
 
 ### Upgrade notes
 - Bump to **0.16.0**. No database migration. No webhook change
@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `config.layout` is unchanged. It does not choose plan density
 - Copy key `recording_studio.stripe.plans.included` is What’s included. Translate it in host locale files
 - `PlanCardPrice` no longer sets an inline font-size. Optional `root_class:`, `amount_class:`, and `unit_class:` replace the default classes
-- Hosts that replaced `PlanCardComponent` should keep one submit control in the checkout form (no nested `button_to` around a Flatpack Button). Do not pin the price stack to the bottom of the row. Pad every price block from `md`. Use the larger offer padding when a trial badge and offer line are shown
+- Hosts that replaced `PlanCardComponent` should keep one submit control in the checkout form (no nested `button_to` around a Flatpack Button). Keep amounts on one baseline across a card group. Put extra trial padding above the amount. On a phone, put the trial badge after the plan name
 
 ## [0.15.0] - 2026-10-27
 
