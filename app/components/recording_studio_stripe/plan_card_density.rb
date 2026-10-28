@@ -87,7 +87,8 @@ module RecordingStudioStripe
       md:flex-col
       md:justify-start
     ].join(" ").freeze
-    AUTO_CONTROL = "m-0 flex flex-col max-md:w-auto md:w-full"
+    AUTO_FORM = "m-0 flex flex-col max-md:w-auto md:w-full"
+    AUTO_CONTROL = "max-md:w-auto md:w-full"
     AUTO_INCLUSIONS = "min-w-0 max-md:col-span-2 max-md:col-start-1 max-md:row-start-3"
     AUTO_DISCLOSURE = "peer group m-0 md:hidden"
     AUTO_LIST_FRAME = "max-md:hidden peer-open:block! md:block"
@@ -120,7 +121,8 @@ module RecordingStudioStripe
     ROWS_AMOUNT = "leading-none text-[length:var(--text-xl)]"
     ROWS_UNIT = "leading-none text-[length:var(--text-sm)]"
     ROWS_ACTION = "col-start-2 row-start-1 row-span-2 w-auto shrink-0 self-center justify-self-end"
-    ROWS_CONTROL = "m-0 flex flex-col w-auto"
+    ROWS_FORM = "m-0 flex w-auto flex-col"
+    ROWS_CONTROL = "w-auto"
     ROWS_INCLUSIONS = "min-w-0 col-span-2 col-start-1 row-start-3"
     ROWS_DISCLOSURE = "peer group m-0"
     ROWS_LIST_FRAME = "hidden peer-open:block!"
@@ -138,7 +140,7 @@ module RecordingStudioStripe
         amount: AUTO_AMOUNT,
         unit: AUTO_UNIT,
         action: AUTO_ACTION,
-        form: AUTO_CONTROL,
+        form: AUTO_FORM,
         button: AUTO_CONTROL,
         inclusions: AUTO_INCLUSIONS,
         disclosure: AUTO_DISCLOSURE,
@@ -156,7 +158,7 @@ module RecordingStudioStripe
         amount: ROWS_AMOUNT,
         unit: ROWS_UNIT,
         action: ROWS_ACTION,
-        form: ROWS_CONTROL,
+        form: ROWS_FORM,
         button: ROWS_CONTROL,
         inclusions: ROWS_INCLUSIONS,
         disclosure: ROWS_DISCLOSURE,

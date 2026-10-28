@@ -148,6 +148,7 @@ module RecordingStudioStripe
       assert_includes form["class"].to_s.split, "flex"
       assert_includes form["class"].to_s.split, "flex-col"
       assert_equal 1, form.css("button").size
+      refute_includes form.at_css("button")["class"].to_s.split, "flex-col"
       regions = body.element_children
       assert_includes regions[2]["class"].to_s, "justify-start"
     end
