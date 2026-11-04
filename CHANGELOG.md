@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Stripe Admin forms authorize against `config.site_admin_recording` only. They no longer pick the first recordable with `stripe_admin` enabled. The default Admin `site_admin_recording_resolver` from `AdminSupport` uses that same setting
+- Development and dummy lockfiles pin `rack` `3.2.8` (was `3.2.4` / `3.2.7`) to clear GHSA-2j8w-xcrc-x985, GHSA-5v64-555j-wjxm, GHSA-p8x9-v4hv-2w4g, and GHSA-wvg4-6p58-3gh3
 
 ### Upgrade notes
 - Bump to **0.18.0**. No database migration. No webhook change
