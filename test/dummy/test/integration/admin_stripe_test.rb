@@ -233,6 +233,20 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     RecordingStudioAdmin.configuration.site_admin_recording_resolver = previous_resolver
   end
 
+  test "default Admin resolver returns nil when access_recording lacks stripe_admin" do
+    workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
+    root = RecordingStudio.root_recording_for(workspace)
+    refute RecordingStudio.capability_enabled?(:stripe_admin, for: Workspace)
+
+    previous = RecordingStudioStripe.configuration.site_admin_recording
+    RecordingStudioStripe.configuration.site_admin_recording = nil
+    context = Struct.new(:controller, :access_recording).new(self, root)
+
+    assert_nil RecordingStudioStripe::AdminSupport.default_site_admin_recording_for(context)
+  ensure
+    RecordingStudioStripe.configuration.site_admin_recording = previous
+  end
+
   test "Admin stripe section falls back to access_recording when site_admin_recording is unset" do
     previous = RecordingStudioStripe.configuration.site_admin_recording
     previous_resolver = RecordingStudioAdmin.configuration.site_admin_recording_resolver

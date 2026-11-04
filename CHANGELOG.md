@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Stripe Admin forms authorize against `config.site_admin_recording` only. They no longer pick the first recordable with `stripe_admin` enabled. `Admin::BaseController::AdminContext` and `default_stripe_admin_recording` are gone
 - Public `RecordingStudioStripe.site_admin_recording_for` resolves that setting. A zero-argument callable runs with `instance_exec` on the controller. A callable that takes `controller` or `controller:` receives the controller
-- The default Admin `site_admin_recording_resolver` from `AdminSupport` uses that setting, then `context.access_recording` if the setting is missing or does not resolve a `:stripe_admin` recording. A host resolver still wins (`||=`)
+- The default Admin `site_admin_recording_resolver` from `AdminSupport` uses that setting, then `context.access_recording` if the setting is missing or does not resolve a `:stripe_admin` recording. The fallback is returned only when that recording's type has `:stripe_admin` enabled. A host resolver still wins (`||=`)
 - Development and dummy lockfiles pin `rack` `3.2.8`, `loofah` `2.25.3`, `nokogiri` `1.19.7`, and `rails-html-sanitizer` `1.7.2` so Bundler Audit clears the current GHSA advisories for those gems
 
 ### Upgrade notes

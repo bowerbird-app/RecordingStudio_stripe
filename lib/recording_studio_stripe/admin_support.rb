@@ -5,7 +5,11 @@ module RecordingStudioStripe
     extend ActiveSupport::Concern
 
     def self.default_site_admin_recording_for(context)
-      RecordingStudioStripe.site_admin_recording_for(context.controller) || context.access_recording
+      named = RecordingStudioStripe.site_admin_recording_for(context.controller)
+      return named if named
+
+      fallback = context.access_recording
+      fallback if SiteAdminRecording.stripe_admin?(fallback)
     end
 
     included do |base|
