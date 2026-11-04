@@ -131,6 +131,28 @@ class ConfigurationTest < Minitest::Test
     assert_equal true, @configuration.authenticate.call
   end
 
+  def test_site_admin_recording_defaults_to_nil
+    assert_nil @configuration.site_admin_recording
+    callable = -> { :named }
+    @configuration.site_admin_recording = callable
+    assert_equal :named, @configuration.site_admin_recording.call
+    @configuration.merge!(site_admin_recording: nil)
+    assert_nil @configuration.site_admin_recording
+  end
+
+  def test_site_admin_recording_for_denies_when_unset_or_blank
+    previous = RecordingStudioStripe.configuration.site_admin_recording
+    RecordingStudioStripe.configuration.site_admin_recording = nil
+
+    assert_nil RecordingStudioStripe.site_admin_recording_for
+
+    RecordingStudioStripe.configuration.site_admin_recording = -> {}
+
+    assert_nil RecordingStudioStripe.site_admin_recording_for
+  ensure
+    RecordingStudioStripe.configuration.site_admin_recording = previous
+  end
+
   def test_plans_background_image_defaults_to_nil
     assert_nil @configuration.plans_background_image
 

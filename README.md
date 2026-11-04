@@ -225,12 +225,23 @@ Checkout starts the real plan Price with Stripe `trial_period_days`. A one-time 
 
 ### Admin
 
-Install Recording Studio Admin and Accessible. Include `RecordingStudioStripe::AdminSupport` on the admin root. Enable the `:stripe` section. Grant Accessible access on that root. Mount Accessible under the admin path:
+Install Recording Studio Admin and Accessible. Include `RecordingStudioStripe::AdminSupport` on the admin root. Enable the `:stripe` section. Grant Accessible access on that root. Name that workspace on this gem. Mount Accessible under the admin path:
 
 ```ruby
+RecordingStudioStripe.configure do |config|
+  config.site_admin_recording = lambda {
+    admin_root = AdminRoot.find_by(name: "Studio Admin")
+    next unless admin_root
+
+    RecordingStudio.root_recording_for(admin_root)
+  }
+end
+
 mount RecordingStudioAccessible::Engine, at: "/admin/access"
 recording_studio_admin_for :admin, at: "/admin", root_section: :stripe
 ```
+
+`config.site_admin_recording` is a callable. It may return the root recording or the admin root recordable. Stripe Admin forms authorize against that workspace only. If the setting is missing or returns nothing, those forms respond 403. They do not pick the first `stripe_admin` row. User billing screens still use `config.current_root_recording`.
 
 Do not invent a second admin.
 
@@ -313,7 +324,7 @@ Replay with `RecordingStudioStripe::ProcessWebhook.replay(webhook_event)`. The n
 
 Set `config.automatic_tax = true` only after Stripe Tax is on in the Dashboard. Checkout then also sends `customer_update: { address: "auto" }`. Promotion codes are on by default.
 
-Hosts that do not use `current_user` should set `config.current_actor`. Hosts that do not use `current_root_recording` should set `config.current_root_recording`. `draw_recording_studio_stripe at:` overwrites `config.mount_path`. Billing screens use Accessible `ControllerAuth` for actor and root; grant `:view` / `:admin` on the workspace root. If Accessible is not loaded, set `config.authenticate` or money actions stay forbidden.
+Hosts that do not use `current_user` should set `config.current_actor`. Hosts that do not use `current_root_recording` should set `config.current_root_recording`. Hosts that mount Stripe Admin forms must set `config.site_admin_recording`. `draw_recording_studio_stripe at:` overwrites `config.mount_path`. Billing screens use Accessible `ControllerAuth` for actor and root; grant `:view` / `:admin` on the workspace root. If Accessible is not loaded, set `config.authenticate` or money actions stay forbidden.
 
 Recording Studio core still swallows `before_record` errors. Standing caps gate on `Recording` `before_create`, restore, and move until core can deny `record!` itself.
 

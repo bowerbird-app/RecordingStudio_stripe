@@ -14,9 +14,8 @@ module RecordingStudioStripe
       RecordingStudio.enable_capability(:stripe_admin, on: base)
 
       RecordingStudioAdmin.configuration.site_admin_recording_resolver ||= lambda do |context|
-        recording = context.access_recording
-        recordable = recording&.recordable
-        recording if recordable && RecordingStudio.capability_enabled?(:stripe_admin, for: recordable.class)
+        controller = context.respond_to?(:controller) ? context.controller : nil
+        RecordingStudioStripe.site_admin_recording_for(controller)
       end
 
       base.recording_studio_admin_sections do

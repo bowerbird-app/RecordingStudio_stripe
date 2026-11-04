@@ -175,6 +175,76 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_equal "Staff only.", response.body
   end
 
+  test "configured site-admin workspace grants Stripe Admin forms" do
+    decoy = AdminRoot.create!(id: "00000000-0000-0000-0000-000000000001", name: "Wrong First")
+    decoy_recording = RecordingStudio.root_recording_for(decoy)
+    assert_equal decoy, AdminRoot.order(:id).first
+
+    previous = RecordingStudioStripe.configuration.site_admin_recording
+    RecordingStudioStripe.configuration.site_admin_recording = -> { decoy_recording }
+    grant_owner_access!(recording: decoy_recording, actor: @user)
+
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
+
+    assert_response :success
+  ensure
+    RecordingStudioStripe.configuration.site_admin_recording = previous
+  end
+
+  test "missing site_admin_recording denies Stripe Admin forms" do
+    previous = RecordingStudioStripe.configuration.site_admin_recording
+    RecordingStudioStripe.configuration.site_admin_recording = nil
+
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
+
+    assert_response :forbidden
+    assert_equal "Staff only.", response.body
+
+    RecordingStudioStripe.configuration.site_admin_recording = -> { nil }
+
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
+
+    assert_response :forbidden
+    assert_equal "Staff only.", response.body
+  ensure
+    RecordingStudioStripe.configuration.site_admin_recording = previous
+  end
+
+  test "first admin root of the same type is not granted when it is not configured" do
+    decoy = AdminRoot.create!(id: "00000000-0000-0000-0000-000000000001", name: "Wrong First")
+    decoy_recording = RecordingStudio.root_recording_for(decoy)
+    assert_equal decoy, AdminRoot.order(:id).first
+
+    outsider = User.find_or_create_by!(email: "first-row@example.com") do |user|
+      user.password = "Password"
+      user.password_confirmation = "Password"
+    end
+    grant_owner_access!(recording: decoy_recording, actor: outsider)
+    sign_out @user
+    sign_in outsider
+
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
+
+    assert_response :forbidden
+    assert_equal "Staff only.", response.body
+  end
+
+  test "plans stay on the billing workspace when site_admin_recording is unset" do
+    workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
+    root = RecordingStudio.root_recording_for(workspace)
+    grant_owner_access!(recording: root, actor: @user, role: :admin)
+    switch_to_root!(root)
+
+    previous = RecordingStudioStripe.configuration.site_admin_recording
+    RecordingStudioStripe.configuration.site_admin_recording = nil
+
+    get "/plans"
+
+    assert_response :success
+  ensure
+    RecordingStudioStripe.configuration.site_admin_recording = previous
+  end
+
   test "staff can save a paid trial on a new plan" do
     assert_difference -> { RecordingStudioStripe::Product.count }, 1 do
       post RecordingStudioStripe.configuration.mount_path + "/admin/products", params: {
