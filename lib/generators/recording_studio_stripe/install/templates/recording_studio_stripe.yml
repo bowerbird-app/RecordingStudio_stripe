@@ -1,9 +1,9 @@
 development:
-  secret_key: <%= ENV["STRIPE_SECRET_KEY"] %>
-  publishable_key: <%= ENV["STRIPE_PUBLISHABLE_KEY"] %>
-  webhook_secret: <%= ENV["STRIPE_WEBHOOK_SECRET"] %>
+  api_key: "dev-key"
+  enable_feature_x: true
+  timeout: 5
 
 production:
-  secret_key: <%= ENV["STRIPE_SECRET_KEY"] %>
-  publishable_key: <%= ENV["STRIPE_PUBLISHABLE_KEY"] %>
-  webhook_secret: <%= ENV["STRIPE_WEBHOOK_SECRET"] %>
+  api_key: <%= ENV["RECORDING_STUDIO_STRIPE_API_KEY"] %>
+  enable_feature_x: false
+  timeout: 5

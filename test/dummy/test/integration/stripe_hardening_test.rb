@@ -20,28 +20,34 @@ class StripeHardeningTest < ActionDispatch::IntegrationTest
   end
 
   test "checkout success and cancel urls rebuild from the request origin" do
-    controller = RecordingStudioStripe::CheckoutsController.new
-    request = ActionDispatch::TestRequest.create
-    request.host = "www.example.com"
-    controller.set_request!(request)
-    controller.set_response!(ActionDispatch::TestResponse.new)
+    previous_client = RecordingStudioStripe.configuration.client
+    client = RecordingStudioStripe::Testing::Client.new
+    RecordingStudioStripe.configuration.client = client
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
 
-    assert_equal "http://www.example.com/billing", controller.send(:after_checkout_url)
-    assert_equal "http://www.example.com/plans", controller.send(:checkout_cancel_url)
+    post recording_studio_stripe.checkout_path, params: { price_id: price.id }
+
+    params = client.last_checkout_params
+    assert_equal "http://www.example.com/billing?checkout=ok", params[:success_url]
+    assert_equal "http://www.example.com/plans", params[:cancel_url]
+    assert_redirected_to %r{\Ahttps://checkout\.stripe\.test/}
+  ensure
+    RecordingStudioStripe.configuration.client = previous_client
   end
 
   test "checkout urls reject a protocol-relative return path" do
     previous = RecordingStudioStripe.configuration.success_path
+    previous_client = RecordingStudioStripe.configuration.client
     RecordingStudioStripe.configuration.success_path = "//evil.example/phish"
-    controller = RecordingStudioStripe::CheckoutsController.new
-    request = ActionDispatch::TestRequest.create
-    request.host = "www.example.com"
-    controller.set_request!(request)
-    controller.set_response!(ActionDispatch::TestResponse.new)
+    RecordingStudioStripe.configuration.client = RecordingStudioStripe::Testing::Client.new
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
 
-    assert_raises(ActionController::BadRequest) { controller.send(:after_checkout_url) }
+    post recording_studio_stripe.checkout_path, params: { price_id: price.id }
+
+    assert_response :bad_request
   ensure
     RecordingStudioStripe.configuration.success_path = previous
+    RecordingStudioStripe.configuration.client = previous_client
   end
 
   test "two first checkouts in one group keep one pending row" do

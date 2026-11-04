@@ -7,36 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.17.2] - 2026-11-04
+## [0.17.1] - 2026-11-04
 
 ### Changed
-- Bump to **0.17.2**. **0.17.1 was never tagged**
+- Bump to **0.17.1**. This release was never tagged from the earlier FlatPack Collection work
 - Runtime floors: `recording_studio` `>= 6.3.0`, `recording_studio_accessible` `~> 0.24`, `flat_pack` `>= 0.1.341`. Development pins: Recording Studio `v6.3.0`, Accessible `v0.24.0`, FlatPack `v0.1.341`, Metrics `v0.7.2`, Trashable `v0.12.2`, Cache `v0.6.2`, Logs `v0.7.3`, Root Switchable `v0.11.4`. Dummy Admin stays `v2.7.0`. `view_component` stays `4.19.0`
 - Checkout success and cancel URLs rebuild from the request scheme, host, and port. `success_path` and `cancel_path` must be site-relative
-- Local mode still accepts an unsigned webhook. It now logs that signature verification was skipped. The log has no secrets and no exception text
-- Install YAML lists Stripe keys (`secret_key`, `publishable_key`, `webhook_secret`) instead of leftover `enable_feature_x`
+- Billing and usage cards stack their body through FlatPack `Collection` (`as: :list`, `layout: :stack`, `gap: :md`) instead of a custom flex column. `stripe_card_stack` still takes the same parts
+- The Admin pricing-card disclosure uses that Collection for its fields. Hide-on-the-card and Extra line are FlatPack `SectionTitle` (`size: :sm`, `spacing: :none`). Extra line help is the subtitle. The hide tooltip stays on `SectionTitle` `trailing`. Copy is unchanged
+- `density: :rows` What’s included is FlatPack `Collapse` (`id:` is `plan-included-<product-id>-<interval>`, `title:`, `open: false`, `border: false`). `density: :auto` keeps a native `details` sibling of the feature list, because Collapse `[hidden]` cannot stay closed on a phone and open from `md` without a second list or a CSS override. `density: :cards` still has no disclosure. Copy key `plans.included` is unchanged
 
 ### Removed
-- Tracked `test/dummy/coverage/` output, `.audit/stripe-review-fixes.tsv`, `MIGRATION_NOTES.md`, and the `widen_recording_studio_requirement` Bundler prepend
+- The `widen_recording_studio_requirement` Bundler prepend
 
 ### Upgrade notes
-- Bump to **0.17.2**. No database migration. Webhook handling is unchanged except for the local-mode log line
+- Bump to **0.17.1**. No database migration. No webhook change
 - Accessible is now `~> 0.24`. Hosts on 0.22 or 0.23 need to move to 0.24
 - Recording Studio is now `>= 6.3.0`. FlatPack is now `>= 0.1.341`
 - `rack` in the lockfiles is `>= 3.2.8` (GHSA-2j8w-xcrc-x985, GHSA-5v64-555j-wjxm, GHSA-p8x9-v4hv-2w4g, GHSA-wvg4-6p58-3gh3)
 - Development and dummy pin `minitest` `< 6` so `Object#stub` stays available to the gem suite
-
-## [0.17.1] - 2026-10-28
-
-### Changed
-- Billing and usage cards stack their body through FlatPack `Collection` (`as: :list`, `layout: :stack`, `gap: :md`) instead of a custom flex column. `stripe_card_stack` still takes the same parts
-- The Admin pricing-card disclosure uses that Collection for its fields. Hide-on-the-card and Extra line are FlatPack `SectionTitle` (`size: :sm`, `spacing: :none`). Extra line help is the subtitle. The hide tooltip stays on `SectionTitle` `trailing`. Copy is unchanged
-- Requires `flat_pack` `>= 0.1.329`. Development and dummy pins are GitHub tag `v0.1.329`. `view_component` stays `4.19.0`
-- `density: :rows` What’s included is FlatPack `Collapse` (`id:` is `plan-included-<product-id>-<interval>`, `title:`, `open: false`, `border: false`). `density: :auto` keeps a native `details` sibling of the feature list, because Collapse `[hidden]` cannot stay closed on a phone and open from `md` without a second list or a CSS override. `density: :cards` still has no disclosure. Copy key `plans.included` is unchanged
-
-### Upgrade notes
-- Bump to **0.17.1**. No database migration. No webhook change
-- The gemspec runtime floor is now `flat_pack >= 0.1.329` (was `>= 0.1.327`). Development and dummy pins are GitHub tag `v0.1.329`
 - `stripe_card_stack` now renders a FlatPack Collection list (`ul`/`li`) instead of a `div`. Hosts that styled the old flex wrapper may need to update. Hosts that copied `flex h-full flex-col gap-4` should render `FlatPack::Collection::Component` with `as: :list`, `layout: :stack`, `gap: :md`, and `class: "h-full"`
 - Hosts that replaced the Admin `_plan_card` partial should drop the raw `<p>` headings and use `SectionTitle` for Hide on the card and Extra line
 - Hosts that render `density: :rows` get a FlatPack Collapse instead of `details`/`summary`. Hosts that styled that markup may need to update. `density: :auto` is still native `details`
@@ -592,8 +581,7 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.2...HEAD
-[0.17.2]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.1...v0.17.2
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.1...HEAD
 [0.17.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.16.0...v0.17.0
 [0.14.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.13.0...v0.14.0

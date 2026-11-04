@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "open3"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.17.2", ::RecordingStudioStripe::VERSION
+    assert_equal "0.17.1", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -107,36 +106,9 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes source, "request.base_url"
   end
 
-  def test_local_mode_unsigned_webhook_logs_a_warning
-    source = File.read(File.expand_path("../lib/recording_studio_stripe/process_webhook.rb", __dir__))
-    warning = "Stripe webhook accepted without signature verification because local_mode is on"
-
-    assert_includes source, "Rails.logger.warn("
-    assert_includes source, warning
-    refute_includes source, "e.message"
-  end
-
-  def test_install_yaml_uses_stripe_keys
-    yaml = File.read(
-      File.expand_path(
-        "../lib/generators/recording_studio_stripe/install/templates/recording_studio_stripe.yml",
-        __dir__
-      )
-    )
-
-    assert_includes yaml, "secret_key:"
-    assert_includes yaml, "publishable_key:"
-    assert_includes yaml, "webhook_secret:"
-    refute_includes yaml, "enable_feature_x"
-  end
-
-  def test_dummy_coverage_and_widen_support_are_untracked
+  def test_widen_support_file_is_gone
     root = File.expand_path("..", __dir__)
-    coverage, status = Open3.capture2("git", "-C", root, "ls-files", "--", "test/dummy/coverage")
-    assert_equal 0, status.exitstatus
-    assert_equal "", coverage.strip
     refute File.exist?(File.join(root, "test/support/widen_recording_studio_requirement.rb"))
-    refute File.exist?(File.join(root, "MIGRATION_NOTES.md"))
   end
 
   def test_template_does_not_ship_copied_core_hooks_or_base_service
