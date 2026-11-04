@@ -10,6 +10,7 @@ require "recording_studio_stripe/errors"
 require "recording_studio_stripe/stripe_request"
 require "recording_studio_stripe/engine"
 require "recording_studio_stripe/configuration"
+require "recording_studio_stripe/site_admin_recording"
 require "recording_studio_stripe/subscription_types"
 require "recording_studio_stripe/limits"
 require "recording_studio_stripe/limit_handle"
@@ -90,13 +91,7 @@ module RecordingStudioStripe
     end
 
     def site_admin_recording_for(controller = nil)
-      value = site_admin_recording_value(controller)
-      return if value.nil?
-
-      recording = recording_from_site_admin_value(value)
-      return unless stripe_admin_recording?(recording)
-
-      recording
+      SiteAdminRecording.for(controller)
     end
 
     def register_capabilities!
@@ -112,31 +107,6 @@ module RecordingStudioStripe
         source: AdminSupport
       )
       @capabilities_registered = true
-    end
-
-    private
-
-    def site_admin_recording_value(controller)
-      setting = configuration.site_admin_recording
-      return if setting.nil?
-      return setting unless setting.respond_to?(:call)
-      return setting.call unless controller
-
-      controller.instance_exec(&setting)
-    end
-
-    def recording_from_site_admin_value(value)
-      return unless defined?(RecordingStudio)
-      return value if defined?(RecordingStudio::Recording) && value.is_a?(RecordingStudio::Recording)
-
-      RecordingStudio.root_recording_for(value)
-    end
-
-    def stripe_admin_recording?(recording)
-      recordable = recording&.recordable
-      return false unless recordable
-
-      RecordingStudio.capability_enabled?(:stripe_admin, for: recordable.class)
     end
   end
 end

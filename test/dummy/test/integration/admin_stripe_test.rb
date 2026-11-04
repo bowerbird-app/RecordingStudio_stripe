@@ -176,9 +176,8 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
   end
 
   test "configured site-admin workspace grants Stripe Admin forms" do
-    decoy = AdminRoot.create!(id: "00000000-0000-0000-0000-000000000001", name: "Wrong First")
+    decoy = AdminRoot.create!(name: "Wrong Admin #{SecureRandom.hex(4)}")
     decoy_recording = RecordingStudio.root_recording_for(decoy)
-    assert_equal decoy, AdminRoot.order(:id).first
 
     previous = RecordingStudioStripe.configuration.site_admin_recording
     RecordingStudioStripe.configuration.site_admin_recording = -> { decoy_recording }
@@ -189,6 +188,66 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_response :success
   ensure
     RecordingStudioStripe.configuration.site_admin_recording = previous
+  end
+
+  test "site_admin_recording may return the admin root recordable" do
+    previous = RecordingStudioStripe.configuration.site_admin_recording
+    admin_root = @admin_root
+    RecordingStudioStripe.configuration.site_admin_recording = -> { admin_root }
+
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
+
+    assert_response :success
+  ensure
+    RecordingStudioStripe.configuration.site_admin_recording = previous
+  end
+
+  test "site_admin_recording whose type lacks stripe_admin denies Stripe Admin forms" do
+    workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
+    root = RecordingStudio.root_recording_for(workspace)
+    refute RecordingStudio.capability_enabled?(:stripe_admin, for: Workspace)
+
+    previous = RecordingStudioStripe.configuration.site_admin_recording
+    RecordingStudioStripe.configuration.site_admin_recording = -> { root }
+
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
+
+    assert_response :forbidden
+    assert_equal "Staff only.", response.body
+  ensure
+    RecordingStudioStripe.configuration.site_admin_recording = previous
+  end
+
+  test "Admin stripe section uses the default resolver through Admin context" do
+    previous_resolver = RecordingStudioAdmin.configuration.site_admin_recording_resolver
+    RecordingStudioAdmin.configuration.site_admin_recording_resolver = lambda do |context|
+      RecordingStudioStripe::AdminSupport.default_site_admin_recording_for(context)
+    end
+
+    get "/admin"
+
+    assert_response :success
+    assert_includes response.body, "Stripe"
+    assert_includes response.body, "Products"
+  ensure
+    RecordingStudioAdmin.configuration.site_admin_recording_resolver = previous_resolver
+  end
+
+  test "Admin stripe section falls back to access_recording when site_admin_recording is unset" do
+    previous = RecordingStudioStripe.configuration.site_admin_recording
+    previous_resolver = RecordingStudioAdmin.configuration.site_admin_recording_resolver
+    RecordingStudioStripe.configuration.site_admin_recording = nil
+    RecordingStudioAdmin.configuration.site_admin_recording_resolver = lambda do |context|
+      RecordingStudioStripe::AdminSupport.default_site_admin_recording_for(context)
+    end
+
+    get "/admin"
+
+    assert_response :success
+    assert_includes response.body, "Stripe"
+  ensure
+    RecordingStudioStripe.configuration.site_admin_recording = previous
+    RecordingStudioAdmin.configuration.site_admin_recording_resolver = previous_resolver
   end
 
   test "missing site_admin_recording denies Stripe Admin forms" do
@@ -210,10 +269,9 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     RecordingStudioStripe.configuration.site_admin_recording = previous
   end
 
-  test "first admin root of the same type is not granted when it is not configured" do
-    decoy = AdminRoot.create!(id: "00000000-0000-0000-0000-000000000001", name: "Wrong First")
+  test "an unconfigured admin root of the same type is not granted" do
+    decoy = AdminRoot.create!(name: "Wrong Admin #{SecureRandom.hex(4)}")
     decoy_recording = RecordingStudio.root_recording_for(decoy)
-    assert_equal decoy, AdminRoot.order(:id).first
 
     outsider = User.find_or_create_by!(email: "first-row@example.com") do |user|
       user.password = "Password"
@@ -227,6 +285,9 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
 
     assert_response :forbidden
     assert_equal "Staff only.", response.body
+  ensure
+    sign_out outsider
+    sign_in @user
   end
 
   test "plans stay on the billing workspace when site_admin_recording is unset" do

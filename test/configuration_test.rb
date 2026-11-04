@@ -153,6 +153,50 @@ class ConfigurationTest < Minitest::Test
     RecordingStudioStripe.configuration.site_admin_recording = previous
   end
 
+  def test_site_admin_recording_for_instance_execs_a_zero_argument_callable
+    previous = RecordingStudioStripe.configuration.site_admin_recording
+    admin_controller = Class.new do
+      def site_admin
+        nil
+      end
+    end.new
+    RecordingStudioStripe.configuration.site_admin_recording = -> { site_admin }
+
+    assert_nil RecordingStudioStripe.site_admin_recording_for(admin_controller)
+  ensure
+    RecordingStudioStripe.configuration.site_admin_recording = previous
+  end
+
+  def test_site_admin_recording_for_passes_the_controller_to_an_arity_one_lambda
+    previous = RecordingStudioStripe.configuration.site_admin_recording
+    seen = nil
+    admin_controller = Object.new
+    RecordingStudioStripe.configuration.site_admin_recording = lambda { |controller|
+      seen = controller
+      nil
+    }
+
+    assert_nil RecordingStudioStripe.site_admin_recording_for(admin_controller)
+    assert_same admin_controller, seen
+  ensure
+    RecordingStudioStripe.configuration.site_admin_recording = previous
+  end
+
+  def test_site_admin_recording_for_passes_keyword_controller
+    previous = RecordingStudioStripe.configuration.site_admin_recording
+    seen = nil
+    admin_controller = Object.new
+    RecordingStudioStripe.configuration.site_admin_recording = lambda { |controller:|
+      seen = controller
+      nil
+    }
+
+    assert_nil RecordingStudioStripe.site_admin_recording_for(admin_controller)
+    assert_same admin_controller, seen
+  ensure
+    RecordingStudioStripe.configuration.site_admin_recording = previous
+  end
+
   def test_plans_background_image_defaults_to_nil
     assert_nil @configuration.plans_background_image
 

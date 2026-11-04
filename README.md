@@ -241,7 +241,7 @@ mount RecordingStudioAccessible::Engine, at: "/admin/access"
 recording_studio_admin_for :admin, at: "/admin", root_section: :stripe
 ```
 
-`config.site_admin_recording` is a callable. It may return the root recording or the admin root recordable. Stripe Admin forms authorize against that workspace only. If the setting is missing or returns nothing, those forms respond 403. They do not pick the first `stripe_admin` row. User billing screens still use `config.current_root_recording`.
+`config.site_admin_recording` may be the root recording, the admin root recordable, or a callable that returns one of those. A zero-argument callable runs with `instance_exec` on the Stripe Admin controller (`self` is that controller), same as `config.current_actor`. A callable that takes `controller` or `controller:` receives the controller. `RecordingStudioStripe.site_admin_recording_for` is the public resolver. Stripe Admin forms authorize against that workspace only. If the setting is missing or returns nothing, those forms respond 403. They do not pick the first `stripe_admin` row. User billing screens still use `config.current_root_recording`.
 
 Do not invent a second admin.
 

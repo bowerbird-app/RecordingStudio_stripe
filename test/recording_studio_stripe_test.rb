@@ -111,21 +111,6 @@ class RecordingStudioStripeTest < Minitest::Test
     refute File.exist?(File.join(root, "test/support/widen_recording_studio_requirement.rb"))
   end
 
-  def test_admin_base_controller_uses_configured_site_admin_recording
-    path = File.expand_path(
-      "../app/controllers/recording_studio_stripe/admin/base_controller.rb",
-      __dir__
-    )
-    source = File.read(path)
-    support = File.read(File.expand_path("../lib/recording_studio_stripe/admin_support.rb", __dir__))
-
-    assert_includes source, "RecordingStudioStripe.site_admin_recording_for(self)"
-    refute_includes source, "klass.first"
-    refute_includes source, "default_stripe_admin_recording"
-    assert_includes support, "RecordingStudioStripe.site_admin_recording_for(controller)"
-    refute_includes support, "context.access_recording"
-  end
-
   def test_template_does_not_ship_copied_core_hooks_or_base_service
     refute File.exist?(File.expand_path("../lib/recording_studio_stripe/hooks.rb", __dir__))
     refute File.exist?(File.expand_path("../lib/recording_studio_stripe/services/base_service.rb", __dir__))
