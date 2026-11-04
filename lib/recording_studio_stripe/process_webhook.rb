@@ -69,6 +69,9 @@ module RecordingStudioStripe
       if secret.present?
         Stripe::Webhook.construct_event(@payload, @signature, secret)
       elsif RecordingStudioStripe.configuration.local_mode?
+        Rails.logger.warn(
+          "Stripe webhook accepted without signature verification because local_mode is on"
+        )
         Stripe::Event.construct_from(JSON.parse(@payload))
       else
         raise Stripe::SignatureVerificationError.new(

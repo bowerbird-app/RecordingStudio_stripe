@@ -8,6 +8,9 @@ module RecordingStudioStripe
 
     include RecordingStudioAccessible::ControllerAuth
 
+    CHECKOUT_HOST = /\A[A-Za-z0-9.-]+\z/
+    CHECKOUT_SCHEMES = %w[http https].freeze
+
     recording_studio_layout { RecordingStudioStripe.configuration.layout }
 
     recording_studio_auth(
@@ -106,11 +109,32 @@ module RecordingStudioStripe
     end
 
     def after_checkout_url
-      "#{request.base_url}#{RecordingStudioStripe.configuration.success_path}"
+      "#{same_origin_base}#{checkout_return_path(RecordingStudioStripe.configuration.success_path)}"
     end
 
     def checkout_cancel_url
-      "#{request.base_url}#{RecordingStudioStripe.configuration.cancel_path}"
+      "#{same_origin_base}#{checkout_return_path(RecordingStudioStripe.configuration.cancel_path)}"
+    end
+
+    def same_origin_base
+      host = request.host
+      scheme = request.scheme
+      unless host&.match?(CHECKOUT_HOST) && CHECKOUT_SCHEMES.include?(scheme)
+        raise ActionController::BadRequest, "Invalid checkout origin"
+      end
+
+      origin = "#{scheme}://#{host}"
+      origin += ":#{request.port}" unless request.standard_port?
+      origin
+    end
+
+    def checkout_return_path(path)
+      value = path.to_s
+      unless value.start_with?("/") && !value.start_with?("//")
+        raise ActionController::BadRequest, "Invalid checkout path"
+      end
+
+      value
     end
 
     def recording_studio_stripe_sign_in_url

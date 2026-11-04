@@ -19,6 +19,31 @@ class StripeHardeningTest < ActionDispatch::IntegrationTest
     switch_to_root!(@root)
   end
 
+  test "checkout success and cancel urls rebuild from the request origin" do
+    controller = RecordingStudioStripe::CheckoutsController.new
+    request = ActionDispatch::TestRequest.create
+    request.host = "www.example.com"
+    controller.set_request!(request)
+    controller.set_response!(ActionDispatch::TestResponse.new)
+
+    assert_equal "http://www.example.com/billing", controller.send(:after_checkout_url)
+    assert_equal "http://www.example.com/plans", controller.send(:checkout_cancel_url)
+  end
+
+  test "checkout urls reject a protocol-relative return path" do
+    previous = RecordingStudioStripe.configuration.success_path
+    RecordingStudioStripe.configuration.success_path = "//evil.example/phish"
+    controller = RecordingStudioStripe::CheckoutsController.new
+    request = ActionDispatch::TestRequest.create
+    request.host = "www.example.com"
+    controller.set_request!(request)
+    controller.set_response!(ActionDispatch::TestResponse.new)
+
+    assert_raises(ActionController::BadRequest) { controller.send(:after_checkout_url) }
+  ensure
+    RecordingStudioStripe.configuration.success_path = previous
+  end
+
   test "two first checkouts in one group keep one pending row" do
     previous_client = RecordingStudioStripe.configuration.client
     client = RecordingStudioStripe::Testing::Client.new

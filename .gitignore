@@ -52,6 +52,7 @@ test/dummy/config/credentials/*.key
 *.gem
 pkg/
 coverage/
+test/dummy/coverage/
 tmp/rubocop/
 
 # Rename script state

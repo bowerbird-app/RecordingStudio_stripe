@@ -265,6 +265,36 @@ class WebhooksTest < ActionDispatch::IntegrationTest
     assert_equal "past_due", @workspace.billing.subscription.reload.status
   end
 
+  test "local_mode unsigned webhook logs a warning and still processes" do
+    payload = stripe_event(
+      "evt_local_unsigned",
+      "product.updated",
+      {
+        "id" => "prod_local_unsigned",
+        "name" => "Local",
+        "active" => true,
+        "metadata" => { "kind" => "plan", "subscription_type" => "studio" }
+      }
+    ).to_json
+    warnings = []
+    logger = Rails.logger.singleton_class
+    logger.alias_method(:warn_without_capture, :warn)
+    logger.define_method(:warn) { |message = nil, *| warnings << message }
+
+    result = RecordingStudioStripe::ProcessWebhook.call(payload: payload, signature: nil)
+
+    assert_equal :processed, result
+    assert_includes warnings, "Stripe webhook accepted without signature verification because local_mode is on"
+    warnings.each do |message|
+      refute_match(/secret|whsec|sk_live|sk_test/i, message.to_s)
+    end
+  ensure
+    if logger&.method_defined?(:warn_without_capture)
+      logger.alias_method(:warn, :warn_without_capture)
+      logger.remove_method(:warn_without_capture)
+    end
+  end
+
   test "configured Stripe without a webhook secret rejects unsigned events" do
     previous_client = RecordingStudioStripe.configuration.client
     RecordingStudioStripe.configuration.client = RecordingStudioStripe::Testing::Client.new

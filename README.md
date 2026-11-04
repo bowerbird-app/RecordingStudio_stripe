@@ -37,14 +37,14 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 
 ```ruby
 # Gemfile
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.2.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"
 gem "recording_studio_stripe", github: "bowerbird-app/RecordingStudio_stripe"
-gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.22.0"
-gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.329"
+gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.0"
+gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.341"
 gem "view_component", "4.19.0"
 ```
 
-This gem requires `recording_studio` `>= 6.2.0`, Accessible `~> 0.22`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.329`. The pin above loads FlatPack `0.1.329`.
+This gem requires `recording_studio` `>= 6.3.0`, Accessible `~> 0.24`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.341`. The pin above loads FlatPack `0.1.341`. Accessible `~> 0.24` no longer matches 0.22 or 0.23.
 
 `config.layout` chooses the screen chrome for this engine. `nil` uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. A String is a layout name. `false` renders with no layout. A callable must take `controller:` and return a String, `nil`, or `false`.
 
@@ -58,7 +58,7 @@ Page titles are `content_for :title` and `content_for :subtitle`. The default la
 
 `recording_studio_background_image(url)` sets `content_for :background_image`. The default layout passes that URL to `FlatPack::PageLayout` as a decorative image (`alt=""`, `loading="lazy"`). A blank URL leaves the page unchanged. `/plans` passes `config.plans_background_image`. That setting defaults to nil. `recording_studio_page_width(:wide)` sets `content_for :page_width`. Allowed values are `:narrow`, `:default`, `:wide`, and `:full`. A blank value stays `:default`.
 
-Logs, Metrics, Cache, Internationalization, and Root Switchable may still declare `recording_studio` below 6. This repo loads `test/support/widen_recording_studio_requirement.rb` from the Gemfile so Bundler can resolve `6.2.0`. The widened floor stays `>= 6.1.0`, which `6.2.0` satisfies. A host that bundles those gems needs the same widen until they publish a 6.2 requirement.
+Checkout `success_url` and `cancel_url` are built from the request scheme, host, and port plus `config.success_path` and `config.cancel_path`. Those paths must be site-relative (`/billing`, not `//other.example`).
 
 ```bash
 bin/rails generate recording_studio_stripe:install
