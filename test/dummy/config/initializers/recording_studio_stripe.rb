@@ -5,6 +5,12 @@ RecordingStudioStripe.configure do |config|
     "application" if controller.devise_controller?
   }
   config.plans_background_image = "/plans-backdrop.svg"
+  config.site_admin_recording = lambda {
+    admin_root = AdminRoot.find_by(name: "Studio Admin")
+    next unless admin_root
+
+    RecordingStudio.root_recording_for(admin_root)
+  }
   config.secret_key = ENV["STRIPE_SECRET_KEY"]
   config.publishable_key = ENV["STRIPE_PUBLISHABLE_KEY"]
   config.webhook_secret = ENV["STRIPE_WEBHOOK_SECRET"]

@@ -11,5 +11,6 @@ Recording Studio Stripe is mounted.
 9. Optional: set config.limits so a plan can cap how many of a type exist. Put the number on the Product.
 10. Optional: set icon and plan_line on limits, meters, and paywalls for the public plan card.
 11. Optional: set config.current_actor and config.current_root_recording if those helpers are not already on the host.
-12. Optional: set Trial days and Trial amount in cents on a plan Product for a paid or $0 trial.
-13. Customer screens use `recording_studio.stripe.*`. The gem ships English. Add host locale files to translate. Staff Admin stays English.
+12. Set config.site_admin_recording for Stripe Admin forms. Missing or nil denies those screens.
+13. Optional: set Trial days and Trial amount in cents on a plan Product for a paid or $0 trial.
+14. Customer screens use `recording_studio.stripe.*`. The gem ships English. Add host locale files to translate. Staff Admin stays English.

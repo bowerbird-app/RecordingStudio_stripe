@@ -9,16 +9,6 @@ module RecordingStudioStripe
 
       helper_method :admin_screen_url
 
-      AdminContext = Struct.new(:controller) do
-        def access_recording
-          controller.send(:default_stripe_admin_recording)
-        end
-
-        def current_actor
-          controller.send(:current_admin_actor)
-        end
-      end
-
       private
 
       def require_admin_access!
@@ -40,10 +30,7 @@ module RecordingStudioStripe
       end
 
       def admin_access_recording
-        return unless defined?(RecordingStudioAdmin)
-
-        resolver = RecordingStudioAdmin.configuration.site_admin_recording_resolver
-        resolver&.call(AdminContext.new(self))
+        RecordingStudioStripe.site_admin_recording_for(self)
       end
 
       def current_admin_actor
@@ -52,23 +39,6 @@ module RecordingStudioStripe
                       end
         method_name ||= :current_user
         public_send(method_name) if respond_to?(method_name, true)
-      end
-
-      def default_stripe_admin_recording
-        return unless defined?(RecordingStudio)
-
-        types = RecordingStudio.configuration.try(:recordable_types)
-        Array(types).each do |name|
-          klass = name.to_s.safe_constantize
-          next unless klass
-          next unless RecordingStudio.capability_enabled?(:stripe_admin, for: klass)
-
-          recordable = klass.first
-          next unless recordable
-
-          return RecordingStudio.root_recording_for(recordable)
-        end
-        nil
       end
 
       def admin_screen_url(key)

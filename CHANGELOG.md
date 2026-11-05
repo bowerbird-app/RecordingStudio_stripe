@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-04
+
+### Changed
+- Stripe Admin forms authorize against `config.site_admin_recording` only. They no longer pick the first recordable with `stripe_admin` enabled. `Admin::BaseController::AdminContext` and `default_stripe_admin_recording` are gone
+- Public `RecordingStudioStripe.site_admin_recording_for` resolves that setting. A zero-argument callable runs with `instance_exec` on the controller. A callable that takes `controller` or `controller:` receives the controller
+- The default Admin `site_admin_recording_resolver` from `AdminSupport` uses that setting, then `context.access_recording` if the setting is missing or does not resolve a `:stripe_admin` recording. The fallback is returned only when that recording's type has `:stripe_admin` enabled. A host resolver still wins (`||=`)
+- Development and dummy lockfiles pin `rack` `3.2.8`, `loofah` `2.25.3`, `nokogiri` `1.19.7`, and `rails-html-sanitizer` `1.7.2` so Bundler Audit clears the current GHSA advisories for those gems
+
+### Upgrade notes
+- Bump to **0.18.0**. No database migration. No webhook change. Latest tag is `v0.17.0`; `main` holds untagged `0.17.1`
+- Set `config.site_admin_recording` to the site-admin workspace recording, the admin root recordable, or a callable that returns one of those. If the setting is missing or returns nothing, Stripe Admin forms respond 403. They do not fall back to `klass.first`. User billing screens (`/plans`, checkout, portal) are unchanged
+- Delete uses of `RecordingStudioStripe::Admin::BaseController::AdminContext`. Call `RecordingStudioStripe.site_admin_recording_for(controller)` instead of Admin's resolver with that struct
+- A `->(controller) { ... }` lambda is supported. A zero-argument `lambda { ... }` still runs as `instance_exec` on the controller, same as `config.current_actor`
+
 ## [0.17.1] - 2026-11-04
 
 ### Changed
@@ -581,7 +595,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.1...v0.18.0
 [0.17.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.16.0...v0.17.0
 [0.14.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.13.0...v0.14.0

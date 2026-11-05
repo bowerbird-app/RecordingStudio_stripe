@@ -61,6 +61,16 @@ RecordingStudioStripe.configure do |config|
   # end
   # Decorative backdrop for /plans. Blank leaves that page unchanged.
   # config.plans_background_image = "/plans-backdrop.svg"
+  # Required for Stripe Admin forms. Return the site-admin workspace recording
+  # (or the admin root recordable). A zero-argument callable runs as instance_exec
+  # on the controller. A callable may take controller or controller:. Missing or
+  # nil denies those screens.
+  # config.site_admin_recording = lambda {
+  #   admin_root = AdminRoot.find_by(name: "Studio Admin")
+  #   next unless admin_root
+  #
+  #   RecordingStudio.root_recording_for(admin_root)
+  # }
   # config.limit_reached_path = "/plans"
   # config.usage_path = "/billing/usage"
   # config.automatic_tax = true

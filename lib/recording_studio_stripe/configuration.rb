@@ -20,6 +20,7 @@ module RecordingStudioStripe
                   :authenticate,
                   :current_actor,
                   :current_root_recording,
+                  :site_admin_recording,
                   :domain_event_publish_lease,
                   :prices_pending_alert_after,
                   :prices_pending_max_hold,
@@ -49,6 +50,7 @@ module RecordingStudioStripe
       @authenticate = nil
       @current_actor = nil
       @current_root_recording = nil
+      @site_admin_recording = nil
       @domain_event_publish_lease = 5.minutes
       @prices_pending_alert_after = 1.day
       @prices_pending_max_hold = 3.days

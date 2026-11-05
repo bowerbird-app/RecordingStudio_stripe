@@ -10,6 +10,7 @@ require "recording_studio_stripe/errors"
 require "recording_studio_stripe/stripe_request"
 require "recording_studio_stripe/engine"
 require "recording_studio_stripe/configuration"
+require "recording_studio_stripe/site_admin_recording"
 require "recording_studio_stripe/subscription_types"
 require "recording_studio_stripe/limits"
 require "recording_studio_stripe/limit_handle"
@@ -87,6 +88,10 @@ module RecordingStudioStripe
 
     def register_limit_usage(name, &)
       configuration.register_limit_usage(name, &)
+    end
+
+    def site_admin_recording_for(controller = nil)
+      SiteAdminRecording.for(controller)
     end
 
     def register_capabilities!

@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.17.1", ::RecordingStudioStripe::VERSION
+    assert_equal "0.18.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -250,6 +250,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "recording_studio.stripe"
     assert_includes readme, "config.layout"
     assert_includes readme, ">= 6.3.0"
+    assert_includes readme, "config.site_admin_recording"
     refute_includes readme, "ExampleService"
   end
 
@@ -268,6 +269,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes initializer, "rectangle-stack"
     assert_includes initializer, "plans_background_image"
     assert_includes initializer, "/plans-backdrop.svg"
+    assert_includes initializer, "config.site_admin_recording"
+    assert_includes initializer, "Studio Admin"
   end
 
   def test_install_initializer_template_documents_paywalls
@@ -285,6 +288,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes template, "usage_path"
     assert_includes template, "usage_costs"
     assert_includes template, "plans_background_image"
+    assert_includes template, "config.site_admin_recording"
     refute_includes template, "media_monitoring"
   end
 
@@ -347,6 +351,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "used/included"
     assert_includes docs, "See usage"
     assert_includes docs, "Breakdown"
+    assert_includes docs, "config.site_admin_recording"
   end
 
   def test_billing_view_offers_manage_billing
