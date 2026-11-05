@@ -19,6 +19,37 @@ class StripeHardeningTest < ActionDispatch::IntegrationTest
     switch_to_root!(@root)
   end
 
+  test "checkout success and cancel urls rebuild from the request origin" do
+    previous_client = RecordingStudioStripe.configuration.client
+    client = RecordingStudioStripe::Testing::Client.new
+    RecordingStudioStripe.configuration.client = client
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+
+    post recording_studio_stripe.checkout_path, params: { price_id: price.id }
+
+    params = client.last_checkout_params
+    assert_equal "http://www.example.com/billing?checkout=ok", params[:success_url]
+    assert_equal "http://www.example.com/plans", params[:cancel_url]
+    assert_redirected_to %r{\Ahttps://checkout\.stripe\.test/}
+  ensure
+    RecordingStudioStripe.configuration.client = previous_client
+  end
+
+  test "checkout urls reject a protocol-relative return path" do
+    previous = RecordingStudioStripe.configuration.success_path
+    previous_client = RecordingStudioStripe.configuration.client
+    RecordingStudioStripe.configuration.success_path = "//evil.example/phish"
+    RecordingStudioStripe.configuration.client = RecordingStudioStripe::Testing::Client.new
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+
+    post recording_studio_stripe.checkout_path, params: { price_id: price.id }
+
+    assert_response :bad_request
+  ensure
+    RecordingStudioStripe.configuration.success_path = previous
+    RecordingStudioStripe.configuration.client = previous_client
+  end
+
   test "two first checkouts in one group keep one pending row" do
     previous_client = RecordingStudioStripe.configuration.client
     client = RecordingStudioStripe::Testing::Client.new
