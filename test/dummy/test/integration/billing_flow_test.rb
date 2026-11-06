@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "minitest/mock"
 require "devise/test/integration_helpers"
 
 class BillingFlowTest < ActionDispatch::IntegrationTest
@@ -696,6 +697,17 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "Need a bit more"
     refute_includes response.body, "Add this pack"
     refute_includes response.body, "Unlimited vibes"
+  end
+
+  test "manage billing hides when Accessible is undefined even with a customer" do
+    RecordingStudioStripe::EnsureCustomer.call(root_recording: @root, email: @user.email)
+
+    RecordingStudioStripe.stub(:accessible_loaded?, false) do
+      get recording_studio_stripe.root_path
+    end
+
+    assert_response :success
+    refute_includes response.body, "Manage billing on Stripe"
   end
 
   test "manage billing shows when a customer exists without an active plan" do

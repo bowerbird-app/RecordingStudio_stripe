@@ -83,25 +83,13 @@ module RecordingStudioStripe
       authorize_role!(:admin)
     end
 
-    # Same as main: Accessible when loaded; otherwise config.authenticate; else fail closed.
-    # ControllerAuth has no authenticate fallback, so this stays on the gem.
     def authorize_role!(role)
-      if defined?(RecordingStudioAccessible)
-        return if RecordingStudioAccessible.authorized?(
-          actor: current_actor,
-          recording: current_billing_root,
-          role: role
-        )
-
-        render plain: Copy.t("alerts.no_access"), status: :forbidden
-        return
-      end
-
-      authenticator = RecordingStudioStripe.configuration.authenticate
-      if authenticator
-        return if instance_exec(&authenticator)
-
-        render plain: Copy.t("alerts.no_access"), status: :forbidden
+      if defined?(RecordingStudioAccessible) &&
+         RecordingStudioAccessible.authorized?(
+           actor: current_actor,
+           recording: current_billing_root,
+           role: role
+         )
         return
       end
 

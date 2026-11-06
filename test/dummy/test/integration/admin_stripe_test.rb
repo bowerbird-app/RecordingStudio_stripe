@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "minitest/mock"
 require "devise/test/integration_helpers"
 
 class AdminStripeTest < ActionDispatch::IntegrationTest
@@ -159,6 +160,15 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_equal %w[limit:press_kits meter:ai_tokens paywall:generate_image extra:priority], card["order"]
     assert_equal "Someone picks up the phone", card["extras"].first["text"]
     assert_equal "phone", card["extras"].first["icon"]
+  end
+
+  test "missing Accessible denies Stripe Admin forms" do
+    RecordingStudioStripe.stub(:accessible_loaded?, false) do
+      get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
+    end
+
+    assert_response :forbidden
+    assert_equal "Staff only.", response.body
   end
 
   test "staff without admin access sees Staff only on engine admin forms" do
