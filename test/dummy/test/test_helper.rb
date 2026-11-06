@@ -24,6 +24,16 @@ module StripeBillingTestHelpers
     raise(result.error || "Failed to grant #{role} access") if result.failure?
   end
 
+  def after_setup
+    super
+    Current.actor = @user if instance_variable_defined?(:@user) && @user
+  end
+
+  def after_teardown
+    Current.actor = nil if defined?(Current)
+    super
+  end
+
   def admin_actor_for(recording)
     target = RecordingStudio.root_recording_or_self(recording)
     RecordingStudio::Recording.unscoped

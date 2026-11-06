@@ -698,6 +698,24 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "Unlimited vibes"
   end
 
+  test "manage billing hides when Accessible is undefined even with a customer" do
+    RecordingStudioStripe::EnsureCustomer.call(root_recording: @root, email: @user.email)
+    controller = RecordingStudioStripe::BillingController.new
+    root = @root
+    actor = @user
+    controller.define_singleton_method(:billing) { RecordingStudioStripe::Billing.new(root_recording: root) }
+    controller.define_singleton_method(:current_actor) { actor }
+    controller.define_singleton_method(:current_billing_root) { root }
+    accessible = ::RecordingStudioAccessible
+    Object.send(:remove_const, :RecordingStudioAccessible)
+
+    refute controller.send(:show_manage_billing?)
+  ensure
+    unless defined?(::RecordingStudioAccessible)
+      Object.const_set(:RecordingStudioAccessible, accessible)
+    end
+  end
+
   test "manage billing shows when a customer exists without an active plan" do
     RecordingStudioStripe::EnsureCustomer.call(root_recording: @root, email: @user.email)
 

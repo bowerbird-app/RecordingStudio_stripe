@@ -161,6 +161,20 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_equal "phone", card["extras"].first["icon"]
   end
 
+  test "missing Accessible denies Stripe Admin forms" do
+    accessible = ::RecordingStudioAccessible
+    Object.send(:remove_const, :RecordingStudioAccessible)
+
+    get RecordingStudioStripe.configuration.mount_path + "/admin/products/new"
+
+    assert_response :forbidden
+    assert_equal "Staff only.", response.body
+  ensure
+    unless defined?(::RecordingStudioAccessible)
+      Object.const_set(:RecordingStudioAccessible, accessible)
+    end
+  end
+
   test "staff without admin access sees Staff only on engine admin forms" do
     outsider = User.find_or_create_by!(email: "outsider@example.com") do |user|
       user.password = "Password"

@@ -20,7 +20,7 @@ module RecordingStudioStripe
       def admin_authorized?
         recording = admin_access_recording
         return false unless recording
-        return true unless defined?(RecordingStudioAccessible)
+        return false unless defined?(RecordingStudioAccessible)
 
         RecordingStudioAccessible.authorized?(
           actor: current_admin_actor,

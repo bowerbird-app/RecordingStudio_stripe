@@ -198,25 +198,22 @@ class ControllerAuthTest < ActionDispatch::IntegrationTest
     RecordingStudioStripe.configuration.authenticate = previous
   end
 
-  test "config.authenticate allows and denies when Accessible is absent" do
+  test "missing Accessible forbids billing even when config.authenticate would allow" do
     sign_in @user
     switch_to_root!(@root)
     accessible = ::RecordingStudioAccessible
     Object.send(:remove_const, :RecordingStudioAccessible)
     previous = RecordingStudioStripe.configuration.authenticate
     no_access = RecordingStudioStripe::Copy.t("alerts.no_access")
-
     RecordingStudioStripe.configuration.authenticate = -> { true }
-    get "/plans"
-    assert_response :success
 
-    RecordingStudioStripe.configuration.authenticate = -> { false }
-    get "/billing"
+    get "/plans"
+
     assert_response :forbidden
     assert_equal no_access, response.body
 
-    RecordingStudioStripe.configuration.authenticate = nil
     get "/billing"
+
     assert_response :forbidden
     assert_equal no_access, response.body
   ensure
@@ -226,5 +223,4 @@ class ControllerAuthTest < ActionDispatch::IntegrationTest
     RecordingStudioStripe.configuration.authenticate = previous
   end
 end
-
 

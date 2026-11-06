@@ -21,8 +21,14 @@ class QuantityLimitsTest < ActiveSupport::TestCase
     RecordingStudioStripe::SeedDemoCatalog.call
     @previous_limits = RecordingStudioStripe.configuration.limits
     @previous_usages = RecordingStudioStripe.configuration.limit_usages.dup
+    @user = User.find_or_create_by!(email: "admin@admin.com") do |user|
+      user.password = "Password"
+      user.password_confirmation = "Password"
+    end
     @workspace = Workspace.create!(name: "Quantity Studio #{SecureRandom.hex(4)}")
     @root = RecordingStudio.root_recording_for(@workspace)
+    grant_owner_access!(recording: @root, actor: @user)
+    Current.actor = @user
     @starter = RecordingStudioStripe::Product.find_by!(name: "Starter")
     @usage = 3_500_000_000
     configure_quantity_limit
@@ -189,6 +195,7 @@ class QuantityLimitsTest < ActiveSupport::TestCase
 
     other = Workspace.create!(name: "Quantity Other #{SecureRandom.hex(4)}")
     other_root = RecordingStudio.root_recording_for(other)
+    grant_owner_access!(recording: other_root, actor: @user)
     moving = other_root.record(Folder) { |folder| folder.name = "Traveler" }
     moving.update!(parent_recording_id: @root.id, root_recording_id: @root.id)
 

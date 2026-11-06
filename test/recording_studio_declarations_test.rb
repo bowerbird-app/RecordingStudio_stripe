@@ -7,6 +7,18 @@ require_relative "dummy/config/environment"
 require "rails/test_help"
 
 class RecordingStudioDeclarationsTest < ActiveSupport::TestCase
+  setup do
+    @user = User.find_or_create_by!(email: "declarations@example.com") do |user|
+      user.password = "Password"
+      user.password_confirmation = "Password"
+    end
+    Current.actor = @user
+  end
+
+  teardown do
+    Current.actor = nil
+  end
+
   test "dummy recordable declarations validate and expose parent/root introspection" do
     assert RecordingStudio.validate_recordable_declarations!
     assert_equal %w[AdminRoot Workspace].sort, RecordingStudio.root_recordable_types.sort
@@ -28,13 +40,15 @@ class RecordingStudioDeclarationsTest < ActiveSupport::TestCase
 
   test "allowed child can be recorded under a workspace root" do
     root_recording = RecordingStudio.root_recording_for(Workspace.create!(name: unique_name("Child Workspace")))
+    grant_admin_access!(root_recording)
     folder = Folder.new(name: unique_name("Allowed Folder"))
 
     event = RecordingStudio.record!(
       action: "created",
       recordable: folder,
       root_recording: root_recording,
-      parent_recording: root_recording
+      parent_recording: root_recording,
+      actor: @user
     )
 
     assert_equal folder, event.recording.recordable
@@ -97,12 +111,24 @@ class RecordingStudioDeclarationsTest < ActiveSupport::TestCase
   private
 
   def record_child(recordable, root_recording, parent_recording)
+    grant_admin_access!(root_recording)
     RecordingStudio.record!(
       action: "created",
       recordable: recordable,
       root_recording: root_recording,
-      parent_recording: parent_recording
+      parent_recording: parent_recording,
+      actor: @user
     ).recording
+  end
+
+  def grant_admin_access!(recording)
+    return if RecordingStudioAccessible.authorized?(actor: @user, recording: recording, role: :admin)
+
+    result = RecordingStudioAccessible.bootstrap_owner_access!(
+      recording: recording,
+      actor: @user
+    )
+    raise(result.error || "Failed to bootstrap admin access") if result.failure?
   end
 
   def unique_name(prefix)

@@ -17,7 +17,7 @@ module RecordingStudioStripe
 
     def show_manage_billing?
       return false unless billing.customer
-      return true unless defined?(RecordingStudioAccessible)
+      return false unless defined?(RecordingStudioAccessible)
 
       RecordingStudioAccessible.authorized?(
         actor: current_actor,

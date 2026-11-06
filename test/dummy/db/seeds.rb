@@ -39,10 +39,6 @@ begin
   accessible_root_recording = RecordingStudio.root_recording_for(accessible_workspace)
   private_root_recording = RecordingStudio.root_recording_for(private_workspace)
 
-  folder_recording = find_or_record_child.call(folder, root_recording, root_recording)
-
-  find_or_record_child.call(page, root_recording, folder_recording)
-
   admin_root = AdminRoot.find_or_create_by!(name: "Studio Admin")
   admin_root_recording = RecordingStudio.root_recording_for(admin_root)
 
@@ -60,6 +56,10 @@ begin
     )
     raise result.error if result.failure?
   end
+
+  folder_recording = find_or_record_child.call(folder, root_recording, root_recording)
+
+  find_or_record_child.call(page, root_recording, folder_recording)
 
   RecordingStudioStripe::SeedDemoCatalog.call
 ensure

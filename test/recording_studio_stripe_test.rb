@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.18.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.19.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -15,7 +15,7 @@ class RecordingStudioStripeTest < Minitest::Test
     gemspec = File.read(File.expand_path("../recording_studio_stripe.gemspec", __dir__))
 
     assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.341"'
-    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.3.0"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.5.0"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.24"'
     assert_includes gemspec, 'spec.add_dependency "view_component", ">= 4.14", "< 5"'
     assert_includes gemspec, 'spec.add_dependency "stripe"'
@@ -51,28 +51,28 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_dummy_gemfile_pins_recording_studio_6_2
     gemfile = File.read(File.expand_path("dummy/Gemfile", __dir__))
 
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.5.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.2"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.7.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.12.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.12.3"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.11.4"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.3"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.6.2"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.3"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.4"'
     assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.341"'
     assert_includes gemfile, 'gem "view_component", "4.19.0"'
     refute_includes gemfile, "widen_recording_studio_requirement"
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.1.7"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.2.2"'
   end
 
   def test_root_gemfile_pins_accessible_and_recording_studio_6_2
     gemfile = File.read(File.expand_path("../Gemfile", __dir__))
 
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.5.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.2"'
     assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.341"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.2"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.12.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.3"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.12.3"'
     assert_includes gemfile, 'gem "view_component", "4.19.0"'
     refute_includes gemfile, "widen_recording_studio_requirement"
   end
@@ -101,7 +101,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes source, "recording_studio_auth("
     assert_includes source, "authenticate: false"
     assert_includes source, "def authorize_role!(role)"
-    assert_includes source, "configuration.authenticate"
+    refute_includes source, "configuration.authenticate"
     assert_includes source, "def same_origin_base"
     refute_includes source, "request.base_url"
   end
@@ -227,6 +227,10 @@ class RecordingStudioStripeTest < Minitest::Test
     initializer_source = File.read(initializer_path)
 
     assert_includes initializer_source, "config.require_recordable_declarations = true"
+    assert_includes initializer_source, "config.authorize_write"
+    assert_includes initializer_source, "RecordingStudioAccessible.authorized?"
+    refute_match(/authorize_write\s*=\s*->\(actor:, \*\*\) \{ actor\.present\? \}/, initializer_source)
+    refute_includes initializer_source, "allow_unauthorized_writes = true"
     assert_includes initializer_source, "AdminRoot"
     assert_includes initializer_source, "PressKit"
     refute_includes initializer_source, "v3"
@@ -249,7 +253,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "UsageComponent"
     assert_includes readme, "recording_studio.stripe"
     assert_includes readme, "config.layout"
-    assert_includes readme, ">= 6.3.0"
+    assert_includes readme, ">= 6.5.0"
     assert_includes readme, "config.site_admin_recording"
     refute_includes readme, "ExampleService"
   end
@@ -385,6 +389,8 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes view_source, "dashboard.stripe.com"
     assert_includes controller, "@show_see_usage = show_see_usage?"
     assert_includes controller, "helpers.usage_in_use?(billing)"
+    assert_includes controller, "return false unless defined?(RecordingStudioAccessible)"
+    refute_includes controller, "return true unless defined?(RecordingStudioAccessible)"
   end
 
   def test_usage_view_renders_caps_and_meters

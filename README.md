@@ -37,14 +37,14 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 
 ```ruby
 # Gemfile
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.5.0"
 gem "recording_studio_stripe", github: "bowerbird-app/RecordingStudio_stripe"
-gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.0"
+gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.2"
 gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.341"
 gem "view_component", "4.19.0"
 ```
 
-This gem requires `recording_studio` `>= 6.3.0`, Accessible `~> 0.24`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.341`. The pin above loads FlatPack `0.1.341`. Accessible `~> 0.24` no longer matches 0.22 or 0.23.
+This gem requires `recording_studio` `>= 6.5.0`, Accessible `~> 0.24`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.341`. The pin above loads FlatPack `0.1.341`. Accessible `~> 0.24` no longer matches 0.22 or 0.23.
 
 `config.layout` chooses the screen chrome for this engine. `nil` uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. A String is a layout name. `false` renders with no layout. A callable must take `controller:` and return a String, `nil`, or `false`.
 
@@ -324,7 +324,7 @@ Replay with `RecordingStudioStripe::ProcessWebhook.replay(webhook_event)`. The n
 
 Set `config.automatic_tax = true` only after Stripe Tax is on in the Dashboard. Checkout then also sends `customer_update: { address: "auto" }`. Promotion codes are on by default.
 
-Hosts that do not use `current_user` should set `config.current_actor`. Hosts that do not use `current_root_recording` should set `config.current_root_recording`. Hosts that mount Stripe Admin forms must set `config.site_admin_recording`. `draw_recording_studio_stripe at:` overwrites `config.mount_path`. Billing screens use Accessible `ControllerAuth` for actor and root; grant `:view` / `:admin` on the workspace root. If Accessible is not loaded, set `config.authenticate` or money actions stay forbidden.
+Hosts that do not use `current_user` should set `config.current_actor`. Hosts that do not use `current_root_recording` should set `config.current_root_recording`. Hosts that mount Stripe Admin forms must set `config.site_admin_recording`. `draw_recording_studio_stripe at:` overwrites `config.mount_path`. Billing screens use Accessible `ControllerAuth` for actor and root; grant `:view` / `:admin` on the workspace root. Accessible is required. Missing Accessible forbids billing money actions and Stripe Admin forms, and hides Manage billing on Stripe.
 
 Recording Studio core still swallows `before_record` errors. Standing caps gate on `Recording` `before_create`, restore, and move until core can deny `record!` itself.
 

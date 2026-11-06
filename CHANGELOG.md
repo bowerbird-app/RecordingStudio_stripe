@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-11-06
+
+### Changed
+- Stripe Admin forms, `/billing` Manage billing, and `authorize_role!` deny when Accessible is not loaded. They no longer allow on a missing constant, and they no longer run `config.authenticate`
+- Development and dummy pins: Recording Studio `v6.5.0`, Accessible `v0.24.2`, Metrics `v0.7.3`, Trashable `v0.12.3`, Logs `v0.7.4`. Dummy Internationalization `v0.2.2` (v0.1.7 still declares `recording_studio ~> 4.2`, which cannot resolve 6.5.0). Dummy Admin stays `v2.7.0`. Runtime floor: `recording_studio` `>= 6.5.0`
+
+### Upgrade notes
+- Bump to **0.19.0**. No database migration. No webhook change
+- Install Recording Studio **6.5.0** or newer. Accessible stays `~> 0.24` (this repo pins `v0.24.2`)
+- Grant Accessible roles on the workspace and on `config.site_admin_recording`. Missing Accessible is forbidden on billing money actions and on Stripe Admin forms. Manage billing on Stripe stays hidden unless Accessible grants `:admin`
+- `config.authenticate` is unused. Delete it from the host initializer. Accessible is required
+- Dummy Internationalization is `v0.2.2`. Hosts that pin `v0.1.7` keep that pin; that tag still declares `recording_studio ~> 4.2`
+- Set `RecordingStudio.configuration.authorize_write` before 6.5.0. Dummy checks Accessible `:edit` on the workspace root (and `:admin` when writing an Access grant). Missing authorizer raises. `actor.present?` is not a write policy
+
 ## [0.18.0] - 2026-11-04
 
 ### Changed
@@ -595,7 +609,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.1...v0.18.0
 [0.17.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.16.0...v0.17.0
