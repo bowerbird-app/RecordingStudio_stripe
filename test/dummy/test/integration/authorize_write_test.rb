@@ -8,6 +8,8 @@ class AuthorizeWriteTest < ActiveSupport::TestCase
 
     assert_includes initializer, "config.authorize_write"
     assert_includes initializer, "RecordingStudioAccessible.authorized?"
+    assert_includes initializer, "AccessCreationContext.allowed?"
+    refute_includes initializer, "recordable.actor == actor"
     refute_match(/authorize_write\s*=\s*->\(actor:, \*\*\) \{ actor\.present\? \}/, initializer)
     refute_includes initializer, "allow_unauthorized_writes = true"
   end
@@ -31,5 +33,22 @@ class AuthorizeWriteTest < ActiveSupport::TestCase
     grant_owner_access!(recording: root_recording, actor: actor)
 
     assert authorizer.call(actor: actor, root_recording: root_recording, recordable: folder)
+  end
+
+  test "dummy authorize_write denies an Access write without an Accessible admin grant" do
+    authorizer = RecordingStudio.configuration.authorize_write
+    actor = User.find_or_create_by!(email: "dummy-access-write@example.com") do |record|
+      record.password = "Password123!"
+      record.password_confirmation = "Password123!"
+    end
+    workspace = Workspace.create!(name: "Access write #{SecureRandom.hex(4)}")
+    root_recording = RecordingStudio.root_recording_for(workspace)
+    access = RecordingStudio::Access.new(actor: actor, role: "admin")
+
+    refute authorizer.call(actor: actor, root_recording: root_recording, recordable: access)
+
+    grant_owner_access!(recording: root_recording, actor: actor)
+
+    assert authorizer.call(actor: actor, root_recording: root_recording, recordable: access)
   end
 end

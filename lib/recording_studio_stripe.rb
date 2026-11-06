@@ -94,6 +94,10 @@ module RecordingStudioStripe
       SiteAdminRecording.for(controller)
     end
 
+    def accessible_loaded?
+      defined?(::RecordingStudioAccessible)
+    end
+
     def register_capabilities!
       return if @capabilities_registered
 

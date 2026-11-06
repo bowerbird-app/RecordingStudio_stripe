@@ -11,6 +11,11 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_kind_of Class, ::RecordingStudioStripe::Engine
   end
 
+  def test_accessible_loaded_is_true_when_accessible_is_required
+    assert defined?(RecordingStudioAccessible)
+    assert RecordingStudioStripe.accessible_loaded?
+  end
+
   def test_gemspec_pins_recording_studio_accessible_and_stripe
     gemspec = File.read(File.expand_path("../recording_studio_stripe.gemspec", __dir__))
 
@@ -229,6 +234,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes initializer_source, "config.require_recordable_declarations = true"
     assert_includes initializer_source, "config.authorize_write"
     assert_includes initializer_source, "RecordingStudioAccessible.authorized?"
+    assert_includes initializer_source, "AccessCreationContext.allowed?"
+    refute_includes initializer_source, "recordable.actor == actor"
     refute_match(/authorize_write\s*=\s*->\(actor:, \*\*\) \{ actor\.present\? \}/, initializer_source)
     refute_includes initializer_source, "allow_unauthorized_writes = true"
     assert_includes initializer_source, "AdminRoot"
@@ -389,7 +396,7 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes view_source, "dashboard.stripe.com"
     assert_includes controller, "@show_see_usage = show_see_usage?"
     assert_includes controller, "helpers.usage_in_use?(billing)"
-    assert_includes controller, "return false unless defined?(RecordingStudioAccessible)"
+    assert_includes controller, "return false unless RecordingStudioStripe.accessible_loaded?"
     refute_includes controller, "return true unless defined?(RecordingStudioAccessible)"
   end
 

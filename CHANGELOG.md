@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Grant Accessible roles on the workspace and on `config.site_admin_recording`. Missing Accessible is forbidden on billing money actions and on Stripe Admin forms. Manage billing on Stripe stays hidden unless Accessible grants `:admin`
 - `config.authenticate` is unused. Delete it from the host initializer. Accessible is required
 - Dummy Internationalization is `v0.2.2`. Hosts that pin `v0.1.7` keep that pin; that tag still declares `recording_studio ~> 4.2`
-- Set `RecordingStudio.configuration.authorize_write` before 6.5.0. Dummy checks Accessible `:edit` on the workspace root (and `:admin` when writing an Access grant). Missing authorizer raises. `actor.present?` is not a write policy
+- Set `RecordingStudio.configuration.authorize_write` before 6.5.0. Dummy checks Accessible `:edit` on the workspace root (and `:admin` when writing an Access grant). First Access rows come from `bootstrap_owner_access!` / `grant_access`. Dummy does not allow an Access write because `recordable.actor` is the writer. Missing authorizer raises. `actor.present?` is not a write policy
 
 ## [0.18.0] - 2026-11-04
 

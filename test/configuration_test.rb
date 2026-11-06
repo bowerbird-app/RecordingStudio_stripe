@@ -240,7 +240,7 @@ class ConfigurationTest < Minitest::Test
 
     assert_includes stripe, "recording_studio_layout { RecordingStudioStripe.configuration.layout }"
     assert_includes admin, "recording_studio_layout { RecordingStudioStripe.configuration.layout }"
-    assert_includes admin, "return false unless defined?(RecordingStudioAccessible)"
+    assert_includes admin, "return false unless RecordingStudioStripe.accessible_loaded?"
     refute_includes admin, "return true unless defined?(RecordingStudioAccessible)"
     refute_includes stripe, "UsesDefaultLayout"
     refute_includes admin, "UsesDefaultLayout"

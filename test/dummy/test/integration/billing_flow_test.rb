@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "minitest/mock"
 require "devise/test/integration_helpers"
 
 class BillingFlowTest < ActionDispatch::IntegrationTest
@@ -700,20 +701,13 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
   test "manage billing hides when Accessible is undefined even with a customer" do
     RecordingStudioStripe::EnsureCustomer.call(root_recording: @root, email: @user.email)
-    controller = RecordingStudioStripe::BillingController.new
-    root = @root
-    actor = @user
-    controller.define_singleton_method(:billing) { RecordingStudioStripe::Billing.new(root_recording: root) }
-    controller.define_singleton_method(:current_actor) { actor }
-    controller.define_singleton_method(:current_billing_root) { root }
-    accessible = ::RecordingStudioAccessible
-    Object.send(:remove_const, :RecordingStudioAccessible)
 
-    refute controller.send(:show_manage_billing?)
-  ensure
-    unless defined?(::RecordingStudioAccessible)
-      Object.const_set(:RecordingStudioAccessible, accessible)
+    RecordingStudioStripe.stub(:accessible_loaded?, false) do
+      get recording_studio_stripe.root_path
     end
+
+    assert_response :success
+    refute_includes response.body, "Manage billing on Stripe"
   end
 
   test "manage billing shows when a customer exists without an active plan" do
