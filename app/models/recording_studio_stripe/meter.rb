@@ -19,7 +19,10 @@ module RecordingStudioStripe
     end
 
     def self.sync_from_config!
-      RecordingStudioStripe.configuration.meters.each_key { |name| ensure_named!(name) }
+      declared = RecordingStudioStripe.configuration.meters.to_h.stringify_keys
+      declared.each_key { |name| ensure_named!(name) }
+      extras = declared.empty? ? all : where.not(name: declared.keys)
+      extras.find_each { |meter| drop_undeclared!(meter) }
       all
     end
 
@@ -30,5 +33,14 @@ module RecordingStudioStripe
       record.save!
       record
     end
+
+    def self.drop_undeclared!(meter)
+      transaction do
+        Price.drop_meter_keys!(meter.name)
+        Product.drop_plan_card_token!("meter:#{meter.name}")
+        meter.destroy!
+      end
+    end
+    private_class_method :drop_undeclared!
   end
 end

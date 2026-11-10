@@ -321,7 +321,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "config.paywalls"
     assert_includes docs, "authorized_action?"
     assert_includes docs, "Do not put them on a Price"
-    assert_includes docs, "Not in config"
+    assert_includes docs, "removed on boot"
     assert_includes docs, "Gates is a catalog"
     assert_includes docs, "## Plan groups"
     assert_includes docs, "config.subscription_types"

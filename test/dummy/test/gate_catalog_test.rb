@@ -7,15 +7,11 @@ class GateCatalogTest < ActiveSupport::TestCase
     RecordingStudioStripe::SeedDemoCatalog.call
     @previous_limits = RecordingStudioStripe.configuration.limits
     @previous_usages = RecordingStudioStripe.configuration.limit_usages.dup
-    @previous_meters = RecordingStudioStripe.configuration.meters
-    @previous_paywalls = RecordingStudioStripe.configuration.paywalls
   end
 
   teardown do
     RecordingStudioStripe.configuration.limits = @previous_limits
     RecordingStudioStripe.configuration.limit_usages.replace(@previous_usages)
-    RecordingStudioStripe.configuration.meters = @previous_meters
-    RecordingStudioStripe.configuration.paywalls = @previous_paywalls
   end
 
   test "lists declared paywalls limits and meters with the products that use them" do
@@ -28,39 +24,65 @@ class GateCatalogTest < ActiveSupport::TestCase
     assert_includes image.plans, "Pro"
     assert_includes image.plans, "Team"
     refute_includes image.plans, "Starter"
-    assert_nil image.note
+    assert_nil image.aggregation_label
 
     kits = by_name.fetch("press_kits")
     assert_equal "Limit", kits.kind
     assert_equal "count", kits.aggregation_label
     assert_includes kits.plans, "Starter"
-    assert_nil kits.note
 
     tokens = by_name.fetch("ai_tokens")
     assert_equal "Meter", tokens.kind
     assert_includes tokens.plans, "Starter"
     assert_includes tokens.plans, "AI token packs"
-    assert_nil tokens.note
   end
 
-  test "keeps database-only meters and paywalls and flags them" do
-    RecordingStudioStripe::Meter.create!(name: "seats", label: "Seats")
+  test "sync removes undeclared meters and paywalls and their dependents" do
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter")
+    meter = RecordingStudioStripe::Meter.create!(name: "seats", label: "Seats")
     RecordingStudioStripe::Paywall.create!(name: "share_link", label: "Share a link")
+    starter.assign_paywalls(starter.paywalls.map(&:name) + %w[share_link])
+    starter.assign_plan_card(
+      starter.plan_card_settings.merge(
+        "hide" => Array(starter.plan_card_settings["hide"]) + %w[meter:seats paywall:share_link],
+        "order" => Array(starter.plan_card_settings["order"]) + %w[meter:seats]
+      )
+    )
+    starter.save!
+
+    price = starter.monthly_price
+    price.update!(metadata: price.metadata.merge("included_seats" => "3", "meter" => "seats", "allowance" => "9"))
+
+    usage = RecordingStudioStripe::UsageEntry.create!(
+      root_recording_id: SecureRandom.uuid,
+      meter: meter,
+      quantity: 1,
+      recorded_at: Time.current
+    )
+    pack = RecordingStudioStripe::AllowancePurchase.create!(
+      root_recording_id: SecureRandom.uuid,
+      meter: meter,
+      quantity: 5,
+      purchased_at: Time.current
+    )
+
     RecordingStudioStripe::Meter.sync_from_config!
     RecordingStudioStripe::Paywall.sync_from_config!
 
-    assert RecordingStudioStripe::Meter.exists?(name: "seats")
-    assert RecordingStudioStripe::Paywall.exists?(name: "share_link")
-
-    rows = RecordingStudioStripe::GateCatalog.rows
-    seats = rows.find { |row| row.name == "seats" }
-    share = rows.find { |row| row.name == "share_link" }
-
-    assert_equal "Meter", seats.kind
-    assert_equal "Not in config", seats.note
-    assert_equal "No plan", seats.plans
-    assert_equal "Paywall", share.kind
-    assert_equal "Not in config", share.note
+    refute RecordingStudioStripe::Meter.exists?(name: "seats")
+    refute RecordingStudioStripe::Paywall.exists?(name: "share_link")
+    refute RecordingStudioStripe::UsageEntry.exists?(id: usage.id)
+    refute RecordingStudioStripe::AllowancePurchase.exists?(id: pack.id)
+    refute starter.reload.paywalls.exists?(name: "share_link")
+    refute_includes Array(starter.plan_card_settings["hide"]), "meter:seats"
+    refute_includes Array(starter.plan_card_settings["hide"]), "paywall:share_link"
+    refute_includes Array(starter.plan_card_settings["order"]), "meter:seats"
+    metadata = starter.monthly_price.reload.metadata
+    refute metadata.key?("included_seats")
+    refute_equal "seats", metadata["meter"]
+    refute metadata.key?("allowance")
+    assert_nil RecordingStudioStripe::Paywall.named("share_link")
+    refute RecordingStudioStripe::GateCatalog.rows.any? { |row| row.name == "seats" }
   end
 
   test "flags quantity limits that have no usage reader" do
@@ -76,7 +98,6 @@ class GateCatalogTest < ActiveSupport::TestCase
     storage = RecordingStudioStripe::GateCatalog.rows.find { |row| row.name == "storage_bytes" }
 
     assert_equal "Limit", storage.kind
-    assert_equal "quantity", storage.aggregation_label
-    assert_equal "No usage reader", storage.note
+    assert_equal "quantity · No usage reader", storage.aggregation_label
   end
 end

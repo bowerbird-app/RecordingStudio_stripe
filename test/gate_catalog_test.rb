@@ -10,7 +10,6 @@ class GateCatalogTest < Minitest::Test
       label: "Export CSV",
       aggregation: nil,
       plan_names: [],
-      in_config: true,
       missing_usage: false
     )
     used = RecordingStudioStripe::GateCatalog::Row.new(
@@ -19,32 +18,21 @@ class GateCatalogTest < Minitest::Test
       label: "Generate an image",
       aggregation: nil,
       plan_names: %w[Team Pro Team],
-      in_config: true,
       missing_usage: false
     )
 
     assert_equal "No plan", empty.plans
     assert_equal "Pro, Team", used.plans
-    assert_equal "—", empty.aggregation_label
+    assert_nil empty.aggregation_label
   end
 
-  def test_note_flags_missing_config_and_quantity_reader
-    stray = RecordingStudioStripe::GateCatalog::Row.new(
-      kind: "Meter",
-      name: "seats",
-      label: "Seats",
-      aggregation: nil,
-      plan_names: [],
-      in_config: false,
-      missing_usage: false
-    )
+  def test_aggregation_names_a_quantity_limit_without_a_usage_reader
     unread = RecordingStudioStripe::GateCatalog::Row.new(
       kind: "Limit",
       name: "storage_bytes",
       label: "Storage",
       aggregation: "quantity",
       plan_names: %w[Pro],
-      in_config: true,
       missing_usage: true
     )
     ok = RecordingStudioStripe::GateCatalog::Row.new(
@@ -53,13 +41,10 @@ class GateCatalogTest < Minitest::Test
       label: "Press kits",
       aggregation: "count",
       plan_names: %w[Starter],
-      in_config: true,
       missing_usage: false
     )
 
-    assert_equal "Not in config", stray.note
-    assert_equal "No usage reader", unread.note
-    assert_nil ok.note
-    assert_equal "quantity", unread.aggregation_label
+    assert_equal "quantity · No usage reader", unread.aggregation_label
+    assert_equal "count", ok.aggregation_label
   end
 end

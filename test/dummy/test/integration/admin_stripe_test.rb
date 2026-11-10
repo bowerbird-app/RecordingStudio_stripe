@@ -82,13 +82,12 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
   end
 
   test "gates screen lists paywalls limits and meters" do
-    RecordingStudioStripe::Meter.create!(name: "seats", label: "Seats")
-
     get "/admin/screens/gates"
 
     assert_response :success
     assert_includes response.body, "Gates"
     assert_includes response.body, "Declared paywalls, limits, and meters"
+    refute_includes response.body, "Table data"
     refute_includes response.body, "New Meter"
     refute_includes response.body, "New paywall"
 
@@ -103,8 +102,8 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "count"
     assert_includes response.body, "ai_tokens"
     assert_includes response.body, "Pro"
-    assert_includes response.body, "Not in config"
-    assert_includes response.body, "seats"
+    refute_includes response.body, "Not in config"
+    refute_includes response.body, "seats"
   end
 
   test "meter and paywall create routes are gone" do

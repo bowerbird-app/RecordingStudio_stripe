@@ -11,10 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Admin **Gates** screen under Stripe. It lists every declared paywall, limit, and meter: kind, key, label, limit aggregation, and which Products use it (`No plan` when none do)
-- Quantity limits with no `register_limit_usage` block show a **No usage reader** badge. Meter and Paywall rows that exist in the database but not in config show **Not in config**. Those rows are kept
+- Quantity limits with no `register_limit_usage` block show **No usage reader** on the aggregation cell
 
 ### Changed
 - Meter and paywall **names** come from `config.meters` and `config.paywalls` only. Admin no longer creates, deletes, or renames those declarations
+- Boot sync removes Meter and Paywall rows whose key is not in config, and strips Product ticks, plan-card tokens, usage, packs, and Price `included_*` / allowance meter keys for those names
 - Admin Meters and Paywalls stay as name lists. Product paywall ticks, Product `limit_*` fields, and Price `included_*` fields still edit plan numbers
 - Bump to **0.20.0**. No database migration. No webhook change
 
@@ -23,8 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Upgrade notes
 - Bump to **0.20.0**. No database migration. No webhook change
-- Declare meters and paywalls in the host initializer (`config.meters`, `config.paywalls`). Removing a name from config does not delete the local row. Gates flags it **Not in config**. Tick and included amounts on that name still work until you remove them from Products and Prices
-- Hosts that created meters or paywalls in Admin should copy those names into config. Usage rows and Product ticks stay attached to the existing database name
+- Declare meters and paywalls in the host initializer (`config.meters`, `config.paywalls`). DB-only meters and paywalls are removed on boot
 - Bookmarks to `{mount}/admin/meters/new` and `{mount}/admin/paywalls/new` now 404. Open Gates, or edit numbers on the Product and Price screens
 
 ## [0.19.0] - 2026-11-06

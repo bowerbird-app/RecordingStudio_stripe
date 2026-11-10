@@ -2,7 +2,7 @@
 
 module RecordingStudioStripe
   class GateCatalog
-    Row = Struct.new(:kind, :name, :label, :aggregation, :plan_names, :in_config, :missing_usage,
+    Row = Struct.new(:kind, :name, :label, :aggregation, :plan_names, :missing_usage,
                      keyword_init: true) do
       def plans
         names = Array(plan_names).uniq.sort
@@ -10,14 +10,9 @@ module RecordingStudioStripe
       end
 
       def aggregation_label
-        aggregation.presence || "—"
-      end
+        return aggregation unless missing_usage
 
-      def note
-        return "Not in config" unless in_config
-        return "No usage reader" if missing_usage
-
-        nil
+        "#{aggregation} · No usage reader"
       end
     end
 
@@ -35,12 +30,11 @@ module RecordingStudioStripe
     def paywall_rows(products)
       records = Paywall.order(:name).index_by(&:name)
       declared = config_hash(:paywalls)
-      names = union_names(declared, records)
       used = Hash.new { |hash, key| hash[key] = [] }
       products.each do |product|
         product.paywalls.each { |paywall| used[paywall.name] << product.name }
       end
-      named_rows(kind: "Paywall", names: names, declared: declared, records: records, used: used)
+      named_rows(kind: "Paywall", names: declared.keys.sort, declared: declared, records: records, used: used)
     end
 
     def limit_rows(products)
@@ -51,7 +45,6 @@ module RecordingStudioStripe
           label: definition.label,
           aggregation: definition.aggregation,
           plan_names: products.select { |product| product.limit_quantity(definition.name).positive? }.map(&:name),
-          in_config: true,
           missing_usage: quantity_without_reader?(definition)
         )
       end
@@ -60,7 +53,7 @@ module RecordingStudioStripe
     def meter_rows(products)
       records = Meter.order(:name).index_by(&:name)
       declared = config_hash(:meters)
-      names = union_names(declared, records)
+      names = declared.keys.sort
       named_rows(kind: "Meter", names: names, declared: declared, records: records, used: meter_usage(products, names))
     end
 
@@ -85,14 +78,9 @@ module RecordingStudioStripe
           label: attrs["label"].presence || records[name]&.label || humanize(name),
           aggregation: nil,
           plan_names: used[name],
-          in_config: declared.key?(name),
           missing_usage: false
         )
       end
-    end
-
-    def union_names(declared, records)
-      (declared.keys + records.keys).uniq.sort
     end
 
     def quantity_without_reader?(definition)

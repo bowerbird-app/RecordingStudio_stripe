@@ -143,22 +143,12 @@ module RecordingStudioStripe
         klass.blast_radius :site
         klass.query { |_context| RecordingStudioStripe::GateCatalog.rows }
         klass.table do
+          title ""
           column :kind, sortable: false
           column :name, title: "Key", sortable: false
           column :label, sortable: false
           column :aggregation_label, title: "Aggregation", sortable: false
           column :plans, sortable: false
-          column :note,
-                 title: "Note",
-                 sortable: false,
-                 display: :badge,
-                 display_options: lambda { |_row, _context, value|
-                   if value.blank?
-                     { text: "—", style: :default, size: :sm }
-                   else
-                     { text: value, style: :warning, size: :sm }
-                   end
-                 }
         end
         RecordingStudioStripe::Admin::Definitions.const_set(:GatesScreen, klass)
       end

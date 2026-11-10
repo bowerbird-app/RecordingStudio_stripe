@@ -11,12 +11,14 @@ module RecordingStudioStripe
     validates :label, presence: true
 
     def self.named(name)
-      key = name.to_s
-      find_by(name: key) || ensure_named!(key)
+      find_by(name: name.to_s)
     end
 
     def self.sync_from_config!
-      RecordingStudioStripe.configuration.paywalls.each_key { |name| ensure_named!(name) }
+      declared = RecordingStudioStripe.configuration.paywalls.to_h.stringify_keys
+      declared.each_key { |name| ensure_named!(name) }
+      extras = declared.empty? ? all : where.not(name: declared.keys)
+      extras.find_each { |paywall| drop_undeclared!(paywall) }
       all
     end
 
@@ -31,5 +33,13 @@ module RecordingStudioStripe
     def action_name
       name.to_sym
     end
+
+    def self.drop_undeclared!(paywall)
+      transaction do
+        Product.drop_plan_card_token!("paywall:#{paywall.name}")
+        paywall.destroy!
+      end
+    end
+    private_class_method :drop_undeclared!
   end
 end

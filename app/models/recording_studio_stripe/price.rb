@@ -30,6 +30,21 @@ module RecordingStudioStripe
       interval == "year"
     end
 
+    def self.drop_meter_keys!(name)
+      included_key = "included_#{name}"
+      find_each do |price|
+        data = (price.metadata || {}).stringify_keys
+        changed = data.key?(included_key)
+        data.delete(included_key)
+        if data["meter"].to_s == name.to_s
+          data.delete("meter")
+          data.delete("allowance")
+          changed = true
+        end
+        price.update!(metadata: data) if changed
+      end
+    end
+
     def included_quantity(meter_name)
       (metadata || {})["included_#{meter_name}"].to_i
     end
