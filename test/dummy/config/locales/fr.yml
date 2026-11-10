@@ -190,13 +190,12 @@ fr:
           included_amounts_saved: Les montants inclus sont enregistrés.
           product_on_catalogue: "%{name} est au catalogue."
           product_saved: "%{name} est enregistré."
-          meter_ready: "%{label} est prêt à compter."
-          paywall_ready: "%{label} est prêt à cocher sur une offre."
         definitions:
           section:
             title: Stripe
             link_products: Produits
             link_prices: Tarifs
+            link_gates: Seuils
             link_meters: Compteurs
             link_paywalls: Accès payants
             link_customers: Clients
@@ -209,12 +208,12 @@ fr:
           prices:
             title: Tarifs
             edit: Modifier
+          gates:
+            title: Seuils
           meters:
             title: Compteurs
-            new_button: Nouveau compteur
           paywalls:
             title: Accès payants
-            new_button: Nouvel accès payant
           customers:
             title: Clients
           subscriptions:
@@ -227,8 +226,6 @@ fr:
         nav:
           products: Produits
           prices: Tarifs
-          meters: Compteurs
-          paywalls: Accès payants
         common:
           name: Nom
           label: Libellé
@@ -271,18 +268,6 @@ fr:
           allowance_quantity: Quantité du pack
           create: Créer le tarif
           save: Enregistrer le tarif
-        meters:
-          new_title: Nouveau compteur
-          new_subtitle: Un compteur nommé. L’app y enregistre l’usage.
-          name_help: "En minuscules, comme ai_tokens."
-          label_placeholder: Jetons IA
-          create: Créer le compteur
-        paywalls:
-          new_title: Nouvel accès payant
-          new_subtitle: Une chose nommée qu’une offre peut ouvrir. Cochez-la sur le produit.
-          name_help: "En minuscules, comme generate_image."
-          label_placeholder: Générer une image
-          create: Créer l’accès payant
         trial:
           title: Essai payant
           days: Jours d’essai
