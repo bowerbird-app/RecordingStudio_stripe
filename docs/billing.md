@@ -259,7 +259,7 @@ Dummy registers `generate_image` and `export_csv`, and ticks `generate_image` on
 
 A limit is a standing cap on the workspace right now. It is not a meter. Meters spend this Stripe period and reset. Limits do not reset when a period ends. Capacity comes back when current usage falls.
 
-`aggregation` is `count` or `quantity`. Omit it and the limit stays a count, which is the existing behaviour.
+`aggregation` is `count`, `quantity`, or `per_item`. Omit it and the limit stays a count, which is the existing behaviour. `per_item` is opt-in. A host that does not configure one sees no change.
 
 A **count** limit is how many live recordings of one type can exist. Example: 5 press kits. It requires `recordable_type`. `used` is `Recording.for_root(workspace).of_type("PressKit")` where `trashed_at` is nil. Nested recordings of that type share the cap. Trashed rows do not count.
 
@@ -280,6 +280,14 @@ RecordingStudioStripe.configure do |config|
       "label" => "Storage",
       "aggregation" => "quantity",
       "subscription_type" => "studio"
+    },
+    "max_file_bytes" => {
+      "label" => "Max file size",
+      "aggregation" => "per_item",
+      "unit" => "bytes",
+      "subscription_type" => "studio",
+      "plan_line" => "Up to %{quantity} per file",
+      "no_plan_ceiling" => 10.megabytes
     }
   }
 end
@@ -289,7 +297,13 @@ RecordingStudioStripe.register_limit_usage(:storage_bytes) do |root_recording|
 end
 ```
 
-`config.register_limit_usage` is the same registry. The number lives on the **Product** as `limit_<name>` metadata, for both kinds, so monthly and yearly of the same plan share it. Missing or 0 means none on that plan. Admin New plan and Edit show one integer field per configured limit. Quantity limits stay plain integers. There is no separate meter on the plan card or on `/billing/usage`.
+`config.register_limit_usage` is the same registry. The number lives on the **Product** as `limit_<name>` metadata, for every kind, so monthly and yearly of the same plan share it. For count and quantity, missing or 0 means none on that plan. Admin New plan and Edit show one integer field per configured limit, including a per-item byte ceiling. Quantity limits stay plain integers. There is no separate meter on the plan card or on `/billing/usage`.
+
+A **per-item** limit is a ceiling on one item, such as max file size. It does not need `recordable_type` or a usage reader. `ceiling` is the live plan's `limit_<name>`. The live plan is `Subscription.current_for` for that subscription type, so `past_due` still counts during grace. When the plan omits the key, `ceiling` is nil. nil means this gem is not capping the item. The consumer applies its own code max. Do not treat a missing key as 0. A workspace with no live plan, including a canceled plan, gets `no_plan_ceiling` when that positive integer is set, and nil when it is omitted. `no_plan_ceiling` on a count or quantity limit raises `ArgumentError`. A non-positive or non-integer value raises too. `unit` is `"bytes"` or omitted. `"bytes"` is display only. Any other unit raises.
+
+`allows?(amount)` is true when `ceiling` is nil or the positive integer `amount` is within the ceiling. `enforce_item!(amount)` raises `PlanLimitReached` when it is not, and it does not take an advisory lock. `used`, `remaining`, `over?`, `available?`, `enforce!`, and `with_capacity!` raise `ArgumentError` and point at `ceiling` and `enforce_item!`. `enforce_item!` on a count or quantity limit raises the same way. The Recording `before_create` count gate only runs for `count`. `/billing/usage` skips per-item limits, so it never asks them for `used` or `remaining`.
+
+Plan cards show one line. With `unit: "bytes"` the default is `Up to 50 MB`. Without a unit it is `Up to 12`. `plan_line` can say `Up to %{quantity} per file`, and `%{quantity}` is already the formatted size. The line is never `x of y`. Gates lists the row as a Limit whose aggregation is "per item", and appends the no-plan ceiling (`10 MB with no plan`) when one is set. The denial copy is "This file is larger than your plan allows. Upgrade for bigger uploads." HTML still redirects to `/plans`. JSON is still 403 `{ "code": "plan_limit_reached" }`.
 
 ```ruby
 kits = account.billing.limit(:press_kits)
@@ -306,6 +320,11 @@ storage.remaining
 storage.available?(12_000_000)
 storage.over?
 storage.enforce!(incoming_size)
+
+files = account.billing.limit(:max_file_bytes)
+files.ceiling
+files.allows?(byte_size)
+files.enforce_item!(byte_size)
 ```
 
 `available?` takes a positive integer. The default is 1. Zero, a negative integer, a float, a string, or nil raises `ArgumentError`.
@@ -324,11 +343,11 @@ end
 
 The lock does not cover a write that leaves this database transaction: another process, a file store, or a job queued after the check. Non-Postgres adapters skip the advisory lock, the same way they do for count creates.
 
-Creating another recording of a count-limited type is blocked at the Recording. `revise` does not consume a slot. Restore from trash does, because used ignores trashed rows. Moving a live row into a full workspace does too. The gate only runs when the destination root enabled `:stripe`, and only for limits whose aggregation is `count`. It checks `enforce!(1)`. A quantity limit is not inferred from a Recording create, restore, or move. The gem that performs that operation calls `with_capacity!`. The gem raises `RecordingStudioStripe::PlanLimitReached`. HTML redirects to `/plans`, or `config.limit_reached_path`. JSON is 403 `{ "code": "plan_limit_reached" }`. Dummy copy: “Pick a plan to add press kits.” or “Starter includes 3 press kits. Upgrade, or archive one.” A quantity limit says “Upgrade, or free some up.” Recording Studio core still swallows `before_record` errors, so the count gate is `Recording` `before_create` (and restore, and move) until core can deny `record!`.
+Creating another recording of a count-limited type is blocked at the Recording. `revise` does not consume a slot. Restore from trash does, because used ignores trashed rows. Moving a live row into a full workspace does too. The gate only runs when the destination root enabled `:stripe`, and only for limits whose aggregation is `count`. It checks `enforce!(1)`. A quantity limit is not inferred from a Recording create, restore, or move. A per-item limit is not inferred either. Call `enforce_item!` for one item. The gem that performs a quantity write calls `with_capacity!`. The gem raises `RecordingStudioStripe::PlanLimitReached`. HTML redirects to `/plans`, or `config.limit_reached_path`. JSON is 403 `{ "code": "plan_limit_reached" }`. Dummy copy: “Pick a plan to add press kits.” or “Starter includes 3 press kits. Upgrade, or archive one.” A quantity limit says “Upgrade, or free some up.” Recording Studio core still swallows `before_record` errors, so the count gate is `Recording` `before_create` (and restore, and move) until core can deny `record!`.
 
-Downgrades do not delete extras. `over?` is true and `available?` is false until current usage falls. For a count, that is an archive. For a quantity, that is the registered usage dropping. Accessible stays access. Do not `record` usage for these caps. A billing period does not clear either kind.
+Downgrades do not delete extras. `over?` is true and `available?` is false until current usage falls. For a count, that is an archive. For a quantity, that is the registered usage dropping. A per-item ceiling has no `used` total to clear. Accessible stays access. Do not `record` usage for these caps. A billing period does not clear them.
 
-Dummy seeds Starter at 3, Pro at 10, and Team at 25 on Studio. Inbox plans do not include press kits. `/billing/usage` shows the standing cap as a progress bar. Dummy `/press_kits` is the product screen that lists kits and adds them. Plan cards on `/plans` and `/pricing` list those caps, included usage, and ticked features, with icons from the host config.
+Dummy seeds Starter at 3 press kits and a 50 MB file ceiling, Pro at 10 and 2 GB, and Team at 25 press kits with no file key. A workspace with no live Studio plan is capped at 10 MB per file when `max_file_bytes` is configured. Inbox plans do not include press kits. `/billing/usage` shows the standing count and quantity caps as a progress bar and skips per-item ceilings. Dummy `/press_kits` is the product screen that lists kits and adds them. Plan cards on `/plans` and `/pricing` list those caps, included usage, and ticked features, with icons from the host config.
 
 ## Remaining
 

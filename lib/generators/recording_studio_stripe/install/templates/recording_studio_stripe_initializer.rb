@@ -40,6 +40,8 @@ RecordingStudioStripe.configure do |config|
   # Standing caps. The number lives on the Product. Missing or 0 means none on that plan.
   # aggregation defaults to count: live recordings of recordable_type. No billing-period reset.
   # quantity is a current total. Register how to read it. Enforce it with with_capacity!.
+  # per_item is a ceiling on one item. ceiling is nil when the plan omits limit_<name>.
+  # no_plan_ceiling applies only with no live plan. Enforce it with enforce_item!.
   # Do not reuse a plan group name as a limit name unless they are the same thing.
   # config.limits = {
   #   "press_kits" => {
@@ -54,6 +56,14 @@ RecordingStudioStripe.configure do |config|
   #     "label" => "Storage",
   #     "aggregation" => "quantity",
   #     "subscription_type" => "studio"
+  #   },
+  #   "max_file_bytes" => {
+  #     "label" => "Max file size",
+  #     "aggregation" => "per_item",
+  #     "unit" => "bytes",
+  #     "subscription_type" => "studio",
+  #     "plan_line" => "Up to %{quantity} per file",
+  #     "no_plan_ceiling" => 10.megabytes
   #   }
   # }
   # RecordingStudioStripe.register_limit_usage(:storage_bytes) do |root_recording|

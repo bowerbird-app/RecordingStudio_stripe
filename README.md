@@ -21,7 +21,7 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Downgrade at the next renewal, after the same confirmation page
 - Cancel at period end, after a confirmation that names the plan and the end date
 - Included usage on a Price (`included_ai_tokens`, `included_api_calls` metadata)
-- Standing inventory limits on a Product (`limit_press_kits` metadata) for how many of a type can exist
+- Standing inventory limits on a Product (`limit_press_kits` metadata) for how many of a type can exist, plus an opt-in per-item ceiling (`limit_max_file_bytes`) for one file or one item
 - Extra packs as one-time Prices (`meter`, `allowance` metadata)
 - Optional paid or $0 trial on a plan Product (`trial_days`, `trial_unit_amount`, plus a one-time `kind=trial_fee` Price)
 - Customer pricing page, billing page, and usage page
@@ -172,6 +172,8 @@ A count limit is how many live recordings of `recordable_type` can exist under t
 
 A quantity limit is a current total, such as stored bytes. Leave `recordable_type` off. Register how to read that total. This gem does not measure it, and a Recording create does not enforce it. Call `with_capacity!` around the write so the check and the write share one transaction and, on Postgres, one advisory lock for that root and limit. `enforce!` is the same check when you are already inside that transaction. A later separate write can still race.
 
+A per-item limit is a ceiling on one item, such as the largest file a workspace can upload. Set `aggregation` to `"per_item"`. Leave `recordable_type` off. There is no usage reader. `ceiling` is the live plan's `limit_<name>` (`Subscription.current_for`, so a `past_due` plan still counts). When that plan omits the key, `ceiling` is nil. nil means this gem is not capping the item. The consumer applies its own code max. A workspace with no live plan, including a canceled plan, gets `no_plan_ceiling` when you set that positive integer, and nil when you do not. `allows?(amount)` is true when `ceiling` is nil or `amount` is within it. `enforce_item!` raises `PlanLimitReached` and does not take a lock. `used`, `remaining`, `over?`, `available?`, `enforce!`, and `with_capacity!` raise. The Recording create gate and `/billing/usage` skip per-item limits. Optional `unit: "bytes"` formats the plan card as a size (`Up to 50 MB`). Any other `unit` raises. Omit `unit` and the card shows a plain number (`Up to 12`). `plan_line` still interpolates `%{quantity}` after that formatting.
+
 ```ruby
 RecordingStudioStripe.configure do |config|
   config.limits = {
@@ -187,6 +189,14 @@ RecordingStudioStripe.configure do |config|
       "label" => "Storage",
       "aggregation" => "quantity",
       "subscription_type" => "studio"
+    },
+    "max_file_bytes" => {
+      "label" => "Max file size",
+      "aggregation" => "per_item",
+      "unit" => "bytes",
+      "subscription_type" => "studio",
+      "plan_line" => "Up to %{quantity} per file",
+      "no_plan_ceiling" => 10.megabytes
     }
   }
 end
@@ -204,6 +214,10 @@ kits.over?
 
 storage = account.billing.limit(:storage_bytes)
 storage.with_capacity!(incoming_size) { MyStorageGem.store!(account, incoming_size) }
+
+files = account.billing.limit(:max_file_bytes)
+files.ceiling
+files.enforce_item!(byte_size) if files.allows?(byte_size)
 
 tokens = account.billing.line(:studio).meter(:ai_tokens)
 tokens.spend(1) if tokens.available?(1)
@@ -264,14 +278,15 @@ allowance=5000000
 
 One Product per plan. Monthly and annual are Prices on that Product. Extra packs are a separate Product. `/plans` groups by Product, then by plan group when `config.subscription_types` is set. Admin Prices shows the Product name and filters by Product or interval.
 
-Plan Products also store standing limits, count or quantity:
+Plan Products also store standing limits, count, quantity, or per item:
 
 ```text
 limit_press_kits=3
 limit_storage_bytes=5000000000
+limit_max_file_bytes=2147483648
 ```
 
-Set those in Admin on the Product, not on each Price. The field is a plain integer for both. Admin Prices has Edit for included usage. Stripe still owns the amount.
+Set those in Admin on the Product, not on each Price. The field is a plain integer for each kind. A per-item value is the ceiling in the same unit you store (bytes, when `unit` is `"bytes"`). Admin Prices has Edit for included usage. Stripe still owns the amount.
 
 ## Webhooks
 

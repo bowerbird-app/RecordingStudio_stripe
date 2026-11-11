@@ -3,16 +3,23 @@
 module RecordingStudioStripe
   class GateCatalog
     Row = Struct.new(:kind, :name, :label, :aggregation, :plan_names, :missing_usage,
-                     keyword_init: true) do
+                     :ceiling_note, keyword_init: true) do
       def plans
         names = Array(plan_names).uniq.sort
-        names.empty? ? "No plan" : names.join(", ")
+        text = names.empty? ? "No plan" : names.join(", ")
+        note = ceiling_note.to_s.strip
+        return text if note.empty?
+
+        "#{text} · #{note}"
       end
 
       def aggregation_label
-        return aggregation unless missing_usage
+        return if aggregation.nil?
 
-        "#{aggregation} · No usage reader"
+        label = aggregation == "per_item" ? "per item" : aggregation
+        return label unless missing_usage
+
+        "#{label} · No usage reader"
       end
     end
 
@@ -45,7 +52,8 @@ module RecordingStudioStripe
           label: definition.label,
           aggregation: definition.aggregation,
           plan_names: products.select { |product| product.limit_quantity(definition.name).positive? }.map(&:name),
-          missing_usage: quantity_without_reader?(definition)
+          missing_usage: quantity_without_reader?(definition),
+          ceiling_note: ceiling_note(definition)
         )
       end
     end
@@ -87,6 +95,12 @@ module RecordingStudioStripe
       return false unless definition.quantity?
 
       RecordingStudioStripe.configuration.limit_usage_for(definition.name).nil?
+    end
+
+    def ceiling_note(definition)
+      return unless definition.per_item? && definition.no_plan_ceiling
+
+      "#{definition.display_quantity(definition.no_plan_ceiling)} with no plan"
     end
 
     def meter_on_price?(price, name)

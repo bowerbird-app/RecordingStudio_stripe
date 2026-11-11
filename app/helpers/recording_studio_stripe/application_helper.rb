@@ -94,6 +94,8 @@ module RecordingStudioStripe
 
     def billing_line_limits(line)
       RecordingStudioStripe::Limits.for_subscription_type(line.subscription_type).filter_map do |definition|
+        next if definition.per_item?
+
         handle = line.limit(definition.name)
         handle if handle.included.positive? || handle.used.positive?
       end
