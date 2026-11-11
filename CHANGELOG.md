@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-10
+
+### Added
+- Admin **Gates** screen under Stripe. It lists every declared paywall, limit, and meter: kind, key, label, limit aggregation, and which Products use it (`No plan` when none do)
+- Quantity limits with no `register_limit_usage` block show **No usage reader** on the aggregation cell
+
+### Changed
+- Meter and paywall **names** come from `config.meters` and `config.paywalls` only. Admin no longer creates, deletes, or renames those declarations
+- Boot sync removes Meter and Paywall rows whose key is not in config, and strips Product ticks, plan-card tokens, usage, packs, and Price `included_*` / allowance meter keys for those names
+- Admin Meters and Paywalls stay as name lists. Product paywall ticks, Product `limit_*` fields, and Price `included_*` fields still edit plan numbers
+- Bump to **0.20.0**. No database migration. No webhook change
+
+### Removed
+- Admin New meter and New paywall forms, and the engine `admin/meters` and `admin/paywalls` create routes
+
+### Upgrade notes
+- Bump to **0.20.0**. No database migration. No webhook change
+- Declare meters and paywalls in the host initializer (`config.meters`, `config.paywalls`). DB-only meters and paywalls are removed on boot
+- Bookmarks to `{mount}/admin/meters/new` and `{mount}/admin/paywalls/new` now 404. Open Gates, or edit numbers on the Product and Price screens
+
 ## [0.19.0] - 2026-11-06
 
 ### Changed
@@ -609,7 +629,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.1...v0.18.0
 [0.17.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.0...v0.17.1

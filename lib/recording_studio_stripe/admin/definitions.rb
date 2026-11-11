@@ -11,6 +11,7 @@ module RecordingStudioStripe
         stripe_section
         products_screen
         prices_screen
+        gates_screen
         meters_screen
         paywalls_screen
         customers_screen
@@ -26,7 +27,7 @@ module RecordingStudioStripe
         # Titles/links resolve via evaluate/resolve at render. Subtitles stay English
         # literals — Admin search reads screen_definition.subtitle raw.
         klass.title { Copy.t("admin.definitions.section.title", default: "Stripe") }
-        klass.subtitle "Products, Prices, meters, paywalls, and who is paying"
+        klass.subtitle "Products, Prices, gates, and who is paying"
         klass.blast_radius :site
         klass.link :products,
                    text: ->(_context) { Copy.t("admin.definitions.section.link_products", default: "Products") },
@@ -34,6 +35,9 @@ module RecordingStudioStripe
         klass.link :prices,
                    text: ->(_context) { Copy.t("admin.definitions.section.link_prices", default: "Prices") },
                    url: ->(context) { context.admin_screen_path("prices") }
+        klass.link :gates,
+                   text: ->(_context) { Copy.t("admin.definitions.section.link_gates", default: "Gates") },
+                   url: ->(context) { context.admin_screen_path("gates") }
         klass.link :meters,
                    text: ->(_context) { Copy.t("admin.definitions.section.link_meters", default: "Meters") },
                    url: ->(context) { context.admin_screen_path("meters") }
@@ -130,6 +134,25 @@ module RecordingStudioStripe
         ).order(:interval, :unit_amount)
       end
 
+      def gates_screen
+        klass = Class.new(RecordingStudioAdmin::Screen)
+        klass.key "gates"
+        klass.icon :flag
+        klass.title { Copy.t("admin.definitions.gates.title", default: "Gates") }
+        klass.subtitle "Declared paywalls, limits, and meters. Plan numbers stay on Products and Prices."
+        klass.blast_radius :site
+        klass.query { |_context| RecordingStudioStripe::GateCatalog.rows }
+        klass.table do
+          title ""
+          column :kind, sortable: false
+          column :name, title: "Key", sortable: false
+          column :label, sortable: false
+          column :aggregation_label, title: "Aggregation", sortable: false
+          column :plans, sortable: false
+        end
+        RecordingStudioStripe::Admin::Definitions.const_set(:GatesScreen, klass)
+      end
+
       def meters_screen
         klass = Class.new(RecordingStudioAdmin::Screen)
         klass.key "meters"
@@ -138,9 +161,6 @@ module RecordingStudioStripe
         klass.subtitle "Named usage counters the app records against"
         klass.blast_radius :site
         klass.query { |_context| RecordingStudioStripe::Meter.order(:name) }
-        klass.button :new_meter,
-                     text: ->(_context) { Copy.t("admin.definitions.meters.new_button", default: "New Meter") },
-                     url: ->(_context) { "#{RecordingStudioStripe.configuration.mount_path}/admin/meters/new" }
         klass.table do
           column :name
           column :label
@@ -156,9 +176,6 @@ module RecordingStudioStripe
         klass.subtitle "Named things a plan can open. Tick them on the Product."
         klass.blast_radius :site
         klass.query { |_context| RecordingStudioStripe::Paywall.order(:name) }
-        klass.button :new_paywall,
-                     text: ->(_context) { Copy.t("admin.definitions.paywalls.new_button", default: "New paywall") },
-                     url: ->(_context) { "#{RecordingStudioStripe.configuration.mount_path}/admin/paywalls/new" }
         klass.table do
           column :name
           column :label

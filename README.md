@@ -29,7 +29,7 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Usage at `/billing/usage` for standing caps and period meters
 - `PlansComponent` for those cards, centered by default (`align: :center`). Default `density: :auto` draws a compact row on a phone and, from the `md` breakpoint, four subgrid rows so the name, the price, the button, and the feature list line up. `density: :cards` keeps the tall card on a phone. `density: :rows` keeps the compact row at every width
 - `UsageComponent` for caps and meters on a host screen
-- Recording Studio Admin section for Products, Prices, Meters, Paywalls, Customers, and Subscriptions
+- Recording Studio Admin section for Products, Prices, Gates, Meters, Paywalls, Customers, and Subscriptions. Gates lists declared paywalls, limits, and meters. Meter and paywall names come from config. Product and Price screens still edit plan numbers
 - Named paywalls on a Product, checked with Accessible `authorized_action?`
 - Stripe webhooks that keep the local projection honest
 

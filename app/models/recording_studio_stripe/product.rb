@@ -118,6 +118,23 @@ module RecordingStudioStripe
       SubscriptionTypes.label(subscription_type)
     end
 
+    def self.drop_plan_card_token!(token)
+      find_each do |product|
+        data = (product.metadata || {}).stringify_keys
+        card = data["plan_card"]
+        next unless card.is_a?(Hash)
+
+        card = card.stringify_keys
+        hide = Array(card["hide"]).map(&:to_s)
+        order = Array(card["order"]).map(&:to_s)
+        next unless hide.include?(token) || order.include?(token)
+
+        card["hide"] = hide - [token]
+        card["order"] = order - [token]
+        product.update!(metadata: data.merge("plan_card" => card))
+      end
+    end
+
     private
 
     def assign_default_subscription_type

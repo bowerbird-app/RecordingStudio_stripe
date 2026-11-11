@@ -164,13 +164,12 @@ en:
           included_amounts_saved: Included amounts are saved.
           product_on_catalogue: "%{name} is on the catalogue."
           product_saved: "%{name} is saved."
-          meter_ready: "%{label} is ready to count."
-          paywall_ready: "%{label} is ready to tick on a plan."
         definitions:
           section:
             title: Stripe
             link_products: Products
             link_prices: Prices
+            link_gates: Gates
             link_meters: Meters
             link_paywalls: Paywalls
             link_customers: Customers
@@ -183,12 +182,12 @@ en:
           prices:
             title: Prices
             edit: Edit
+          gates:
+            title: Gates
           meters:
             title: Meters
-            new_button: New Meter
           paywalls:
             title: Paywalls
-            new_button: New paywall
           customers:
             title: Customers
           subscriptions:
@@ -201,8 +200,6 @@ en:
         nav:
           products: Products
           prices: Prices
-          meters: Meters
-          paywalls: Paywalls
         common:
           name: Name
           label: Label
@@ -245,18 +242,6 @@ en:
           allowance_quantity: Allowance quantity
           create: Create Price
           save: Save Price
-        meters:
-          new_title: New meter
-          new_subtitle: A named counter. The app records usage against it.
-          name_help: "Lowercase, like ai_tokens."
-          label_placeholder: AI tokens
-          create: Create meter
-        paywalls:
-          new_title: New paywall
-          new_subtitle: A named thing a plan can open. Tick it on the Product.
-          name_help: "Lowercase, like generate_image."
-          label_placeholder: Generate an image
-          create: Create paywall
         trial:
           title: Paid trial
           days: Trial days

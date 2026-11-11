@@ -10,6 +10,7 @@ module RecordingStudioStripe
         RecordingStudioAdmin.register_section(Definitions::StripeSection)
         RecordingStudioAdmin.register_screen(Definitions::ProductsScreen)
         RecordingStudioAdmin.register_screen(Definitions::PricesScreen)
+        RecordingStudioAdmin.register_screen(Definitions::GatesScreen)
         RecordingStudioAdmin.register_screen(Definitions::MetersScreen)
         RecordingStudioAdmin.register_screen(Definitions::PaywallsScreen)
         RecordingStudioAdmin.register_screen(Definitions::CustomersScreen)

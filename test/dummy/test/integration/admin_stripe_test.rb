@@ -31,7 +31,8 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "min-h-28 max-h-28"
     assert_includes response.body, "widget_view_variant=compact"
     assert_includes response.body, "Paywalls"
-    assert_includes response.body, "Products, Prices, meters, paywalls, and who is paying"
+    assert_includes response.body, "Gates"
+    assert_includes response.body, "Products, Prices, gates, and who is paying"
     assert_equal "Stripe", I18n.t("recording_studio.stripe.admin.definitions.section.title")
     assert_equal "New Product", I18n.t("recording_studio.stripe.admin.definitions.products.new_button")
 
@@ -65,12 +66,12 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Edit"
   end
 
-  test "paywalls screen lists registered names" do
+  test "paywalls screen lists registered names without a create form" do
     get "/admin/screens/paywalls"
 
     assert_response :success
     assert_includes response.body, "Paywalls"
-    assert_includes response.body, "New paywall"
+    refute_includes response.body, "New paywall"
 
     get "/admin/screens/paywalls/table"
 
@@ -80,25 +81,55 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "export_csv"
   end
 
-  test "staff can create a paywall from the engine form" do
-    get RecordingStudioStripe.configuration.mount_path + "/admin/paywalls/new"
+  test "gates screen lists paywalls limits and meters" do
+    get "/admin/screens/gates"
 
     assert_response :success
-    assert_includes response.body, "New paywall"
-    assert_includes response.body, "A named thing a plan can open. Tick it on the Product."
-    assert_includes response.body, "Lowercase, like generate_image."
-    assert_includes response.body, "Create paywall"
+    assert_includes response.body, "Gates"
+    assert_includes response.body, "Declared paywalls, limits, and meters"
+    refute_includes response.body, "Table data"
+    refute_includes response.body, "New Meter"
+    refute_includes response.body, "New paywall"
 
-    assert_difference -> { RecordingStudioStripe::Paywall.count }, 1 do
+    get "/admin/screens/gates/table"
+
+    assert_response :success
+    assert_includes response.body, "Paywall"
+    assert_includes response.body, "Limit"
+    assert_includes response.body, "Meter"
+    assert_includes response.body, "generate_image"
+    assert_includes response.body, "press_kits"
+    assert_includes response.body, "count"
+    assert_includes response.body, "ai_tokens"
+    assert_includes response.body, "Pro"
+    refute_includes response.body, "Not in config"
+    refute_includes response.body, "seats"
+  end
+
+  test "meter and paywall create routes are gone" do
+    get RecordingStudioStripe.configuration.mount_path + "/admin/paywalls/new"
+
+    assert_response :not_found
+
+    assert_no_difference -> { RecordingStudioStripe::Paywall.count } do
       post RecordingStudioStripe.configuration.mount_path + "/admin/paywalls", params: {
         name: "share_link",
         label: "Share a link"
       }
     end
+    assert_response :not_found
 
-    follow_redirect!
-    assert_includes response.body, "Share a link is ready to tick on a plan."
-    assert RecordingStudioStripe::Paywall.exists?(name: "share_link")
+    get RecordingStudioStripe.configuration.mount_path + "/admin/meters/new"
+
+    assert_response :not_found
+
+    assert_no_difference -> { RecordingStudioStripe::Meter.count } do
+      post RecordingStudioStripe.configuration.mount_path + "/admin/meters", params: {
+        name: "seats",
+        label: "Seats"
+      }
+    end
+    assert_response :not_found
   end
 
   test "staff can create a Product from the engine form" do
@@ -560,25 +591,19 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Save Price"
   end
 
-  test "staff can create a meter from the engine form" do
-    get RecordingStudioStripe.configuration.mount_path + "/admin/meters/new"
+  test "meters screen lists names without a create form" do
+    get "/admin/screens/meters"
 
     assert_response :success
-    assert_includes response.body, "New meter"
-    assert_includes response.body, "A named counter. The app records usage against it."
-    assert_includes response.body, "Lowercase, like ai_tokens."
-    assert_includes response.body, "Create meter"
+    assert_includes response.body, "Meters"
+    refute_includes response.body, "New Meter"
+    refute_includes response.body, "New meter"
 
-    assert_difference -> { RecordingStudioStripe::Meter.count }, 1 do
-      post RecordingStudioStripe.configuration.mount_path + "/admin/meters", params: {
-        name: "seats",
-        label: "Seats"
-      }
-    end
+    get "/admin/screens/meters/table"
 
-    follow_redirect!
-    assert_includes response.body, "Seats is ready to count."
-    assert RecordingStudioStripe::Meter.exists?(name: "seats")
+    assert_response :success
+    assert_includes response.body, "ai_tokens"
+    assert_includes response.body, "AI tokens"
   end
 
   test "blank included usage clears the old amount" do

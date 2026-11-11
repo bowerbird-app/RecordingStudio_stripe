@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.19.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.20.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -321,6 +321,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "config.paywalls"
     assert_includes docs, "authorized_action?"
     assert_includes docs, "Do not put them on a Price"
+    assert_includes docs, "removed on boot"
+    assert_includes docs, "Gates is a catalog"
     assert_includes docs, "## Plan groups"
     assert_includes docs, "config.subscription_types"
     assert_includes docs, "## Limits"
