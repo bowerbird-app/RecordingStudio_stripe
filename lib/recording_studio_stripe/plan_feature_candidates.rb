@@ -67,12 +67,7 @@ module RecordingStudioStripe
     end
 
     def limit_text(definition, quantity)
-      qty = PlanFeatures.quantity_label(quantity)
-      if definition.plan_line.present?
-        interpolate(definition.plan_line, quantity: qty, label: definition.label)
-      else
-        Copy.t("plans.features.quantity_with_label", quantity: qty, label: definition.label.downcase)
-      end
+      definition.card_text(quantity)
     end
 
     def meter_text(name, quantity, attrs)

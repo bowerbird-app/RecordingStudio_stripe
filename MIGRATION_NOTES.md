@@ -16,6 +16,14 @@
 - Internationalization dummy tag `v0.2.2`
 - Public RubyGems and GitHub access for dependency installation
 
+## Per-item ceilings
+
+`aggregation: "per_item"` is optional. Leave it unset and count limits, quantity limits, plan cards, usage, and the Recording create gate stay as they are. No database migration. No webhook change.
+
+Configure it on `config.limits`. The plan number stays Product metadata `limit_<name>`. `LimitHandle#ceiling` is that number while the workspace has a live plan in the limit's subscription type (`active`, `trialing`, or `past_due`). A live plan that omits the key leaves `ceiling` nil. nil means the consumer gem applies its own max and this gem does not add one.
+
+A workspace with no live plan, including a canceled plan, receives `no_plan_ceiling` when that positive integer is set. Omit `no_plan_ceiling` and a plan-less workspace also has a nil ceiling. Call `enforce_item!`. The HTML redirect and JSON `403` `plan_limit_reached` response are the same as the other limits.
+
 ## Layout
 
 `RecordingStudioStripe.configuration.layout` is the engine layout setting.

@@ -33,6 +33,7 @@ RecordingStudioStripe.configure do |config|
   }
   # Standing caps. aggregation defaults to count (live recordings of recordable_type).
   # The number lives on the Product. Missing or 0 means none on that plan. No billing-period reset.
+  # per_item is a ceiling on one item. Omit it and nothing here changes.
   config.limits = {
     "press_kits" => {
       "label" => "Press kits",
@@ -40,6 +41,15 @@ RecordingStudioStripe.configure do |config|
       "subscription_type" => "studio",
       "icon" => "rectangle-stack",
       "plan_line" => "%{quantity} press kits"
+    },
+    "max_file_bytes" => {
+      "label" => "Max file size",
+      "aggregation" => "per_item",
+      "unit" => "bytes",
+      "subscription_type" => "studio",
+      "icon" => "document",
+      "plan_line" => "Up to %{quantity} per file",
+      "no_plan_ceiling" => 10.megabytes
     }
   }
 end

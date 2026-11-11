@@ -27,8 +27,8 @@ class PlanLimitsTest < ActionDispatch::IntegrationTest
     assert_equal 3, starter.limit_quantity("press_kits")
     assert_equal 10, pro.limit_quantity("press_kits")
     assert_equal 0, inbox.limit_quantity("press_kits")
-    assert_equal ["3 press kits"], starter.limit_inclusion_lines
-    assert_equal ["10 press kits"], pro.limit_inclusion_lines
+    assert_equal ["3 press kits", "Up to 50 MB per file"], starter.limit_inclusion_lines
+    assert_equal ["10 press kits", "Up to 2 GB per file"], pro.limit_inclusion_lines
 
     starter_lines = RecordingStudioStripe::PlanFeatures.for(starter, starter.monthly_price)
     team = RecordingStudioStripe::Product.find_by!(name: "Team")

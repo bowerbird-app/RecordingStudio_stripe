@@ -29,6 +29,7 @@ Rails.application.routes.draw do
   get "docs/methods", to: "docs#methods", as: :docs_methods
   get "pricing", to: "pricing#show", as: :pricing
   resources :press_kits, only: %i[index create]
+  resources :uploads, only: :create
 
   # Defines the root path route ("/")
   root "home#index"

@@ -17,6 +17,8 @@ module RecordingStudioStripe
     end
 
     def user_message
+      return Copy.t("errors.per_item") if handle.per_item?
+
       label = handle.label.downcase
       return Copy.t("errors.pick_plan_to_add", label: label) if handle.included <= 0
 

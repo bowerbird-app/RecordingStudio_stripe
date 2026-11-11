@@ -80,6 +80,151 @@ class LimitUsageTest < Minitest::Test
     assert_equal "count", RecordingStudioStripe::Limits.fetch(:press_kits).aggregation
   end
 
+  def test_per_item_limit_needs_no_recordable_type
+    configure_per_item
+
+    definition = RecordingStudioStripe::Limits.fetch(:max_file_bytes)
+
+    assert_equal "per_item", definition.aggregation
+    assert_predicate definition, :per_item?
+    refute_predicate definition, :count?
+    assert_equal "", definition.recordable_type
+    assert_equal "bytes", definition.unit
+    assert_equal 10 * 1024 * 1024, definition.no_plan_ceiling
+    refute definition.covers_type?("PressKit")
+    refute RecordingStudioStripe::Limits.covers_type?("Attachment")
+    assert_empty RecordingStudioStripe::Limits.for_recordable_type("Attachment")
+    assert_equal "Up to 50 MB per file", definition.card_text(50 * 1024 * 1024)
+    assert_equal "10 MB", definition.display_quantity(definition.no_plan_ceiling)
+  end
+
+  def test_per_item_without_a_unit_is_a_plain_number
+    RecordingStudioStripe.configuration.limits = {
+      "max_pages" => { "label" => "Pages", "aggregation" => "per_item" }
+    }
+
+    definition = RecordingStudioStripe::Limits.fetch(:max_pages)
+
+    assert_nil definition.unit
+    assert_nil definition.no_plan_ceiling
+    assert_equal "Up to 12", definition.card_text(12)
+    refute_includes definition.card_text(12), " of "
+  end
+
+  def test_per_item_default_line_is_up_to_the_formatted_quantity
+    RecordingStudioStripe.configuration.limits = {
+      "max_file_bytes" => {
+        "label" => "Max file size",
+        "aggregation" => "per_item",
+        "unit" => "bytes"
+      }
+    }
+
+    text = RecordingStudioStripe::Limits.fetch(:max_file_bytes).card_text(2 * 1024 * 1024 * 1024)
+
+    assert_equal "Up to 2 GB", text
+    refute_includes text, " of "
+  end
+
+  def test_no_plan_ceiling_is_only_a_positive_integer_on_per_item
+    RecordingStudioStripe.configuration.limits = {
+      "press_kits" => {
+        "label" => "Press kits",
+        "recordable_type" => "PressKit",
+        "no_plan_ceiling" => 3
+      }
+    }
+    error = assert_raises(ArgumentError) { RecordingStudioStripe::Limits.fetch(:press_kits) }
+    assert_match(/no_plan_ceiling is only valid on a per_item limit/, error.message)
+
+    [0, -1, 1.5, "10", true].each do |value|
+      RecordingStudioStripe.configuration.limits = {
+        "max_file_bytes" => {
+          "aggregation" => "per_item",
+          "no_plan_ceiling" => value
+        }
+      }
+      bad = assert_raises(ArgumentError) { RecordingStudioStripe::Limits.fetch(:max_file_bytes) }
+      assert_match(/positive integer or nil/, bad.message)
+    end
+
+    RecordingStudioStripe.configuration.limits = {
+      "max_file_bytes" => { "aggregation" => "per_item", "no_plan_ceiling" => nil }
+    }
+    assert_nil RecordingStudioStripe::Limits.fetch(:max_file_bytes).no_plan_ceiling
+  end
+
+  def test_unknown_unit_raises
+    RecordingStudioStripe.configuration.limits = {
+      "max_file_bytes" => { "aggregation" => "per_item", "unit" => "widgets" }
+    }
+
+    error = assert_raises(ArgumentError) { RecordingStudioStripe::Limits.fetch(:max_file_bytes) }
+
+    assert_match(/Unsupported unit "widgets"/, error.message)
+    assert_match(/bytes/, error.message)
+  end
+
+  def test_per_item_ceiling_without_a_plan_uses_no_plan_ceiling
+    configure_per_item
+    handle = per_item_handle
+
+    assert_equal 10 * 1024 * 1024, handle.ceiling
+    assert handle.allows?(10 * 1024 * 1024)
+    refute handle.allows?((10 * 1024 * 1024) + 1)
+    handle.enforce_item!(1024)
+    error = assert_raises(RecordingStudioStripe::PlanLimitReached) { handle.enforce_item!(11 * 1024 * 1024) }
+
+    assert_equal handle, error.handle
+    assert_equal "This file is larger than your plan allows. Upgrade for bigger uploads.", error.user_message
+    assert_equal error.user_message, error.message
+  end
+
+  def test_per_item_without_no_plan_ceiling_allows_any_positive_amount
+    RecordingStudioStripe.configuration.limits = {
+      "max_file_bytes" => { "aggregation" => "per_item", "unit" => "bytes" }
+    }
+    handle = per_item_handle
+
+    assert_nil handle.ceiling
+    assert handle.allows?(50 * 1024 * 1024 * 1024)
+    handle.enforce_item!(50 * 1024 * 1024 * 1024)
+  end
+
+  def test_per_item_aggregate_methods_raise_and_item_methods_reject_other_kinds
+    configure_per_item
+    handle = per_item_handle
+    %i[used remaining over?].each do |method_name|
+      error = assert_raises(ArgumentError) { handle.public_send(method_name) }
+      assert_match(/Use ceiling or enforce_item!/, error.message)
+    end
+    error = assert_raises(ArgumentError) { handle.available?(1) }
+    assert_match(/Use ceiling or enforce_item!/, error.message)
+    error = assert_raises(ArgumentError) { handle.enforce!(1) }
+    assert_match(/Use ceiling or enforce_item!/, error.message)
+    error = assert_raises(ArgumentError) { handle.with_capacity!(1) { true } }
+    assert_match(/Use ceiling or enforce_item!/, error.message)
+
+    [0, -1, 1.5, "100", nil].each do |amount|
+      error = assert_raises(ArgumentError) { handle.allows?(amount) }
+      assert_match(/positive integer/, error.message)
+      error = assert_raises(ArgumentError) { handle.enforce_item!(amount) }
+      assert_match(/positive integer/, error.message)
+    end
+
+    configure_count
+    count = count_handle
+    {
+      ceiling: -> { count.ceiling },
+      allows?: -> { count.allows?(1) },
+      enforce_item!: -> { count.enforce_item!(1) }
+    }.each_value do |call|
+      error = assert_raises(ArgumentError, &call)
+      assert_match(/per-item ceiling/, error.message)
+      assert_match(/count limit/, error.message)
+    end
+  end
+
   def test_unknown_aggregation_raises
     RecordingStudioStripe.configuration.limits = {
       "storage_bytes" => { "label" => "Storage", "aggregation" => "meter" }
@@ -247,6 +392,22 @@ class LimitUsageTest < Minitest::Test
     RecordingStudioStripe.configuration.limits = {
       "press_kits" => { "label" => "Press kits", "recordable_type" => "PressKit" }
     }
+  end
+
+  def configure_per_item
+    RecordingStudioStripe.configuration.limits = {
+      "max_file_bytes" => {
+        "label" => "Max file size",
+        "aggregation" => "per_item",
+        "unit" => "bytes",
+        "plan_line" => "Up to %{quantity} per file", # rubocop:disable Style/FormatStringToken
+        "no_plan_ceiling" => 10 * 1024 * 1024
+      }
+    }
+  end
+
+  def per_item_handle
+    RecordingStudioStripe::LimitHandle.new(root_recording: nil, name: :max_file_bytes)
   end
 
   def handle_for(root)

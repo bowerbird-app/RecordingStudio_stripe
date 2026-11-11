@@ -66,6 +66,7 @@ fr:
           no_price: Cette offre est une place. Les plafonds apparaissent une fois un tarif attaché.
           empty: Une place. Les plafonds se voient sur la facturation.
           quantity_with_label: "%{quantity} %{label}"
+          per_item: "Jusqu’à %{quantity}"
       trial:
         word: essai
         duration_days:
@@ -183,6 +184,7 @@ fr:
         relief_quantity: Passez au-dessus, ou libérez de la place.
         relief_count: Passez au-dessus, ou archivez-en un.
         meter_spent: "Les %{label} de cette période sont épuisés. Achetez un pack, ou attendez le renouvellement."
+        per_item: "Ce fichier est plus gros que votre offre. Passez au-dessus pour des envois plus gros."
       admin:
         staff_only: Réservé au personnel.
         notices:

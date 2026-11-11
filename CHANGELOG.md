@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-11
+
+### Added
+- Opt-in `per_item` limits. A consumer gem can cap one item, such as max file size, from the existing Product metadata key `limit_<name>`
+- `LimitHandle#ceiling`, `#allows?`, and `#enforce_item!`. Optional `no_plan_ceiling` (positive integer) applies only when the workspace has no live plan. Optional `unit: "bytes"` is display only
+- Plan cards render a per-item line such as "Up to 50 MB per file". The Admin Gates aggregation cell says "per item" and shows the no-plan ceiling when one is set
+
+### Upgrade notes
+- Bump to **0.21.0**. No database migration. No webhook change. A host that does not configure a `per_item` limit sees no change
+- Add the limit in `config.limits` with `aggregation: "per_item"`. Example: `max_file_bytes: { aggregation: "per_item", label: "Max file size", unit: "bytes", no_plan_ceiling: 10.megabytes }`. Put the plan number in Product metadata `limit_max_file_bytes`, the same key shape as count and quantity
+- `ceiling` reads that metadata from the live plan in the limit's subscription type (`Subscription.current_for`, so `past_due` still counts). When the plan omits the key, `ceiling` is nil. nil means this gem is not capping the item. The consumer applies its own code max
+- A workspace with no live plan, including a canceled plan, gets `no_plan_ceiling`. When that setting is omitted, `ceiling` is nil there too
+- Call `allows?` or `enforce_item!(amount)`. `enforce_item!` raises `PlanLimitReached` and does not take an advisory lock. `used`, `remaining`, `over?`, `available?`, `enforce!`, and `with_capacity!` raise on a per-item limit. `enforce_item!` raises on count and quantity limits
+- The Recording create gate and `/billing/usage` skip per-item limits
+
 ## [0.20.0] - 2026-11-10
 
 ### Added

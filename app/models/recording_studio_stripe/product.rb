@@ -99,7 +99,11 @@ module RecordingStudioStripe
         quantity = limit_quantity(definition.name)
         next if quantity <= 0
 
-        "#{quantity} #{definition.label.downcase}"
+        if definition.per_item?
+          definition.card_text(quantity)
+        else
+          "#{quantity} #{definition.label.downcase}"
+        end
       end
     end
 

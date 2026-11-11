@@ -33,6 +33,7 @@ module RecordingStudioStripe
         team.assign_limits("press_kits" => 25)
         team.save!
       end
+      seed_file_size_caps(starter, pro)
       assign_card(starter, "For a quiet start")
       assign_card(pro, "For the usual week")
       assign_card(
@@ -42,6 +43,15 @@ module RecordingStudioStripe
           { "key" => "priority", "text" => "Someone picks up the phone", "icon" => "phone" }
         ]
       )
+    end
+
+    def seed_file_size_caps(starter, pro)
+      return unless Limits.known?("max_file_bytes")
+
+      starter.assign_limits("max_file_bytes" => 50.megabytes)
+      starter.save!
+      pro.assign_limits("max_file_bytes" => 2.gigabytes)
+      pro.save!
     end
 
     def seed_prices(starter, pro, team, tokens)
