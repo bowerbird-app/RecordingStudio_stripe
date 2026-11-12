@@ -22,5 +22,13 @@ module RecordingStudioStripe
       charge = UsageTariff.charge(key: key, quantity: quantity)
       credits_meter.available?(charge.credits)
     end
+
+    def credits_available?(minimum:)
+      credits_meter.credits_available?(minimum:)
+    end
+
+    def record_credits(amount:, breakdown:, idempotency_key:)
+      credits_meter.record_credits(amount:, breakdown:, idempotency_key:)
+    end
   end
 end

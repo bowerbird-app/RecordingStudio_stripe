@@ -31,7 +31,7 @@ module RecordingStudioStripe
     end
 
     def record(quantity, idempotency_key: nil, recorded_at: Time.current, usage_key: nil,
-               source_quantity: nil, credit_rate: nil)
+               source_quantity: nil, credit_rate: nil, breakdown: nil)
       RecordingStudioStripe::RecordUsage.call(
         root_recording: root_recording,
         meter: meter,
@@ -41,8 +41,18 @@ module RecordingStudioStripe
         subscription_type: @subscription_type,
         usage_key: usage_key,
         source_quantity: source_quantity,
-        credit_rate: credit_rate
+        credit_rate: credit_rate,
+        breakdown: breakdown
       )
+    end
+
+    def record_credits(amount:, breakdown:, idempotency_key:)
+      RecordCredits.call(handle: self, amount:, breakdown:, idempotency_key:)
+    end
+
+    def credits_available?(minimum:)
+      count = RecordCredits.positive_integer(minimum, "minimum")
+      remaining >= count
     end
 
     def spend(quantity, idempotency_key: nil, recorded_at: Time.current, usage_key: nil,

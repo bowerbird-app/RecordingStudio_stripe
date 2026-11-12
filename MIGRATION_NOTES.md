@@ -16,6 +16,17 @@
 - Internationalization dummy tag `v0.2.2`
 - Public RubyGems and GitHub access for dependency installation
 
+## Whole-credit usage
+
+`0.22.0` adds a nullable `breakdown` jsonb column on `recording_studio_stripe_usage_entries`. Copy the migration and run it:
+
+```bash
+bin/rails generate recording_studio_stripe:migrations
+bin/rails db:migrate
+```
+
+Existing `spend_usage` rows stay valid. They still store `usage_key`, `source_quantity`, and `credit_rate` together. `record_credits` rows store `usage_key` and `breakdown` on the `credits` meter and leave the rate columns empty. No webhook change. Hosts that do not call `record_credits` see the same spend behavior, plus the new column.
+
 ## Per-item ceilings
 
 `aggregation: "per_item"` is optional. Leave it unset and count limits, quantity limits, plan cards, usage, and the Recording create gate stay as they are. No database migration. No webhook change.
