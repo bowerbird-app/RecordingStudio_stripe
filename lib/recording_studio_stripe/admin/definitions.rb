@@ -12,6 +12,7 @@ module RecordingStudioStripe
         products_screen
         prices_screen
         gates_screen
+        credit_rates_screen
         meters_screen
         paywalls_screen
         customers_screen
@@ -19,7 +20,7 @@ module RecordingStudioStripe
         widgets
       end
 
-      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
       def stripe_section
         klass = Class.new(RecordingStudioAdmin::Section)
         klass.key "stripe"
@@ -38,6 +39,9 @@ module RecordingStudioStripe
         klass.link :gates,
                    text: ->(_context) { Copy.t("admin.definitions.section.link_gates", default: "Gates") },
                    url: ->(context) { context.admin_screen_path("gates") }
+        klass.link :credit_rates,
+                   text: ->(_context) { Copy.t("admin.definitions.section.link_credit_rates", default: "Cents per credit") }, # rubocop:disable Layout/LineLength
+                   url: ->(context) { context.admin_screen_path("credit_rates") }
         klass.link :meters,
                    text: ->(_context) { Copy.t("admin.definitions.section.link_meters", default: "Meters") },
                    url: ->(context) { context.admin_screen_path("meters") }
@@ -54,7 +58,7 @@ module RecordingStudioStripe
         klass.widget "widgets.stripe.active_subscriptions", view_variant: :compact
         RecordingStudioStripe::Admin::Definitions.const_set(:StripeSection, klass)
       end
-      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
       # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
       def products_screen
@@ -132,6 +136,29 @@ module RecordingStudioStripe
         RecordingStudioStripe::Price.includes(:product).joins(:product).merge(
           RecordingStudioStripe::Product.order(:name)
         ).order(:interval, :unit_amount)
+      end
+
+      def credit_rates_screen
+        klass = Class.new(RecordingStudioAdmin::Screen)
+        klass.key "credit_rates"
+        klass.icon :banknotes
+        klass.title { Copy.t("admin.definitions.credit_rates.title", default: "Cents per credit") }
+        klass.subtitle "Before tax and coupons. A plan price assumes the whole price is for credits."
+        klass.blast_radius :site
+        klass.query { |_context| RecordingStudioStripe::CreditRates.rows }
+        klass.table do
+          title ""
+          column :product_name, title: "Product", sortable: false
+          column :kind, sortable: false
+          column :interval, sortable: false
+          column :currency, sortable: false
+          column :unit_amount, title: "Amount in cents", sortable: false
+          column :credits, sortable: false
+          column :cents_label, title: "Cents per credit", sortable: false
+          column :cheapest_label, title: "Cheapest", sortable: false
+          column :note, sortable: false
+        end
+        RecordingStudioStripe::Admin::Definitions.const_set(:CreditRatesScreen, klass)
       end
 
       def gates_screen

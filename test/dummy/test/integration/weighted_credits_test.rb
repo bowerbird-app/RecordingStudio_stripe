@@ -1,6 +1,21 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "minitest/mock"
+
+module CreditMeterLockSpy
+  def hold(connection, name)
+    if Thread.current[:capture_credit_meter_locks]
+      Thread.current[:credit_meter_lock_names] << name
+    end
+    super
+  end
+end
+
+lock_ancestors = RecordingStudioStripe::AdvisoryLock.singleton_class.ancestors
+unless lock_ancestors.any? { |ancestor| %w[QuantityLimitLockSpy CreditMeterLockSpy].include?(ancestor.name) }
+  RecordingStudioStripe::AdvisoryLock.singleton_class.prepend(CreditMeterLockSpy)
+end
 
 class WeightedCreditsTest < ActiveSupport::TestCase
   setup do
@@ -309,6 +324,162 @@ class WeightedCreditsTest < ActiveSupport::TestCase
     assert_equal 1_995, pressbot.meter(:credits).remaining
   end
 
+  test "record_credits stores the amount and leaves the tariff empty" do
+    subscribe(plan_price(type: "pressbot", included: 100))
+
+    RecordingStudioStripe::Client.stub(:current, -> { raise "stripe called" }) do
+      entry = pressbot.record_credits(
+        amount: 7,
+        breakdown: { model: "jev", tokens: { "input" => 12 } },
+        idempotency_key: "ai-attempt:7"
+      )
+
+      assert_equal 7, entry.quantity
+      assert_equal "ai", entry.usage_key
+      assert_nil entry.source_quantity
+      assert_nil entry.credit_rate
+      assert_equal({ "model" => "jev", "tokens" => { "input" => 12 } }, entry.reload.breakdown)
+      assert_equal "pressbot", entry.subscription_type
+      assert entry.valid?
+      assert_equal 93, pressbot.meter(:credits).remaining
+    end
+  end
+
+  test "billing record_credits uses the line that holds credits" do
+    subscribe(plan_price(type: "pressbot", included: 40))
+
+    entry = @billing.record_credits(
+      amount: 4,
+      breakdown: { "kind" => "decision" },
+      idempotency_key: "ai-hosted-agent-turn:4"
+    )
+
+    assert_equal "pressbot", entry.subscription_type
+    assert @billing.credits_available?(minimum: 36)
+    refute @billing.credits_available?(minimum: 37)
+  end
+
+  test "record_credits rejects amounts and breakdowns it cannot store" do
+    subscribe(plan_price(type: "pressbot", included: 20))
+    breakdown = { "kind" => "attempt" }
+
+    assert_raises(ArgumentError) { pressbot.record_credits(amount: 1.5, breakdown:, idempotency_key: "float") }
+    assert_raises(ArgumentError) { pressbot.record_credits(amount: 0, breakdown:, idempotency_key: "zero") }
+    assert_raises(ArgumentError) { pressbot.record_credits(amount: -3, breakdown:, idempotency_key: "neg") }
+    assert_raises(ArgumentError) { pressbot.record_credits(amount: 1, breakdown:, idempotency_key: "  ") }
+    assert_raises(ArgumentError) { pressbot.record_credits(amount: 1, breakdown:, idempotency_key: nil) }
+    assert_raises(ArgumentError) { pressbot.record_credits(amount: 1, breakdown: "nope", idempotency_key: "text") }
+    assert_raises(ArgumentError) do
+      pressbot.record_credits(amount: 1, breakdown: { "note" => "x" * 20_000 }, idempotency_key: "huge")
+    end
+    assert_raises(ArgumentError) do
+      pressbot.meter(:api_calls).record_credits(amount: 1, breakdown:, idempotency_key: "other-meter")
+    end
+    assert_equal 0, usage_count
+    assert_equal 20, pressbot.meter(:credits).remaining
+  end
+
+  test "the same idempotency key records credits once" do
+    subscribe(plan_price(type: "pressbot", included: 50))
+    breakdown = { "kind" => "attempt" }
+
+    first = pressbot.record_credits(amount: 6, breakdown:, idempotency_key: "ai-attempt:same")
+    second = pressbot.record_credits(amount: 6, breakdown: { "kind" => "other" }, idempotency_key: "ai-attempt:same")
+
+    assert_equal first.id, second.id
+    assert_equal({ "kind" => "attempt" }, second.reload.breakdown)
+    assert_equal 1, usage_count
+    assert_equal 6, pressbot.meter(:credits).usage
+  end
+
+  test "a repeated key with a different amount keeps the first row" do
+    subscribe(plan_price(type: "pressbot", included: 50))
+    first = pressbot.record_credits(amount: 6, breakdown: { "kind" => "attempt" }, idempotency_key: "ai-attempt:diff")
+    warnings = []
+
+    second = Rails.logger.stub(:warn, ->(message = nil, **) { warnings << message.to_s }) do
+      pressbot.record_credits(amount: 9, breakdown: { "kind" => "attempt" }, idempotency_key: "ai-attempt:diff")
+    end
+
+    assert_equal first.id, second.id
+    assert_equal 6, second.reload.quantity
+    assert_equal 1, usage_count
+    assert_equal 44, pressbot.meter(:credits).remaining
+    assert_includes warnings.join, "ignored 9"
+    assert_includes warnings.join, "recorded 6"
+  end
+
+  test "record_credits still writes after the balance is gone" do
+    subscribe(plan_price(type: "pressbot", included: 10))
+
+    pressbot.record_credits(amount: 15, breakdown: { "kind" => "attempt" }, idempotency_key: "ai-attempt:over")
+    pressbot.record_credits(amount: 1, breakdown: { "kind" => "attempt" }, idempotency_key: "ai-attempt:more")
+
+    assert_equal 16, pressbot.meter(:credits).usage
+    assert_equal 0, pressbot.meter(:credits).remaining
+    refute pressbot.credits_available?(minimum: 1)
+  end
+
+  test "credits_available? compares the whole credit minimum to remaining" do
+    subscribe(plan_price(type: "pressbot", included: 10))
+
+    assert pressbot.credits_available?(minimum: 10)
+    refute pressbot.credits_available?(minimum: 11)
+    assert_raises(ArgumentError) { pressbot.credits_available?(minimum: 1.0) }
+    assert_raises(ArgumentError) { pressbot.credits_available?(minimum: 0) }
+  end
+
+  test "record_credits uses the same meter lock as spend" do
+    subscribe(plan_price(type: "pressbot", included: 100))
+    names = captured_meter_locks do
+      pressbot.spend_usage(key: "web.brave", quantity: 1, idempotency_key: "lock-spend")
+      pressbot.record_credits(amount: 4, breakdown: { "kind" => "attempt" }, idempotency_key: "lock-record")
+    end
+
+    assert_equal ["#{@root.id}:meter:credits"], names.uniq
+    assert_equal 2, names.size
+  end
+
+  test "a spend row still needs the tariff and a priced row does not" do
+    subscribe(plan_price(type: "pressbot", included: 100))
+    spent = pressbot.spend_usage(key: "web.brave", quantity: 1, idempotency_key: "search:tariff")
+
+    assert spent.valid?
+    assert_nil spent.breakdown
+    assert_equal 5, spent.source_quantity * spent.credit_rate
+
+    priced = pressbot.record_credits(amount: 3, breakdown: {}, idempotency_key: "ai-attempt:empty")
+    assert_nil priced.source_quantity
+    assert_nil priced.credit_rate
+    assert_equal({}, priced.breakdown)
+
+    bare = RecordingStudioStripe::UsageEntry.new(
+      root_recording_id: @root.id,
+      meter: RecordingStudioStripe::Meter.fetch("credits"),
+      quantity: 1,
+      recorded_at: Time.current,
+      usage_key: "ai"
+    )
+    refute_predicate bare, :valid?
+
+    other_meter = RecordingStudioStripe::UsageEntry.new(
+      root_recording_id: @root.id,
+      meter: RecordingStudioStripe::Meter.fetch("api_calls"),
+      quantity: 1,
+      recorded_at: Time.current,
+      usage_key: "ai",
+      breakdown: { "kind" => "attempt" }
+    )
+    refute_predicate other_meter, :valid?
+  end
+
+  test "usage entries store breakdown as nullable jsonb" do
+    column = RecordingStudioStripe::UsageEntry.columns_hash.fetch("breakdown")
+
+    assert column.null
+    assert_equal :jsonb, column.type
+  end
+
   test "an allowance card titles a credit pack from the meter label" do
     price = pack_price(type: "pressbot", allowance: 5_000, unit_amount: 3_900)
     component = RecordingStudioStripe::AllowanceCardComponent.new(price: price)
@@ -318,6 +489,24 @@ class WeightedCreditsTest < ActiveSupport::TestCase
   end
 
   private
+
+  def captured_meter_locks
+    ancestors = RecordingStudioStripe::AdvisoryLock.singleton_class.ancestors
+    if ancestors.any? { |ancestor| ancestor.name == "QuantityLimitLockSpy" }
+      Thread.current[:quantity_limit_lock_names] = []
+      Thread.current[:capture_quantity_limit_locks] = true
+      yield
+      Thread.current[:quantity_limit_lock_names].dup
+    else
+      Thread.current[:credit_meter_lock_names] = []
+      Thread.current[:capture_credit_meter_locks] = true
+      yield
+      Thread.current[:credit_meter_lock_names].dup
+    end
+  ensure
+    Thread.current[:capture_quantity_limit_locks] = false
+    Thread.current[:capture_credit_meter_locks] = false
+  end
 
   def pressbot
     @billing.line(:pressbot)

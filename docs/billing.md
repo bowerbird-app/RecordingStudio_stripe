@@ -226,6 +226,12 @@ remaining = included + purchased - usage
 
 `usage_cost` on `Billing` does not pick a plan. It only multiplies the tariff.
 
+`credits_available?(minimum:)` and `record_credits(amount:, breakdown:, idempotency_key:)` sit on the same billing object and line as `spend_usage`. `minimum` and `amount` are positive integers. `credits_available?` compares `minimum` to remaining and does not write. `record_credits` writes the amount even when remaining is already 0. The breakdown Hash is stored on the usage row and is not priced again. The idempotency key is required. A repeat returns the first row. Recording Studio AI 0.21.0 can call these from `usage_precheck` and `usage_handler`. See the README section "Bill AI usage in credits".
+
+The credits card on `/billing/usage` labels the bar with the percent used. The denominator is included plus purchased, and the label caps at 100. Over that total, the bar says `100% used`. When that total is 0, the used label is omitted.
+
+Staff can open **Cents per credit** under the Stripe admin section. It divides each active credit price's amount by the credits that price grants, before tax and coupons. An annual plan divides by the credits included on that annual price. The cheapest price in a currency is marked. Other currencies are not part of that comparison.
+
 ## Paywalls
 
 A paywall is a named feature the host checks before a job. Hosts register names only:

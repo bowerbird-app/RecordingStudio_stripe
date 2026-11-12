@@ -100,6 +100,7 @@ en:
         on_this_plan: On this plan
         extra_packs: Extra packs
         total_this_period: Total this period
+        credits_used: "%{percent}% used"
       allowances:
         pack_title: "+%{quantity} %{label}"
         add_this_pack: Add this pack
@@ -172,6 +173,7 @@ en:
             link_products: Products
             link_prices: Prices
             link_gates: Gates
+            link_credit_rates: Cents per credit
             link_meters: Meters
             link_paywalls: Paywalls
             link_customers: Customers
@@ -194,6 +196,8 @@ en:
             title: Customers
           subscriptions:
             title: Subscriptions
+          credit_rates:
+            title: Cents per credit
           widgets:
             past_due_title: Past due
             past_due_info: Subscriptions Stripe marked past_due. Someone probably needs a card update.

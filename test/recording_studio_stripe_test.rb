@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.21.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.22.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -467,7 +467,9 @@ class RecordingStudioStripeTest < Minitest::Test
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/meter_card_component.rb", __dir__))
 
     assert_includes source, "show_label: true"
-    refute_includes source, "left"
+    assert_includes source, '"usage.credits_used"'
+    refute_includes source, "credits_left"
+    refute_includes source, "10m left"
     refute_includes source, "Included"
   end
 

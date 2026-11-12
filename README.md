@@ -152,6 +152,34 @@ account.billing.line(:pressbot).spend_usage(
 
 `spend_usage` multiplies the quantity by the configured rate and spends that many credits. The usage row stores the key, the source quantity, and the rate from that call. A later change to `usage_costs` does not rewrite the row. Those source fields belong on the `credits` meter. Passing them to another meter raises `ArgumentError`. `RecordingStudioStripe.usage_cost("web.brave")` returns the rate. `billing.line(:pressbot).usage_cost(key:, quantity:)` returns the credits that spend would use, and `usage_available?` checks the line without writing a row. When more than one live plan holds credits, call `billing.line`. `billing.spend_usage` raises `AmbiguousSubscriptionLine` in that case. When more than one subscription type is configured and no live plan holds credits, it raises `SubscriptionLineRequired`. The idempotency key is unique for the workspace, not for each line. Use a fresh request id for each operation. Reusing a key returns the original usage row.
 
+### Bill AI usage in credits
+
+[Recording Studio AI](https://github.com/bowerbird-app/RecordingStudio_AI) 0.21.0 prices each attempt and calls two host hooks. This gem does not know about that gem. Wire the hooks to the credits meter. `usage_precheck` runs before the provider call. `usage_handler` runs after it, with a whole positive `credits` integer. A failed attempt that reported usage is still charged. The same key must not charge twice.
+
+```ruby
+config.usage_precheck = lambda do |attribution:, minimum:|
+  RecordingStudioStripe::Billing
+    .for_recording(attribution.root_recording)
+    .line(:pressbot)
+    .credits_available?(minimum:)
+end
+
+config.usage_handler = lambda do |credits:, breakdown:, idempotency_key:, attribution:|
+  RecordingStudioStripe::Billing
+    .for_recording(attribution.root_recording)
+    .line(:pressbot)
+    .record_credits(amount: credits, breakdown:, idempotency_key:)
+end
+```
+
+`credits_available?(minimum:)` is true when the credits meter's remaining is at least `minimum`. `minimum` is a whole integer of 1 or more. The compare does not coerce floats.
+
+`record_credits` writes that many credits on the credits meter. It does not check the remaining balance, because the work already ran. It does not call Stripe. `amount` is a positive integer. `breakdown` is a Hash stored as JSON and is not read back for pricing. The serialized Hash must be 16KB or smaller, and keys are stored as strings. `idempotency_key` is required. Keys from Recording Studio AI look like `ai-attempt:<id>`, `ai-batch-item:<id>`, and `ai-hosted-agent-turn:<id>`. The usage row stores `usage_key` `ai`, the amount in `quantity`, and leaves `source_quantity` and `credit_rate` empty. A repeated key returns the first row and writes nothing. A repeat with a different amount returns that same row, logs a warning, and does not overwrite it. There is no actor check and no charge screen. Call `billing.line` when the workspace can hold more than one plan. `billing.record_credits` follows the same line rules as `billing.spend_usage`.
+
+`/billing/usage` shows the credits meter as a bar labeled with the percent used: usage divided by included plus purchased, capped at 100. Over the total, the bar says `100% used`. A credits meter whose included plus purchased is 0 does not show that used label. Other meters keep the plain bar percent.
+
+Admin Stripe has a read-only **Cents per credit** screen. For each active price that grants credits, cents per credit is the price amount divided by the credits on that price. A pack is a one-time allowance price with `meter` `credits`. A plan price uses `included_credits` for that billing period, so an annual price divides by its own included amount. The figure is before tax and coupons. A plan row says the whole price is treated as the credit price. Trial prices, `kind=trial_fee` prices, $0 prices, prices with no credits, and inactive prices are left out. The cheapest price in each currency is marked. Prices in different currencies are not compared.
+
 Pay, change plan, cancel, resume, extra packs, and Manage billing on Stripe need Accessible `:admin` on the workspace. `:view` can still read `/plans`, `/billing`, and `/billing/usage`. `:edit` cannot charge the workspace.
 
 Named plan features live in `config.paywalls`. The gem writes those rows on boot. Staff tick which paywalls a Product opens. Monthly and yearly Prices on the same Product share them. Extra packs do not. Then:

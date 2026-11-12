@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-12
+
+### Added
+- `credits_available?(minimum:)` and `record_credits(amount:, breakdown:, idempotency_key:)` on billing and on a subscription line. These record whole credits for a host hook such as Recording Studio AI, including after remaining hits zero
+- Usage rows can store a JSON `breakdown` on the credits meter. `spend_usage` rows still store the tariff columns
+- `/billing/usage` labels the credits meter bar with the percent used. Other meters keep the plain bar percent
+- Admin Stripe screen **Cents per credit** compares active credit prices inside one currency, before tax and coupons
+
+### Upgrade notes
+- Bump to **0.22.0**. Copy migrations with `bin/rails generate recording_studio_stripe:migrations`, then `bin/rails db:migrate`. No webhook change
+- Wire Recording Studio AI `usage_precheck` to `credits_available?(minimum:)` and `usage_handler` to `record_credits(amount: credits, breakdown:, idempotency_key:)`. `amount` is a positive integer. The breakdown Hash is stored and not priced again. A repeated key returns the first row
+- The credits bar says `% used`, from usage / (included + purchased), capped at 100. Over the total, that is `100% used`. A zero total omits that label
+- **Cents per credit** is read-only under the existing Stripe admin section. It skips trial prices, `kind=trial_fee`, $0 prices, prices with no credits, and inactive prices
+
 ## [0.21.0] - 2026-11-11
 
 ### Added
