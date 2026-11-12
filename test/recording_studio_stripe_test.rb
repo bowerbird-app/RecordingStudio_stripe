@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.21.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.22.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -27,6 +27,7 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes gemspec, "recording_studio_conversions"
     refute_includes gemspec, "attachable"
     refute_includes gemspec, "recording_studio_library"
+    refute_includes gemspec, "recording_studio_api"
   end
 
   def test_gemspec_excludes_cursor_config
@@ -68,6 +69,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes gemfile, 'gem "view_component", "4.19.0"'
     refute_includes gemfile, "widen_recording_studio_requirement"
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.2.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_api", tag: "v0.21.3"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_moveable", tag: "v4.1.1"'
   end
 
   def test_root_gemfile_pins_accessible_and_recording_studio_6_2
@@ -79,6 +82,8 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.3"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.12.3"'
     assert_includes gemfile, 'gem "view_component", "4.19.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_api", tag: "v0.21.3"'
+    assert_includes gemfile, "group :development, :test"
     refute_includes gemfile, "widen_recording_studio_requirement"
   end
 
@@ -262,6 +267,9 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "config.layout"
     assert_includes readme, ">= 6.5.0"
     assert_includes readme, "config.site_admin_recording"
+    assert_includes readme, "show_billing"
+    assert_includes readme, "start_checkout"
+    assert_includes readme, "access_grant.authorize!"
     refute_includes readme, "ExampleService"
   end
 
@@ -365,6 +373,9 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes docs, "See usage"
     assert_includes docs, "Breakdown"
     assert_includes docs, "config.site_admin_recording"
+    assert_includes docs, "## JSON API"
+    assert_includes docs, "show_billing"
+    assert_includes docs, "access_grant.authorize!"
   end
 
   def test_billing_view_offers_manage_billing

@@ -8,6 +8,7 @@ Rails.application.routes.draw do
   mount RecordingStudioRootSwitchable::Engine, at: "/recording_studio_root_switchable"
   mount RecordingStudioInternationalization::Engine, at: "/recording_studio_internationalization"
   mount RecordingStudioAccessible::Engine, at: "/admin/access"
+  mount RecordingStudioApi::Engine, at: "/recording_studio_api"
   draw_recording_studio_stripe
   recording_studio_admin_for :admin, at: "/admin", root_section: :stripe
 
