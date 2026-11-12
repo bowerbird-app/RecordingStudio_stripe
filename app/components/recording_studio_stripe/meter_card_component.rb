@@ -79,8 +79,16 @@ module RecordingStudioStripe
         max: cap,
         style: progress_style,
         size: :md,
+        label: credits_used_label(used, cap),
         show_label: true
       )
+    end
+
+    def credits_used_label(used, cap)
+      return unless @handle.meter.name == "credits"
+      return if period_total <= 0
+
+      Copy.t("usage.credits_used", percent: (used * 100) / cap)
     end
 
     def progress_style

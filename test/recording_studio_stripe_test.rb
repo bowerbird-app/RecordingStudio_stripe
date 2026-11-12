@@ -468,6 +468,7 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes source, "show_label: true"
     assert_includes source, '"usage.credits_left"'
+    assert_includes source, '"usage.credits_used"'
     refute_includes source, "10m left"
     refute_includes source, "Included"
   end

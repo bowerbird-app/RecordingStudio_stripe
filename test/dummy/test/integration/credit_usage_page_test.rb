@@ -32,6 +32,7 @@ class CreditUsagePageTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Credits"
     assert_includes response.body, "37 of 100, 37% left"
+    assert_includes response.body, "63% used"
   end
 
   test "usage page shows 0% left after credits run out" do
@@ -46,6 +47,7 @@ class CreditUsagePageTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "0 of 100, 0% left"
+    assert_includes response.body, "100% used"
   end
 
   test "usage page hides the percent when the credit total is zero" do

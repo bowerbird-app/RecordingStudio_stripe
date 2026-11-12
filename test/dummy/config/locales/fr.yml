@@ -127,6 +127,7 @@ fr:
         extra_packs: Packs extra
         total_this_period: Total cette période
         credits_left: "%{remaining} sur %{total}, %{percent} % restants"
+        credits_used: "%{percent} % utilisés"
       allowances:
         pack_title: "+%{quantity} %{label}"
         add_this_pack: Ajouter ce pack
