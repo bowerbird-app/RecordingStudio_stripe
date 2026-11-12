@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Diverges from RS_API v0.21.3 (reversible down) only because CI runs db:rollback STEP=2.
 class DropApiRequestLogSummaries < ActiveRecord::Migration[8.1]
   COUNTS_TABLE = "recording_studio_api_api_request_day_summaries"
   LATENCY_TABLE = "recording_studio_api_api_request_latency_day_summaries"

@@ -9,8 +9,6 @@ module RecordingStudioStripe
         {
           root_id: record.root_recording.id,
           subscribed: record.subscribed?,
-          customer_id: record.customer&.id,
-          stripe_customer_id: record.customer&.stripe_id,
           lines: record.lines.map { |line| billing_line(line) }
         }
       end

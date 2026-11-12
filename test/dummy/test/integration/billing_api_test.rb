@@ -41,6 +41,8 @@ class BillingApiTest < ActionDispatch::IntegrationTest
     body = response.parsed_body
     assert_equal @root.id, body.fetch("root_id")
     refute body.fetch("subscribed")
+    refute body.key?("customer_id")
+    refute body.key?("stripe_customer_id")
 
     get "#{API_ROOT}/billing/plans", headers: auth(@view_token), as: :json
     assert_response :success
@@ -97,6 +99,8 @@ class BillingApiTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert response.parsed_body.fetch("subscribed")
     assert_equal @root.id, response.parsed_body.fetch("root_id")
+    refute response.parsed_body.key?("customer_id")
+    refute response.parsed_body.key?("stripe_customer_id")
 
     post "#{API_ROOT}/billing/change_plan",
          headers: auth(@admin_token),
@@ -131,6 +135,40 @@ class BillingApiTest < ActionDispatch::IntegrationTest
          as: :json
     assert_response :success
     assert response.parsed_body.fetch("unavailable")
+  end
+
+  test "portal uses the same copy as the HTML alerts" do
+    previous_key = RecordingStudioStripe.configuration.secret_key
+    previous_client = RecordingStudioStripe.configuration.client
+    client = RecordingStudioStripe::Testing::Client.new
+    RecordingStudioStripe.configuration.secret_key = "sk_test_dummy"
+    RecordingStudioStripe.configuration.client = client
+
+    post "#{API_ROOT}/billing/portal",
+         headers: auth(@admin_token),
+         params: { return_url: "http://www.example.com/billing" },
+         as: :json
+    assert_response :unprocessable_entity
+    assert_includes response.body, RecordingStudioStripe::Copy.t("alerts.portal_needs_pay")
+
+    RecordingStudioStripe.configuration.secret_key = previous_key
+    RecordingStudioStripe.configuration.client = previous_client
+    price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: price)
+    client.fail_portal!
+    RecordingStudioStripe.configuration.secret_key = "sk_test_dummy"
+    RecordingStudioStripe.configuration.client = client
+
+    post "#{API_ROOT}/billing/portal",
+         headers: auth(@admin_token),
+         params: { return_url: "http://www.example.com/billing" },
+         as: :json
+    assert_response :unprocessable_entity
+    assert_includes response.body, RecordingStudioStripe::Copy.t("alerts.portal_failed")
+    refute_includes response.body, "portal is down"
+  ensure
+    RecordingStudioStripe.configuration.secret_key = previous_key
+    RecordingStudioStripe.configuration.client = previous_client
   end
 
   test "write endpoints are unauthorized without a token" do

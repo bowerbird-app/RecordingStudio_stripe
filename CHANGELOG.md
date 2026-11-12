@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.22.0] - 2026-11-12
 
 ### Added
-- Eight JSON endpoints on Recording Studio API for the same billing actions as the HTML screens. `show_billing` and `list_plans` need Accessible `:view` on the token workspace. `start_checkout`, `change_plan`, `cancel_subscription`, `resume_subscription`, `keep_plan`, and `start_portal` need `:admin`. Each handler calls `access_grant.authorize!` on that root, then the existing Ruby method. MCP picks them up through the API. This gem does not add an MCP adapter.
+- Eight JSON endpoints on Recording Studio API for the same billing actions as the HTML screens. `show_billing` and `list_plans` need Accessible `:view` on the token workspace. `start_checkout`, `change_plan`, `cancel_subscription`, `resume_subscription`, `keep_plan`, and `start_portal` need `:admin`. Each handler calls `access_grant.authorize!` on that root, then the existing Ruby method. `show_billing` omits customer ids. Portal errors use the HTML Copy. MCP picks them up through the API. This gem does not add an MCP adapter.
 
 ### Upgrade notes
 - Bump to **0.22.0**. No database migration. No webhook change. Hosts that do not mount Recording Studio API see no change.

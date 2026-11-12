@@ -115,8 +115,10 @@ module RecordingStudioStripe
               return_url: context.params[:return_url]
             )
           )
-        rescue NoCustomer, Stripe::StripeError => e
-          Handlers.invalid!(e)
+        rescue NoCustomer
+          raise RecordingStudioApi::InvalidActionInputError, Copy.t("alerts.portal_needs_pay")
+        rescue Stripe::StripeError
+          raise RecordingStudioApi::InvalidActionInputError, Copy.t("alerts.portal_failed")
         end
       end
     end

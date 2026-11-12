@@ -379,7 +379,7 @@ Customer UI is a mountable engine slice at `/plans`, `/billing`, and `/billing/u
 
 ## JSON API
 
-When the host mounts Recording Studio API, this gem registers eight endpoints on the public API. They wrap the same methods as the HTML screens. Accessible roles match those screens. `:view` can call `show_billing` and `list_plans`. `:admin` can call `start_checkout`, `change_plan`, `cancel_subscription`, `resume_subscription`, `keep_plan`, and `start_portal`. Handlers call `context.access_grant.authorize!` on the token's root. They do not take another workspace id. MCP uses the generic API pickup. This gem does not register MCP tools itself.
+When the host mounts Recording Studio API, this gem registers eight endpoints on the public API. They wrap the same methods as the HTML screens. Accessible roles match those screens. `:view` can call `show_billing` and `list_plans`. `:admin` can call `start_checkout`, `change_plan`, `cancel_subscription`, `resume_subscription`, `keep_plan`, and `start_portal`. Handlers call `context.access_grant.authorize!` on the token's root. They do not take another workspace id. `show_billing` returns `root_id`, `subscribed`, and plan `lines`. It does not return local or Stripe customer ids. Portal errors use the same Copy as the HTML flashes. MCP uses the generic API pickup. This gem does not register MCP tools itself.
 
 ## Local mode
 

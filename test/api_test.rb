@@ -58,6 +58,23 @@ class ApiTest < Minitest::Test
     refute_includes handlers, "const_set"
     refute_includes handlers, "remove_const"
     refute_includes handlers, "map_to_api_error"
+    assert_includes handlers, 'Copy.t("alerts.portal_needs_pay")'
+    assert_includes handlers, 'Copy.t("alerts.portal_failed")'
+    refute_includes handlers, "NoCustomer, Stripe::StripeError"
+  end
+
+  def test_billing_json_omits_customer_ids
+    serialize = File.read(File.expand_path("../lib/recording_studio_stripe/api/serialize.rb", __dir__))
+
+    refute_includes serialize, "customer_id"
+    refute_includes serialize, "stripe_customer_id"
+  end
+
+  def test_openapi_summaries_are_not_titles
+    RecordingStudioStripe::Api::Registration::ENDPOINTS.each do |endpoint|
+      refute_equal endpoint.fetch(:title), endpoint.fetch(:summary)
+      assert_match(/\A[A-Z].+\.\z/, endpoint.fetch(:summary))
+    end
   end
 
   def test_gemspec_keeps_api_off_the_runtime

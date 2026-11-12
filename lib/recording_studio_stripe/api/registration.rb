@@ -33,7 +33,7 @@ module RecordingStudioStripe
           handler: Handlers::ShowBilling,
           role: :view,
           title: "Billing - Show",
-          summary: "Billing - Show",
+          summary: "Show the workspace plan.",
           tag: "Billing"
         },
         {
@@ -43,7 +43,7 @@ module RecordingStudioStripe
           handler: Handlers::ListPlans,
           role: :view,
           title: "Plans - List",
-          summary: "Plans - List",
+          summary: "List prices you can sell.",
           tag: "Plans"
         },
         {
@@ -53,7 +53,7 @@ module RecordingStudioStripe
           handler: Handlers::StartCheckout,
           role: :admin,
           title: "Checkout - Start",
-          summary: "Checkout - Start",
+          summary: "Open Stripe Checkout for a price.",
           tag: "Checkout",
           input_contract: { reject_unknown: true, fields: CHECKOUT_FIELDS }
         },
@@ -64,7 +64,7 @@ module RecordingStudioStripe
           handler: Handlers::ChangePlan,
           role: :admin,
           title: "Subscription - Change plan",
-          summary: "Subscription - Change plan",
+          summary: "Move the live plan to another price.",
           tag: "Subscription",
           input_contract: { reject_unknown: true, fields: CHANGE_PLAN_FIELDS }
         },
@@ -75,7 +75,7 @@ module RecordingStudioStripe
           handler: Handlers::CancelSubscription,
           role: :admin,
           title: "Subscription - Cancel",
-          summary: "Subscription - Cancel",
+          summary: "Cancel the live plan at period end.",
           tag: "Subscription",
           input_contract: { reject_unknown: true, fields: SUBSCRIPTION_TYPE_FIELDS }
         },
@@ -86,7 +86,7 @@ module RecordingStudioStripe
           handler: Handlers::ResumeSubscription,
           role: :admin,
           title: "Subscription - Resume",
-          summary: "Subscription - Resume",
+          summary: "Keep a plan that was set to cancel.",
           tag: "Subscription",
           input_contract: { reject_unknown: true, fields: SUBSCRIPTION_TYPE_FIELDS }
         },
@@ -97,7 +97,7 @@ module RecordingStudioStripe
           handler: Handlers::KeepPlan,
           role: :admin,
           title: "Subscription - Keep plan",
-          summary: "Subscription - Keep plan",
+          summary: "Drop a scheduled plan change.",
           tag: "Subscription",
           input_contract: { reject_unknown: true, fields: SUBSCRIPTION_TYPE_FIELDS }
         },
@@ -108,7 +108,7 @@ module RecordingStudioStripe
           handler: Handlers::StartPortal,
           role: :admin,
           title: "Portal - Start",
-          summary: "Portal - Start",
+          summary: "Open the Stripe billing portal.",
           tag: "Portal",
           input_contract: { reject_unknown: true, fields: PORTAL_FIELDS }
         }

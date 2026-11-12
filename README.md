@@ -83,7 +83,7 @@ draw_recording_studio_stripe
 
 That mounts billing at `/billing`, usage at `/billing/usage`, pricing at `/plans`, and webhooks at `/webhooks/stripe`.
 
-Mount Recording Studio API if agents or MCP should call those same actions as JSON. This gem registers eight endpoints on the public API. `GET billing` and `GET billing/plans` need Accessible `:view` on the token workspace. The write paths need `:admin`. Each handler authorizes with `access_grant.authorize!` on that root, then calls `Billing.for`, `Catalog.plan_groups`, `StartCheckout`, `ChangePlan`, `CancelSubscription`, `ResumeSubscription`, `ClearScheduledChange`, or `StartPortalSession`. MCP does not need extra code here. It picks registered API endpoints up on its own. The token never sees another workspace's billing.
+Mount Recording Studio API if agents or MCP should call those same actions as JSON. This gem registers eight endpoints on the public API. `GET billing` and `GET billing/plans` need Accessible `:view` on the token workspace. The write paths need `:admin`. Each handler authorizes with `access_grant.authorize!` on that root, then calls `Billing.for`, `Catalog.plan_groups`, `StartCheckout`, `ChangePlan`, `CancelSubscription`, `ResumeSubscription`, `ClearScheduledChange`, or `StartPortalSession`. `GET billing` returns `root_id`, `subscribed`, and plan `lines`. It omits customer ids, matching the HTML page. Portal errors reuse the HTML Copy. MCP does not need extra code here. It picks registered API endpoints up on its own. The token never sees another workspace's billing.
 
 | Endpoint | Verb and path | Role |
 | --- | --- | --- |
