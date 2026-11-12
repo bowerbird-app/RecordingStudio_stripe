@@ -19,7 +19,7 @@ class CreditUsagePageTest < ActionDispatch::IntegrationTest
     RecordingStudioStripe::Meter.sync_from_config!
   end
 
-  test "usage page shows whole credits and the percent left" do
+  test "usage page shows the credits bar as percent used" do
     subscribe(included: 100)
     @workspace.billing.line(:studio).record_credits(
       amount: 63,
@@ -31,11 +31,11 @@ class CreditUsagePageTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Credits"
-    assert_includes response.body, "37 of 100, 37% left"
     assert_includes response.body, "63% used"
+    refute_includes response.body, "% left"
   end
 
-  test "usage page shows 0% left after credits run out" do
+  test "usage page shows 100% used after credits run out" do
     subscribe(included: 100)
     @workspace.billing.line(:studio).record_credits(
       amount: 150,
@@ -46,8 +46,8 @@ class CreditUsagePageTest < ActionDispatch::IntegrationTest
     get recording_studio_stripe.usage_path
 
     assert_response :success
-    assert_includes response.body, "0 of 100, 0% left"
     assert_includes response.body, "100% used"
+    refute_includes response.body, "% left"
   end
 
   test "usage page hides the percent when the credit total is zero" do

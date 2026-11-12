@@ -100,7 +100,6 @@ en:
         on_this_plan: On this plan
         extra_packs: Extra packs
         total_this_period: Total this period
-        credits_left: "%{remaining} of %{total}, %{percent}% left"
         credits_used: "%{percent}% used"
       allowances:
         pack_title: "+%{quantity} %{label}"

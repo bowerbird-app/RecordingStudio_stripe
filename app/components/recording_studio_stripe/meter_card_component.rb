@@ -11,7 +11,7 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(background: :default, border: :strong, shadow: :none) do |card|
-        card.body { helpers.stripe_card_stack(heading, credits_left, details) }
+        card.body { helpers.stripe_card_stack(heading, details) }
       end
     end
 
@@ -53,22 +53,6 @@ module RecordingStudioStripe
 
     def period_total
       @handle.included + @handle.purchased
-    end
-
-    def credits_left
-      return unless @handle.meter.name == "credits"
-      return if period_total <= 0
-
-      percent = (@handle.remaining * 100) / period_total
-      helpers.tag.p(
-        Copy.t(
-          "usage.credits_left",
-          remaining: helpers.number_with_delimiter(@handle.remaining),
-          total: helpers.number_with_delimiter(period_total),
-          percent: percent
-        ),
-        class: "text-sm leading-6"
-      )
     end
 
     def details

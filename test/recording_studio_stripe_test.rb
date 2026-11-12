@@ -467,8 +467,8 @@ class RecordingStudioStripeTest < Minitest::Test
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/meter_card_component.rb", __dir__))
 
     assert_includes source, "show_label: true"
-    assert_includes source, '"usage.credits_left"'
     assert_includes source, '"usage.credits_used"'
+    refute_includes source, "credits_left"
     refute_includes source, "10m left"
     refute_includes source, "Included"
   end
