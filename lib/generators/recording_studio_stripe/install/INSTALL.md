@@ -15,6 +15,8 @@ Staff admin: include RecordingStudioStripe::AdminSupport on the admin root and m
 
 Grant Accessible :admin on the workspace for anyone who should pay.
 
+Optional JSON: mount Recording Studio API. This gem registers billing endpoints on that API. `:view` reads. `:admin` writes. MCP picks those endpoints up.
+
 draw_recording_studio_stripe at: is the mount path.
 
 If you use Tailwind, rebuild:

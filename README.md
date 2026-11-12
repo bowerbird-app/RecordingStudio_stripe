@@ -83,6 +83,19 @@ draw_recording_studio_stripe
 
 That mounts billing at `/billing`, usage at `/billing/usage`, pricing at `/plans`, and webhooks at `/webhooks/stripe`.
 
+Mount Recording Studio API if agents or MCP should call those same actions as JSON. This gem registers eight endpoints on the public API. `GET billing` and `GET billing/plans` need Accessible `:view` on the token workspace. The write paths need `:admin`. Each handler authorizes with `access_grant.authorize!` on that root, then calls `Billing.for`, `Catalog.plan_groups`, `StartCheckout`, `ChangePlan`, `CancelSubscription`, `ResumeSubscription`, `ClearScheduledChange`, or `StartPortalSession`. `GET billing` returns `root_id`, `subscribed`, and plan `lines`. It omits customer ids, matching the HTML page. Portal errors reuse the HTML Copy. MCP does not need extra code here. It picks registered API endpoints up on its own. The token never sees another workspace's billing.
+
+| Endpoint | Verb and path | Role |
+| --- | --- | --- |
+| `show_billing` | `GET /recording_studio_api/api/v1/billing` | `:view` |
+| `list_plans` | `GET /recording_studio_api/api/v1/billing/plans` | `:view` |
+| `start_checkout` | `POST /recording_studio_api/api/v1/billing/checkout` | `:admin` |
+| `change_plan` | `POST /recording_studio_api/api/v1/billing/change_plan` | `:admin` |
+| `cancel_subscription` | `POST /recording_studio_api/api/v1/billing/cancel` | `:admin` |
+| `resume_subscription` | `POST /recording_studio_api/api/v1/billing/resume` | `:admin` |
+| `keep_plan` | `POST /recording_studio_api/api/v1/billing/keep_plan` | `:admin` |
+| `start_portal` | `POST /recording_studio_api/api/v1/billing/portal` | `:admin` |
+
 Turn on the Customer Portal in the Stripe Dashboard. Manage billing on Stripe mints a portal session for the workspace Customer and sends the browser to Stripe. The button uses the gem's `:stripe` Flatpack style. The gem does not copy invoices or cards. Leave keys blank in dummy and the button still shows after a local checkout, then flashes instead of calling Stripe.
 
 Render the same plan cards on a host screen. Pass `groups:` from `Catalog.plan_groups` when you sell more than one kind of plan:

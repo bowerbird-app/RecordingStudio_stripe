@@ -14,3 +14,4 @@ Recording Studio Stripe is mounted.
 12. Set config.site_admin_recording for Stripe Admin forms. Missing or nil denies those screens.
 13. Optional: set Trial days and Trial amount in cents on a plan Product for a paid or $0 trial.
 14. Customer screens use `recording_studio.stripe.*`. The gem ships English. Add host locale files to translate. Staff Admin stays English.
+15. Optional: mount Recording Studio API so agents can call the same billing actions. Enable `:api_access_point` on the workspace. Grant `:view` to read billing and plans, `:admin` to check out, change, cancel, resume, keep, or open the portal.

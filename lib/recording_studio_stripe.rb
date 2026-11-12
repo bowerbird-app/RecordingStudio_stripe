@@ -72,6 +72,7 @@ require "recording_studio_stripe/seed_demo_catalog"
 require "recording_studio_stripe/testing/client"
 require "recording_studio_stripe/admin/definitions"
 require "recording_studio_stripe/admin/registration"
+require "recording_studio_stripe/api"
 
 module RecordingStudioStripe
   class << self
