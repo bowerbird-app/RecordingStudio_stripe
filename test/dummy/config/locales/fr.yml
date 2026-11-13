@@ -141,6 +141,7 @@ fr:
         up: au-dessus
         down: en dessous
         pay_difference: Vous réglez la différence aujourd’hui.
+        switches_today: Bascule aujourd’hui. Le temps non utilisé est crédité.
         starts_on: "À partir du %{date}."
         starts_next: Au prochain renouvellement.
       cancel:
@@ -150,10 +151,14 @@ fr:
         this_plan: cette offre
         subtitle_until: "Vous la gardez jusqu’au %{date}."
         subtitle_period: Vous la gardez jusqu’à la fin de cette période.
+        subtitle_today: Ça s’arrête aujourd’hui.
         confirm: Résilier en fin de période
+        confirm_now: Résilier maintenant
         keep: Garder cette offre
       notices:
         plan_stays_until_end: Cette offre reste jusqu’à la fin de la période.
+        plan_ends_today: Cette offre s’arrête aujourd’hui.
+        switch_today: On bascule aujourd’hui.
         billing_keeps_going: Nickel. La facturation continue.
         stay_on_plan: Vous restez sur cette offre.
         switch_at_renewal: On bascule au prochain renouvellement.

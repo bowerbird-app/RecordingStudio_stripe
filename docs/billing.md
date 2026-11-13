@@ -368,9 +368,12 @@ Included comes from Price metadata. Purchased comes from allowance packs bought 
 ## Plan changes
 
 - Higher monthly amount: confirmation page first, then update the Stripe Subscription now, `proration_behavior: always_invoice`, `payment_behavior: error_if_incomplete`. Local Price waits for the webhook
-- Lower monthly amount: confirmation page first, then keep the current Price, store `scheduled_price`. Stripe gets a schedule created from the Subscription, then an update with every current item copied into both phases. An existing schedule is released first. A failed schedule does not change the live Price
+- Lower monthly amount, default `downgrade_timing: at_period_end`: confirmation page first, then keep the current Price, store `scheduled_price`. Stripe gets a schedule created from the Subscription, then an update with every current item copied into both phases. An existing schedule is released first. A failed schedule does not change the live Price
+- `downgrade_timing: immediately` on that plan group: the confirmation says the switch is today and unused time is credited. `ChangePlan` updates the Stripe Price now with `proration_behavior: create_prorations`. It does not create a schedule. The local Price still waits for the webhook
 - Same Product, a longer interval is an upgrade: week, then month, then year. A shorter interval is a downgrade. Across Products, `rank` metadata wins. With no rank, compare a monthly equivalent (weekly amount × 52 / 12, yearly amount / 12)
-- Cancel: confirmation page first, then `cancel_at_period_end` on that group's Subscription. Pass `subscription_type` when more than one live plan exists. Stay on this plan on billing clears a scheduled downgrade.
+- Cancel, default timing: confirmation page first, then `cancel_at_period_end` on that group's Subscription. Pass `subscription_type` when more than one live plan exists. Stay on this plan on billing clears a scheduled downgrade
+- Cancel with `downgrade_timing: immediately`: the confirmation says the plan ends today. Stripe `Subscription.cancel` ends it now. The local row waits for `customer.subscription.deleted`
+- When the webhook applies a different Product, or ends the Subscription, the gem emits `plan_downgraded.recording_studio_stripe` only if a paywall or a `limit_<name>` was lost. Count and quantity treat a missing or 0 key as none. A per-item key that is missing or blank is unlimited, and cancel uses `no_plan_ceiling` (nil is unlimited). The host handles that event. See the README Downgrades section
 - Checkout for a group that already has a live plan opens the confirmation page. It does not apply the change, and it does not open a second Stripe Subscription. A first Checkout in an empty group reserves an incomplete local row so a second attempt cannot mint another Stripe Subscription
 
 ## Screens

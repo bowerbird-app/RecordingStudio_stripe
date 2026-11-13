@@ -26,7 +26,7 @@ module RecordingStudioStripe
                         params: { subscription_type: @cancel.subscription_type },
                         class: "inline-flex" do
         render FlatPack::Button::Component.new(
-          text: Copy.t("cancel.confirm"),
+          text: @cancel.confirm_label,
           style: :primary,
           size: :md,
           type: "submit"

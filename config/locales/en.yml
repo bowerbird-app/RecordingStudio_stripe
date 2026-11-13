@@ -115,6 +115,7 @@ en:
         up: up
         down: down
         pay_difference: You pay the difference today.
+        switches_today: Switches today. Unused time is credited.
         starts_on: "Starts on %{date}."
         starts_next: Starts at the next renewal.
       cancel:
@@ -124,10 +125,14 @@ en:
         this_plan: this plan
         subtitle_until: "You keep it until %{date}."
         subtitle_period: You keep it until this period ends.
+        subtitle_today: This ends today.
         confirm: Cancel at period end
+        confirm_now: Cancel now
         keep: Keep this plan
       notices:
         plan_stays_until_end: This plan stays on until the period ends.
+        plan_ends_today: This plan ends today.
+        switch_today: We’ll switch you today.
         billing_keeps_going: Nice. Billing keeps going.
         stay_on_plan: You’ll stay on this plan.
         switch_at_renewal: We’ll switch you at the next renewal.

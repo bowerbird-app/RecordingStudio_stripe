@@ -35,8 +35,11 @@ RecordingStudioStripe.configure do |config|
   # Each plan Product belongs to one type. A workspace can hold one live plan per type.
   # config.subscription_types = {
   #   "studio" => { "label" => "Studio" },
-  #   "inbox" => { "label" => "Inbox" }
+  #   "inbox" => { "label" => "Inbox", "downgrade_timing" => "immediately" }
   # }
+  # downgrade_timing is at_period_end (the default) or immediately.
+  # at_period_end schedules a downgrade and cancels at period end.
+  # immediately switches the Stripe Price now, with proration, and cancel ends the subscription now.
   # Standing caps. The number lives on the Product. Missing or 0 means none on that plan.
   # aggregation defaults to count: live recordings of recordable_type. No billing-period reset.
   # quantity is a current total. Register how to read it. Enforce it with with_capacity!.

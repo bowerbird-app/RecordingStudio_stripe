@@ -2,6 +2,9 @@
 
 module RecordingStudioStripe
   class Configuration
+    DOWNGRADE_TIMINGS = %w[at_period_end immediately].freeze
+    private_constant :DOWNGRADE_TIMINGS
+
     attr_accessor :secret_key,
                   :publishable_key,
                   :webhook_secret,
@@ -10,7 +13,6 @@ module RecordingStudioStripe
                   :meters,
                   :paywalls,
                   :limits,
-                  :subscription_types,
                   :success_path,
                   :cancel_path,
                   :limit_reached_path,
@@ -25,7 +27,7 @@ module RecordingStudioStripe
                   :prices_pending_alert_after,
                   :prices_pending_max_hold,
                   :plans_background_image
-    attr_reader :hooks, :usage_costs, :limit_usages, :layout
+    attr_reader :hooks, :usage_costs, :limit_usages, :layout, :subscription_types
     attr_writer :usage_path
 
     def initialize
@@ -108,6 +110,11 @@ module RecordingStudioStripe
       @usage_path.presence || "#{mount_path.to_s.chomp('/')}/usage"
     end
 
+    def subscription_types=(value)
+      validate_downgrade_timings!(value)
+      @subscription_types = value
+    end
+
     def usage_costs=(costs)
       @usage_costs = UsageTariff.normalize_costs(costs).freeze
     end
@@ -130,6 +137,18 @@ module RecordingStudioStripe
       raise ArgumentError, "limit name must not be blank" if key.blank?
 
       key
+    end
+
+    def validate_downgrade_timings!(value)
+      return if value.blank?
+
+      value.to_h.each_value do |entry|
+        timing = entry.to_h.stringify_keys["downgrade_timing"]
+        next if timing.nil?
+        next if DOWNGRADE_TIMINGS.include?(timing.to_s)
+
+        raise ArgumentError, "downgrade_timing must be at_period_end or immediately, got #{timing.inspect}"
+      end
     end
 
     def default_meters

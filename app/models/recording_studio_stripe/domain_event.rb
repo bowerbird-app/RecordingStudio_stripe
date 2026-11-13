@@ -100,7 +100,7 @@ module RecordingStudioStripe
     end
 
     def extra_payload
-      extras = payload.to_h.symbolize_keys
+      extras = payload.to_h.deep_symbolize_keys
       extras[:amount] = extras[:amount].to_i unless extras[:amount].nil?
       return extras unless extras.key?(:first_payment)
 
