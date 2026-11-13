@@ -37,14 +37,14 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 
 ```ruby
 # Gemfile
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.5.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.7.0"
 gem "recording_studio_stripe", github: "bowerbird-app/RecordingStudio_stripe"
-gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.2"
-gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.341"
+gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.32.0"
+gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.356"
 gem "view_component", "4.19.0"
 ```
 
-This gem requires `recording_studio` `>= 6.5.0`, Accessible `~> 0.24`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.341`. The pin above loads FlatPack `0.1.341`. Accessible `~> 0.24` no longer matches 0.22 or 0.23.
+This gem requires `recording_studio` `>= 6.5.0`, Accessible `~> 0.32`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.341`. The pin above loads FlatPack `0.1.356`. Accessible `~> 0.32` no longer matches 0.24 through 0.31.
 
 `config.layout` chooses the screen chrome for this engine. `nil` uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. A String is a layout name. `false` renders with no layout. A callable must take `controller:` and return a String, `nil`, or `false`.
 
