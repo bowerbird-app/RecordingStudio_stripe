@@ -173,15 +173,6 @@ module RecordingStudioStripe
       end
     end
 
-    initializer "recording_studio_stripe.plan_limits" do
-      config.to_prepare do
-        next unless defined?(RecordingStudio::Recording)
-
-        guard = RecordingStudioStripe::PlanLimitGuard
-        RecordingStudio::Recording.include(guard) unless RecordingStudio::Recording.included_modules.include?(guard)
-      end
-    end
-
     initializer "recording_studio_stripe.plan_limit_rescue" do
       ActiveSupport.on_load(:action_controller) do
         rescue_mod = RecordingStudioStripe::PlanLimitRescue

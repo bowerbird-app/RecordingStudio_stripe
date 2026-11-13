@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.1] - 2026-11-13
+
+### Changed
+- The plan limit guard is mixed into `Recording` by the existing `:stripe` capability. `RecordingBilling` includes `PlanLimitGuard`, and core `apply_capabilities!` applies that module on each load. The `recording_studio_stripe.plan_limits` initializer is gone
+
+### Upgrade notes
+- Bump to **0.25.1**. No database migration. No webhook change. No host config change
+- `before_create :assign_root_recording_id` still runs before the plan limit check. A host initializer that ordered itself around `recording_studio_stripe.plan_limits` should drop that name. Do not include `PlanLimitGuard` again
+
 ## [0.25.0] - 2026-11-13
 
 ### Changed
