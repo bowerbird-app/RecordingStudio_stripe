@@ -126,12 +126,22 @@ module RecordingStudioStripe
 
       def update(id, params, _opts = {})
         raise_incomplete!(params)
+        @store[:subscription_updates] << params
 
         existing = retrieve(id)
         existing.status = "active"
         existing.cancel_at_period_end = params[:cancel_at_period_end] if params.key?(:cancel_at_period_end)
         apply_items(existing, params[:items])
         @store[:subscriptions][id] = existing
+        existing
+      end
+
+      def cancel(id, _params = {}, _opts = {})
+        existing = retrieve(id)
+        existing.status = "canceled"
+        existing.cancel_at_period_end = false
+        @store[:subscriptions][id] = existing
+        @store[:subscription_cancels] << id
         existing
       end
 
@@ -322,6 +332,8 @@ module RecordingStudioStripe
           schedules: {},
           schedule_creates: [],
           schedule_updates: [],
+          subscription_updates: [],
+          subscription_cancels: [],
           checkout_idempotency_keys: [],
           expired_sessions: [],
           last_checkout_params: nil,
@@ -340,6 +352,14 @@ module RecordingStudioStripe
 
       def schedule_updates
         @store[:schedule_updates]
+      end
+
+      def subscription_updates
+        @store[:subscription_updates]
+      end
+
+      def subscription_cancels
+        @store[:subscription_cancels]
       end
 
       def checkout_idempotency_keys

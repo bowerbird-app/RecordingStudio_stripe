@@ -24,9 +24,14 @@ module RecordingStudioStripe
     end
 
     def subtitle
+      return Copy.t("cancel.subtitle_today") if downgrade_now?
       return Copy.t("cancel.subtitle_until", date: Copy.long_date(period_end)) if period_end
 
       Copy.t("cancel.subtitle_period")
+    end
+
+    def confirm_label
+      downgrade_now? ? Copy.t("cancel.confirm_now") : Copy.t("cancel.confirm")
     end
 
     def name
@@ -41,6 +46,10 @@ module RecordingStudioStripe
 
     def period_end
       subscription.current_period_end&.to_date
+    end
+
+    def downgrade_now?
+      SubscriptionTypes.downgrade_timing(subscription.subscription_type) == :immediately
     end
   end
 end

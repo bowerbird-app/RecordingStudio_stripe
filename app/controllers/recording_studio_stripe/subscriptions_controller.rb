@@ -40,11 +40,11 @@ module RecordingStudioStripe
     end
 
     def destroy
-      CancelSubscription.call(
+      subscription = CancelSubscription.call(
         root_recording: current_billing_root,
         subscription_type: params[:subscription_type]
       )
-      redirect_to recording_studio_stripe.root_path, notice: Copy.t("notices.plan_stays_until_end")
+      redirect_to recording_studio_stripe.root_path, notice: cancel_notice(subscription)
     rescue NoSubscription => e
       redirect_to recording_studio_stripe.root_path, alert: e.message
     end
@@ -78,9 +78,26 @@ module RecordingStudioStripe
         Copy.t("notices.switch_at_renewal")
       elsif subscription&.price_id == price.id
         Copy.t("notices.on_new_plan")
+      elsif immediate_downgrade?(subscription, price)
+        Copy.t("notices.switch_today")
       else
         Copy.t("notices.stripe_confirming")
       end
+    end
+
+    def cancel_notice(subscription)
+      if SubscriptionTypes.downgrade_timing(subscription.subscription_type) == :immediately
+        Copy.t("notices.plan_ends_today")
+      else
+        Copy.t("notices.plan_stays_until_end")
+      end
+    end
+
+    def immediate_downgrade?(subscription, price)
+      return false unless subscription&.price
+      return false unless SubscriptionTypes.downgrade_timing(subscription.subscription_type) == :immediately
+
+      ComparePrices.new(from: subscription.price, to: price).downgrade?
     end
   end
 end

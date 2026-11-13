@@ -74,9 +74,14 @@ module RecordingStudioStripe
 
     def timing
       return Copy.t("change.pay_difference") if upgrade?
+      return Copy.t("change.switches_today") if downgrade_now?
       return Copy.t("change.starts_on", date: Copy.long_date(renewal_date)) if renewal_date
 
       Copy.t("change.starts_next")
+    end
+
+    def downgrade_now?
+      SubscriptionTypes.downgrade_timing(@subscription.subscription_type) == :immediately
     end
 
     def interval_word(price)

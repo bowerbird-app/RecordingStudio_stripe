@@ -18,8 +18,8 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 - Optional plan groups (`config.subscription_types`) so one workspace can hold more than one live plan on the same Customer
 - Checkout for a Customer
 - Upgrade now with Stripe proration, after a confirmation of the new price
-- Downgrade at the next renewal, after the same confirmation page
-- Cancel at period end, after a confirmation that names the plan and the end date
+- Downgrade at the next renewal, after the same confirmation page. A plan group can set `downgrade_timing: :immediately` to switch the Stripe Price now, with proration
+- Cancel at period end, after a confirmation that names the plan and the end date. That same `immediately` setting ends the subscription now
 - Included usage on a Price (`included_ai_tokens`, `included_api_calls` metadata)
 - Standing inventory limits on a Product (`limit_press_kits` metadata) for how many of a type can exist, plus an opt-in per-item ceiling (`limit_max_file_bytes`) for one file or one item
 - Extra packs as one-time Prices (`meter`, `allowance` metadata)
@@ -316,6 +316,42 @@ limit_max_file_bytes=2147483648
 
 Set those in Admin on the Product, not on each Price. The field is a plain integer for each kind. A per-item value is the ceiling in the same unit you store (bytes, when `unit` is `"bytes"`). Admin Prices has Edit for included usage. Stripe still owns the amount.
 
+## Downgrades
+
+Each `config.subscription_types` entry takes an optional `downgrade_timing`.
+
+- `at_period_end` is the default. A downgrade waits for the next renewal. A cancel keeps the plan until the period ends.
+- `immediately` switches the Stripe Price on the current Subscription now. Stripe prorates a credit. A cancel ends that Subscription now.
+
+Upgrades still charge the difference today. Unknown values raise `ArgumentError` when the host assigns `subscription_types`. Stripe remains the source of truth for the charge and for when the change is real.
+
+The gem compares plans when a webhook moves the Subscription onto a different Product, or when Stripe ends it (`customer.subscription.updated` with status `canceled`, or `customer.subscription.deleted`, including after failed payments). The comparison uses the Product already stored locally, before that row is overwritten. A cancel compares with an empty plan. Paywalls on the old Product and not the new one are `paywalls_lost`. Declared limits whose `limit_<name>` went down, or disappeared, are `limits_lowered` with the old and new numbers. Count, quantity, and per-item limits all count. The gem emits `plan_downgraded.recording_studio_stripe` only when something was lost or lowered. A higher Price that drops a cap still emits, because the event is the loss. An upgrade or any other change that keeps every paywall and every limit emits nothing. Undoing a pending cancel or downgrade before it takes effect emits nothing.
+
+`RecordingStudioStripe::DomainEvents::PLAN_DOWNGRADED` is that name. Schema version stays `1`. The row is written in the webhook transaction and published after commit. Delivery is at-least-once. The idempotency key is `plan_downgraded/` plus the Stripe event id, so a redelivery does not store a second row. `ProcessWebhook.replay` rebuilds that row from the webhook snapshot and does not call Stripe. A second replay does not notify again once the row is published.
+
+The notification includes the usual `schema_version`, `id`, `occurred_at`, `subscription_id`, `customer_id`, and `root_recording_id`, plus:
+
+- `subscription_type`
+- `old_product_id` and `old_product_name` (local Product id and name)
+- `new_product_id` and `new_product_name` (both nil when the plan was canceled)
+- `paywalls_lost`
+- `limits_lowered`, each with `name`, `from`, and `to` (`to` is nil when the key is gone)
+- `reason`, `downgrade` or `canceled`
+- `timing`, `immediately` or `at_period_end` (`at_period_end` when a downgrade was already scheduled, or the cancel was already set for period end)
+- `effective_at`, the Stripe event time in UTC
+
+The payload has no Stripe SDK objects. `$0` invoices still do not emit `invoice_paid`.
+
+```ruby
+ActiveSupport::Notifications.subscribe("plan_downgraded.recording_studio_stripe") do |_name, _start, _finish, _id, payload|
+  PlanCleanup.call(payload[:root_recording_id], payload[:paywalls_lost], payload[:limits_lowered])
+end
+```
+
+Run the handler so a second delivery with the same `payload[:id]` does not do the work twice. The host decides what the loss means. This gem does not archive recordings or revoke anything else.
+
+With no Stripe keys, an immediate downgrade or cancel updates the local Subscription directly and does not emit. There is no Stripe event to key.
+
 ## Webhooks
 
 Point Stripe at `POST /webhooks/stripe`. Set `STRIPE_WEBHOOK_SECRET` whenever Stripe keys are set. Unsigned JSON is only accepted in local mode. Do not deploy local mode on a public host. The gem then projects:
@@ -337,8 +373,9 @@ After the database commit, the gem emits `ActiveSupport::Notifications`. Other g
 | --- | --- |
 | `trial_started.recording_studio_stripe` | The local Subscription is first saved as `trialing`, or first changes to `trialing`. Once per Subscription. |
 | `invoice_paid.recording_studio_stripe` | `invoice.paid` with `amount_paid` greater than 0 that is not a trial fee. Status does not matter: trialing, active, past_due, and canceled all emit. |
+| `plan_downgraded.recording_studio_stripe` | A webhook applied a different Product, or ended the Subscription, and a paywall or limit was lost. See Downgrades. |
 
-`RecordingStudioStripe::DomainEvents::TRIAL_STARTED` and `INVOICE_PAID` are those names. `SCHEMA_VERSION` is `1`.
+`RecordingStudioStripe::DomainEvents::TRIAL_STARTED`, `INVOICE_PAID`, and `PLAN_DOWNGRADED` are those names. `SCHEMA_VERSION` is `1`.
 
 Every payload includes `schema_version`, `occurred_at`, `id` (this event's UUID), `subscription_id`, `customer_id`, and `root_recording_id`. Those ids are local UUIDs. Replay publishes the same row, so the UUIDs stay put.
 

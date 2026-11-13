@@ -219,6 +219,7 @@ module RecordingStudioStripe
     end
 
     def handle_subscription(stripe_subscription, event_created: nil)
+      previous = projection_before(stripe_subscription)
       root = require_root!(root_from_subscription(stripe_subscription))
       price = require_price!(price_from_subscription(stripe_subscription))
       item = matching_subscription_item(stripe_subscription, price.stripe_id)
@@ -233,7 +234,22 @@ module RecordingStudioStripe
         current_period_end: period_end,
         cancel_at_period_end: stripe_get(stripe_subscription, :cancel_at_period_end),
         stripe_event_created: event_created
-      ).tap { |subscription| store_item_id(subscription, item, event_created) }
+      ).tap do |subscription|
+        store_item_id(subscription, item, event_created)
+        PlanDowngrade.record!(subscription: subscription, previous: previous)
+      end
+    end
+
+    def projection_before(stripe_subscription)
+      row = Subscription.includes(price: :product).find_by(stripe_id: stripe_get(stripe_subscription, :id))
+      return unless row
+
+      {
+        product: row.price&.product,
+        status: row.status,
+        cancel_at_period_end: row.cancel_at_period_end?,
+        scheduled_price_id: row.scheduled_price_id
+      }
     end
 
     def subscription_period(item, stripe_subscription)
@@ -252,7 +268,17 @@ module RecordingStudioStripe
     end
 
     def handle_subscription_deleted(stripe_subscription)
-      Subscription.find_by(stripe_id: stripe_subscription.id)&.update!(status: "canceled", cancel_at_period_end: false)
+      subscription = Subscription.includes(price: :product).find_by(stripe_id: stripe_subscription.id)
+      return unless subscription
+
+      previous = {
+        product: subscription.price&.product,
+        status: subscription.status,
+        cancel_at_period_end: subscription.cancel_at_period_end?,
+        scheduled_price_id: subscription.scheduled_price_id
+      }
+      subscription.update!(status: "canceled", cancel_at_period_end: false)
+      PlanDowngrade.record!(subscription: subscription, previous: previous)
     end
 
     def handle_invoice_paid(invoice)

@@ -82,12 +82,45 @@ module RecordingStudioStripe
     end
 
     def schedule_downgrade(subscription)
-      unless RecordingStudioStripe.configuration.local_mode?
-        ScheduleDowngrade.new(subscription: subscription, price: @price).call
+      if downgrade_now?(subscription)
+        apply_immediate_downgrade(subscription)
+      else
+        ScheduleDowngrade.new(subscription: subscription, price: @price).call unless local_mode?
+        subscription.update!(scheduled_price: @price, cancel_at_period_end: false)
+      end
+      subscription
+    end
+
+    def downgrade_now?(subscription)
+      SubscriptionTypes.downgrade_timing(subscription.subscription_type) == :immediately
+    end
+
+    def local_mode?
+      RecordingStudioStripe.configuration.local_mode?
+    end
+
+    def apply_immediate_downgrade(subscription)
+      if local_mode?
+        subscription.update!(
+          price: @price,
+          scheduled_price: nil,
+          cancel_at_period_end: false,
+          status: "active"
+        )
+        return
       end
 
-      subscription.update!(scheduled_price: @price, cancel_at_period_end: false)
-      subscription
+      release_schedule(subscription)
+      subscription.update!(scheduled_price: nil, cancel_at_period_end: false)
+      Client.current.v1.subscriptions.update(
+        subscription.stripe_id,
+        {
+          items: [{ id: stripe_item_id(subscription), price: @price.stripe_id }],
+          proration_behavior: "create_prorations",
+          cancel_at_period_end: false
+        },
+        { idempotency_key: "#{plan_change_key('downgrade', subscription)}-update" }
+      )
     end
 
     def plan_change_key(action, subscription)

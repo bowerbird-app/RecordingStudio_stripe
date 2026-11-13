@@ -30,6 +30,11 @@ module RecordingStudioStripe
       key.to_s.presence || keys.first
     end
 
+    def self.downgrade_timing(key)
+      timing = all.dig(key.to_s, "downgrade_timing").to_s
+      timing == "immediately" ? :immediately : :at_period_end
+    end
+
     def self.select_options
       keys.map { |key| [label(key), key] }
     end

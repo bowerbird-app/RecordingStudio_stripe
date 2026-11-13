@@ -26,7 +26,7 @@ class PlanChangeTest < Minitest::Test
       unit_amount
     end
   end
-  SubscriptionStub = Struct.new(:price, :current_period_end, keyword_init: true)
+  SubscriptionStub = Struct.new(:price, :current_period_end, :subscription_type, keyword_init: true)
 
   def test_upgrade_copy_names_the_new_plan_and_the_charge
     change = PlanChangeTest.change(from_amount: 900, to_amount: 2900, from_name: "Starter", to_name: "Pro")

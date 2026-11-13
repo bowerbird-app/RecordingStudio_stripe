@@ -2,15 +2,15 @@
 
 module RecordingStudioStripe
   # Provider-neutral events for other gems. Names follow ActiveSupport::Notifications:
-  # "trial_started.recording_studio_stripe" and "invoice_paid.recording_studio_stripe".
+  # "trial_started.recording_studio_stripe", "invoice_paid.recording_studio_stripe",
+  # and "plan_downgraded.recording_studio_stripe".
   module DomainEvents
     SCHEMA_VERSION = 1
     TRIAL_STARTED = "trial_started.recording_studio_stripe"
     INVOICE_PAID = "invoice_paid.recording_studio_stripe"
-    NAMES = {
-      "trial_started" => TRIAL_STARTED,
-      "invoice_paid" => INVOICE_PAID
-    }.freeze
+    PLAN_DOWNGRADED = "plan_downgraded.recording_studio_stripe"
+    NAMES = { "trial_started" => TRIAL_STARTED, "invoice_paid" => INVOICE_PAID,
+              "plan_downgraded" => PLAN_DOWNGRADED }.freeze
     WEBHOOK_KEY = :recording_studio_stripe_domain_webhook
 
     class << self
@@ -71,6 +71,7 @@ module RecordingStudioStripe
           with_webhook(webhook_event) do
             rebuild_invoice(webhook_event)
             rebuild_trial(webhook_event)
+            PlanDowngrade.rebuild!(webhook_event)
           end
         end
         ActiveRecord.after_all_transactions_commit { publish_unpublished(webhook_event) }
