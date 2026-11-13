@@ -440,7 +440,8 @@ class RecordingStudioStripeTest < Minitest::Test
   end
 
   def test_current_plan_uses_flatpack_billing_summary
-    source = %w[current_plan_component current_plan_state current_plan_notices_component current_plan_actions_component].map do |name|
+    names = %w[current_plan_component current_plan_state current_plan_notices_component current_plan_actions_component]
+    source = names.map do |name|
       File.read(File.expand_path("../app/components/recording_studio_stripe/#{name}.rb", __dir__))
     end.join("\n")
 
