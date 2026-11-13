@@ -86,6 +86,10 @@ en:
         stay_on_this: Stay on this plan
         keep_this_plan: Keep this plan
         cancel: Cancel
+        over_limit_title: Over the limit
+        over_limit_description: "This plan is past its %{label} cap. Archive some, or upgrade."
+        near_limit_title: Near the limit
+        near_limit_description: "You’re close to the %{label} cap."
       usage:
         title: Usage
         resets_when_paid: Usage resets when a paid period starts.

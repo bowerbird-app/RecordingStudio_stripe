@@ -2,8 +2,6 @@
 
 module RecordingStudioStripe
   class CurrentPlanComponent < ViewComponent::Base
-    include RecordingStudioStripe::ApplicationHelper
-
     def initialize(subscription:, can_manage: true)
       super()
       @subscription = subscription
@@ -11,174 +9,35 @@ module RecordingStudioStripe
     end
 
     def call
-      render FlatPack::Card::Component.new(background: :default, border: :default, shadow: :none) do |card|
-        card.body { helpers.stripe_card_stack(heading, actions) }
+      pieces = [notices, plan_summary].compact
+      return pieces.first if pieces.one?
+
+      render FlatPack::Collection::Component.new(as: :list, layout: :stack, gap: :md) do |stack|
+        pieces.each { |piece| stack.with_item { piece } }
       end
     end
 
     private
 
-    def heading
-      name = helpers.tag.div(class: "min-w-0") { safe_join([group_label, title].compact) }
-      helpers.tag.div(class: "flex items-start justify-between gap-3") { safe_join([name, badges].compact) }
+    def notices
+      component = CurrentPlanNoticesComponent.new(subscription: @subscription)
+      render(component) if component.render?
     end
 
-    def group_label
-      return unless RecordingStudioStripe::SubscriptionTypes.keys.size > 1
+    def plan_summary
+      state = CurrentPlanState.new(@subscription)
+      actions = CurrentPlanActionsComponent.new(subscription: @subscription, can_manage: @can_manage)
 
-      helpers.tag.p(
-        @subscription.subscription_type_label,
-        class: "m-0 text-[length:var(--text-xs)] text-[var(--surface-muted-content-color)]"
-      )
-    end
-
-    def title
-      render FlatPack::PageTitle::Component.new(
-        title: @subscription.price&.product&.name || Copy.t("plans.current_plan"),
-        subtitle: period_copy,
-        variant: :h2,
-        class: "mb-0 pb-0"
-      )
-    end
-
-    def period_copy
-      price = @subscription.price
-      return Copy.t("billing.catching_up") unless price
-
-      amount = Copy.t(
-        "intervals.amount",
-        amount: price.formatted_amount,
-        interval: stripe_interval_label(price.interval)
-      )
-      extra = timing_copy
-      extra.blank? ? amount : "#{amount} (#{extra})"
-    end
-
-    def badges
-      parts = status_badges
-      return if parts.empty?
-
-      helpers.tag.div(safe_join(parts), class: "flex shrink-0 flex-wrap justify-end gap-2")
-    end
-
-    def status_badges
-      parts = []
-      parts << badge(Copy.t("billing.past_due_badge"), :danger) if @subscription.past_due?
-      parts << badge(Copy.t("billing.trial_badge"), :primary) if @subscription.trialing?
-      if @subscription.canceling?
-        parts << badge(Copy.t("billing.ends_this_period"), :warning)
-      elsif @subscription.scheduled_downgrade?
-        parts << badge(Copy.t("billing.change_scheduled"), :info)
-      elsif !@subscription.past_due? && !@subscription.trialing?
-        parts << badge(Copy.t("billing.current"), :success)
+      render FlatPack::Billing::PlanSummary::Component.new(
+        plan_name: state.plan_name,
+        price_text: state.price_text,
+        status: state.status,
+        renews_on: state.renews_on,
+        trial_ends_on: state.trial_ends_on,
+        description: state.description
+      ) do |summary|
+        summary.actions { render(actions) }
       end
-      parts
-    end
-
-    def badge(text, style)
-      render FlatPack::Badge::Component.new(text: text, style: style, size: :sm)
-    end
-
-    def timing_copy
-      days = days_until(@subscription.current_period_end)
-      return if days.nil?
-
-      if @subscription.trialing?
-        return Copy.t("billing.trial_ends_today") if days.zero?
-
-        return Copy.t("billing.trial_ends_in", count: days)
-      end
-
-      return if @subscription.canceling? || @subscription.past_due?
-      return Copy.t("billing.renews_today") if days.zero?
-
-      Copy.t("billing.renews_in", count: days)
-    end
-
-    def days_until(time)
-      return unless time
-
-      remaining = (time.in_time_zone.to_date - Time.zone.today).to_i
-      remaining.negative? ? 0 : remaining
-    end
-
-    def actions
-      helpers.tag.div(class: "flex flex-wrap gap-2") { safe_join(action_buttons) }
-    end
-
-    def action_buttons
-      [
-        update_card_button,
-        stay_button,
-        change_plan_button,
-        keep_plan_button,
-        cancel_link
-      ].compact
-    end
-
-    def change_plan_button
-      render FlatPack::Button::Component.new(text: Copy.t("billing.change_plan"), style: :secondary, size: :md,
-                                             href: main_app.plans_path)
-    end
-
-    def update_card_button
-      return unless @can_manage && @subscription.past_due?
-
-      helpers.stripe_action_form(recording_studio_stripe.portal_path, turbo: false) do
-        submit_button(Copy.t("billing.update_card"))
-      end
-    end
-
-    def stay_button
-      return unless @can_manage && @subscription.scheduled_downgrade? && !@subscription.canceling?
-
-      helpers.stripe_action_form(
-        recording_studio_stripe.subscription_keep_path,
-        hidden: { subscription_type: @subscription.subscription_type }
-      ) do
-        submit_button(stay_label)
-      end
-    end
-
-    def stay_label
-      name = @subscription.price&.product&.name
-      name.present? ? Copy.t("billing.stay_on_named", name: name) : Copy.t("billing.stay_on_this")
-    end
-
-    def keep_plan_button
-      return unless @can_manage && @subscription.canceling?
-
-      helpers.stripe_action_form(
-        recording_studio_stripe.subscription_resume_path,
-        hidden: { subscription_type: @subscription.subscription_type }
-      ) do
-        submit_button(Copy.t("billing.keep_this_plan"))
-      end
-    end
-
-    def submit_button(text)
-      render FlatPack::Button::Component.new(text: text, style: :primary, size: :md, type: "submit")
-    end
-
-    def cancel_link
-      return unless @can_manage && !@subscription.canceling?
-
-      render FlatPack::Button::Component.new(
-        text: Copy.t("billing.cancel"),
-        style: :ghost,
-        size: :md,
-        href: recording_studio_stripe.subscription_cancel_confirm_path(
-          subscription_type: @subscription.subscription_type
-        )
-      )
-    end
-
-    def main_app
-      helpers.main_app
-    end
-
-    def recording_studio_stripe
-      helpers.recording_studio_stripe
     end
   end
 end

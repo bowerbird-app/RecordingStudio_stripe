@@ -1,4 +1,6 @@
 module ApplicationHelper
+  include RecordingStudioStripe::ActionForm
+
   def dummy_sidebar_title
     current_root_recording&.recordable&.try(:name).presence || "This workspace"
   end
