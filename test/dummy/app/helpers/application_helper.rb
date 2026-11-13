@@ -58,16 +58,15 @@ module ApplicationHelper
     if current_root_recording&.id == admin_recording.id
       render FlatPack::Button::Component.new(text: "Admin", style: :ghost, size: :md, href: "/admin")
     else
-      button_to "/recording_studio_root_switchable/v1/root_switch",
-                method: :patch,
-                params: {
-                  scope: "all_workspaces",
-                  root_switch: {
-                    root_recording_id: admin_recording.id,
-                    return_to: "/admin"
-                  }
-                },
-                class: "inline-flex" do
+      stripe_action_form(
+        "/recording_studio_root_switchable/v1/root_switch",
+        method: :patch,
+        hidden: {
+          scope: "all_workspaces",
+          "root_switch[root_recording_id]": admin_recording.id,
+          "root_switch[return_to]": "/admin"
+        }
+      ) do
         render FlatPack::Button::Component.new(text: "Admin", style: :ghost, size: :md, type: "submit")
       end
     end

@@ -28,7 +28,7 @@
   <% if @show_manage_billing || @show_see_usage %>
     <div class="flex flex-wrap gap-2">
       <% if @show_manage_billing %>
-        <%= button_to recording_studio_stripe.portal_path, class: "inline-flex", form: { data: { turbo: false } } do %>
+        <%= stripe_action_form recording_studio_stripe.portal_path, turbo: false do %>
           <%= render FlatPack::Button::Component.new(
             text: t("recording_studio.stripe.billing.manage"),
             icon: "credit-card",
