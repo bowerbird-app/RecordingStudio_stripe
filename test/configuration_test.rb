@@ -248,12 +248,31 @@ class ConfigurationTest < Minitest::Test
     assert_empty RecordingStudio::Layout.hardcoded_layout_paths(File.join(root, "test/dummy"))
   end
 
-  def test_local_mode_when_no_secret
-    ENV["STRIPE_SECRET_KEY"] = nil
+  def test_local_mode_is_development_or_test_without_a_stripe_key
+    previous = ENV.fetch("STRIPE_SECRET_KEY", nil)
+    ENV.delete("STRIPE_SECRET_KEY")
     configuration = RecordingStudioStripe::Configuration.new
 
-    assert_predicate configuration, :local_mode?
+    %w[development test].each do |name|
+      Rails.stub(:env, ActiveSupport::StringInquirer.new(name)) do
+        assert_predicate configuration, :local_mode?
+      end
+    end
+
+    Rails.stub(:env, ActiveSupport::StringInquirer.new("production")) do
+      refute_predicate configuration, :local_mode?
+      refute configuration.stripe_configured?
+    end
+
+    configuration.secret_key = "sk_test_fixture"
+    Rails.stub(:env, ActiveSupport::StringInquirer.new("development")) do
+      refute_predicate configuration, :local_mode?
+    end
   ensure
-    ENV.delete("STRIPE_SECRET_KEY")
+    if previous.nil?
+      ENV.delete("STRIPE_SECRET_KEY")
+    else
+      ENV["STRIPE_SECRET_KEY"] = previous
+    end
   end
 end

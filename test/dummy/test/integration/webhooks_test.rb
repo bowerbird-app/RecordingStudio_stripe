@@ -2,6 +2,7 @@
 
 require "test_helper"
 require "devise/test/integration_helpers"
+require "minitest/mock"
 
 class WebhooksTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
@@ -279,7 +280,107 @@ class WebhooksTest < ActionDispatch::IntegrationTest
     RecordingStudioStripe.configuration.client = previous_client
   end
 
+  test "unsigned events are rejected in production" do
+    with_webhook_settings(secret_key: nil, client: nil, webhook_secret: nil) do
+      Rails.stub(:env, ActiveSupport::StringInquirer.new("production")) do
+        refute_predicate RecordingStudioStripe.configuration, :local_mode?
+        post_unsigned("evt_unsigned_production")
+      end
+    end
+
+    assert_response :bad_request
+    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_unsigned_production")
+  end
+
+  test "a bad signature is rejected" do
+    with_webhook_settings(webhook_secret: "whsec_test_fixture") do
+      payload = unsigned_body("evt_bad_signature")
+      post "/webhooks/stripe",
+           params: payload,
+           headers: {
+             "CONTENT_TYPE" => "application/json",
+             "HTTP_STRIPE_SIGNATURE" => "t=#{Time.now.to_i},v1=deadbeef"
+           }
+    end
+
+    assert_response :bad_request
+    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_bad_signature")
+  end
+
+  test "a valid signature is accepted" do
+    secret = "whsec_test_fixture"
+    payload = unsigned_body("evt_signed_ok")
+    signature = signed_header(payload, secret)
+
+    with_webhook_settings(webhook_secret: secret) do
+      post "/webhooks/stripe",
+           params: payload,
+           headers: { "CONTENT_TYPE" => "application/json", "HTTP_STRIPE_SIGNATURE" => signature }
+    end
+
+    assert_response :success
+    assert RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_signed_ok")
+  end
+
+  test "unsigned events are allowed in development and test local mode" do
+    %w[development test].each do |name|
+      event_id = "evt_unsigned_#{name}"
+      with_webhook_settings(secret_key: nil, client: nil, webhook_secret: nil) do
+        Rails.stub(:env, ActiveSupport::StringInquirer.new(name)) do
+          assert_predicate RecordingStudioStripe.configuration, :local_mode?
+          post_unsigned(event_id)
+        end
+      end
+
+      assert_response :success
+      assert RecordingStudioStripe::WebhookEvent.exists?(stripe_id: event_id)
+    end
+  end
+
+  test "a stripe key without a webhook secret is rejected outside local mode" do
+    with_webhook_settings(secret_key: "sk_test_fixture", client: nil, webhook_secret: nil) do
+      Rails.stub(:env, ActiveSupport::StringInquirer.new("development")) do
+        refute_predicate RecordingStudioStripe.configuration, :local_mode?
+        post_unsigned("evt_key_no_secret")
+      end
+    end
+
+    assert_response :bad_request
+    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_key_no_secret")
+  end
+
   private
+
+  def post_unsigned(event_id)
+    post "/webhooks/stripe", params: JSON.parse(unsigned_body(event_id)), as: :json
+  end
+
+  def unsigned_body(event_id)
+    stripe_event(event_id, "balance.available", { "object" => "balance" }).to_json
+  end
+
+  def signed_header(payload, secret)
+    timestamp = Time.now
+    signature = Stripe::Webhook::Signature.compute_signature(timestamp, payload, secret)
+    Stripe::Webhook::Signature.generate_header(timestamp, signature)
+  end
+
+  def with_webhook_settings(secret_key: :keep, client: :keep, webhook_secret: :keep)
+    configuration = RecordingStudioStripe.configuration
+    previous = {
+      secret_key: configuration.secret_key,
+      client: configuration.client,
+      webhook_secret: configuration.webhook_secret
+    }
+    configuration.secret_key = secret_key unless secret_key == :keep
+    configuration.client = client unless client == :keep
+    configuration.webhook_secret = webhook_secret unless webhook_secret == :keep
+    yield
+  ensure
+    configuration.secret_key = previous[:secret_key]
+    configuration.client = previous[:client]
+    configuration.webhook_secret = previous[:webhook_secret]
+  end
 
   def stripe_event(id, type, object, created: 1_700_000_000)
     { "id" => id, "object" => "event", "type" => type, "created" => created, "data" => { "object" => object } }

@@ -104,7 +104,7 @@ Render the same plan cards on a host screen. Pass `groups:` from `Catalog.plan_g
 
 A single-type host can still pass `products:`, `subscription:`, `weekly_href`, `monthly_href`, and `yearly_href`. `hrefs_for` already includes `weekly_href`. A pill shows only when that group has a Price for it. `stripe_plan_intervals(products)` returns those intervals. Pass `intervals:` to limit them, for example `%w[month year]`. When the requested interval is not in that list, the cards use the first interval that is. The card row keeps Products that have a Price for the interval on screen. `align: :center` is the default and centers the title, subtitle, and interval pills. Pass `align: :left` if the host screen needs that. Copy inside each card stays left either way. `density: :auto` is the default. On a phone each plan is a compact row. The name stays on one line, the marketing subtitle hides, the price is smaller, and the features sit behind What’s included. From the `md` breakpoint those cards share four subgrid rows again, and the feature list stays open. The grid is one column on a phone, two from `md`, and three from `lg`. Pass `density: :cards` to keep the tall card on a phone. Pass `density: :rows` to keep the compact row at every width. That stacks the plans in a list with a small gap. `PlanCardComponent` defaults to `density: :cards`. Pass `density:` when a host renders that card itself. `config.layout` is the engine layout. It does not choose density. An unknown density raises `ArgumentError`. Group titles such as Studio and Inbox only render when more than one type has Products. Week is `/wk` on the card. `?interval=week` and `?interval[studio]=week` select it. Default view stays monthly.
 
-Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave them blank in dummy to click through locally.
+Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave the keys blank in development or test to click through locally. Production will not boot without `STRIPE_WEBHOOK_SECRET`.
 
 Named usage counters default to `ai_tokens` and `api_calls`. Change `config.meters` in the initializer to add your own, then set `included_<name>` on each plan Price. Optional `icon` and `plan_line` on meters, paywalls, and limits are the words and icons on the public plan card.
 
@@ -350,11 +350,11 @@ end
 
 Run the handler so a second delivery with the same `payload[:id]` does not do the work twice. The host decides what the loss means. This gem does not archive recordings or revoke anything else.
 
-With no Stripe keys, an immediate downgrade or cancel updates the local Subscription directly and does not emit. There is no Stripe event to key.
+In local mode, an immediate downgrade or cancel updates the local Subscription directly and does not emit. There is no Stripe event to key.
 
 ## Webhooks
 
-Point Stripe at `POST /webhooks/stripe`. Set `STRIPE_WEBHOOK_SECRET` whenever Stripe keys are set. Unsigned JSON is only accepted in local mode. Do not deploy local mode on a public host. The gem then projects:
+Point Stripe at `POST /webhooks/stripe`. Local mode is development or test with no Stripe secret key and no client. Unsigned JSON is accepted only in that mode, and only when `STRIPE_WEBHOOK_SECRET` is blank. A Stripe key or client with no webhook secret is rejected in every environment, including development. A missing or invalid signature returns 400. Production raises `RecordingStudioStripe::MissingWebhookSecret` on boot when `STRIPE_WEBHOOK_SECRET` is blank. `assets:precompile`, `assets:clean`, `assets:clobber`, and a boot with `SECRET_KEY_BASE_DUMMY` skip that raise so a build can compile files without the runtime secret. The gem then projects:
 
 - `checkout.session.completed` and `checkout.session.async_payment_succeeded` for paid plans and extra packs
 - `customer.subscription.*`

@@ -91,6 +91,12 @@ module RecordingStudioStripe
       RecordingStudioStripe.configuration.hooks.run(:after_initialize, self)
     end
 
+    initializer "recording_studio_stripe.require_webhook_secret", after: "recording_studio_stripe.after_initialize" do
+      config.after_initialize do
+        RecordingStudioStripe::WebhookSecret.require_in_production!
+      end
+    end
+
     initializer "recording_studio_stripe.apply_model_extensions" do
       config.to_prepare do
         next unless defined?(ActiveRecord::Base)

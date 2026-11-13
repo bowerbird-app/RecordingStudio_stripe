@@ -69,8 +69,10 @@ module RecordingStudioStripe
       secret_key.present? || client.present?
     end
 
+    # Development or test, with no Stripe secret key and no client.
+    # A missing key in any other environment is not local mode.
     def local_mode?
-      !stripe_configured?
+      !stripe_configured? && %w[development test].include?(Rails.env.to_s)
     end
 
     def to_h
