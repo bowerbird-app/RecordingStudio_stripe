@@ -570,7 +570,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_equal 15_000_101, @workspace.billing.meter(:ai_tokens).usage
   end
 
-  test "usage page shows usage percent" do
+  test "usage page shows used of the cap" do
     pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: pro)
 
@@ -580,15 +580,15 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "Studio usage"
     refute_includes response.body, "Inbox usage"
     assert_includes response.body, "AI tokens"
-    assert_includes response.body, "0%"
+    assert_includes response.body, "0 of 10000000"
+    assert_includes response.body, "0 of 10"
     refute_includes response.body, "Need a bit more"
     refute_includes response.body, "+5m ai tokens"
     refute_includes response.body, "Add this pack"
     refute_includes response.body, "10m left"
     refute_includes response.body, "Included 10m"
-    refute_includes response.body, "0 of 10"
+    refute_includes response.body, "0/10"
     refute_includes response.body, "on this plan."
-    assert_includes response.body, "0/10"
     assert_includes response.body, "grid-cols-1"
     refute_includes response.body, "md:grid-cols-2"
     refute_includes response.body, "Manage billing on Stripe"
@@ -605,13 +605,11 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     get recording_studio_stripe.usage_path
 
     assert_response :success
-    assert_includes response.body, "Breakdown"
-    assert_includes response.body, "On this plan"
-    assert_includes response.body, "Extra packs"
-    assert_includes response.body, "Total this period"
-    assert_includes response.body, "10m"
-    assert_includes response.body, "5m"
-    assert_includes response.body, "15m"
+    assert_includes response.body, "10m on this plan. 5m from extra packs."
+    assert_includes response.body, "0 of 15000000"
+    refute_includes response.body, "Breakdown"
+    refute_includes response.body, "Total this period"
+    refute_includes response.body, "15m"
     refute_includes response.body, "Studio usage"
   end
 

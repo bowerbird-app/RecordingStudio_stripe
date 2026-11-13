@@ -124,13 +124,9 @@ fr:
         empty_title: Rien à compter pour l’instant
         empty_description: Les compteurs apparaissent une fois que l’équipe les a ajoutés.
         none_on_plan: Aucun sur cette offre.
-        over_hint: Archivez-en, ou passez à l’offre au-dessus.
-        used_of_included: "%{used}/%{included}"
-        breakdown: Détail
-        on_this_plan: Sur cette offre
-        extra_packs: Packs extra
-        total_this_period: Total cette période
-        credits_used: "%{percent} % utilisés"
+        none_named: "%{label}. Aucun sur cette offre."
+        used_none_on_plan: "%{label}. %{used} utilisés. Aucun sur cette offre."
+        pack_split: "%{included} sur cette offre. %{purchased} en packs extra."
       allowances:
         pack_title: "+%{quantity} %{label}"
         add_this_pack: Ajouter ce pack

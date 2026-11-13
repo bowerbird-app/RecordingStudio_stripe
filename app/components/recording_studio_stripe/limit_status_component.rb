@@ -33,7 +33,10 @@ module RecordingStudioStripe
     def over?
       return @handle.over? if @handle.respond_to?(:over?)
 
-      total = @handle.included + @handle.purchased.to_i
+      included = @handle.included
+      return false unless included.is_a?(Numeric)
+
+      total = included + @handle.purchased.to_i
       total.positive? && @handle.usage > total
     end
 
@@ -41,7 +44,7 @@ module RecordingStudioStripe
       return false if over?
 
       included = @handle.included
-      return false unless included.positive?
+      return false unless included.is_a?(Numeric) && included.positive?
 
       remaining = @handle.remaining
       remaining.positive? && remaining < (included * NEAR_REMAINING_RATIO)

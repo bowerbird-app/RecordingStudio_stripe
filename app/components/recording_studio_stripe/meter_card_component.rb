@@ -11,81 +11,42 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(background: :default, border: :strong, shadow: :none) do |card|
-        card.body { helpers.stripe_card_stack(heading, details, limit_notice) }
+        card.body { helpers.stripe_card_stack(meter, limit_notice) }
       end
     end
 
     private
 
-    def heading
-      return title unless combined?
-
-      helpers.tag.div(class: "flex items-start justify-between gap-4") do
-        helpers.safe_join([title, breakdown])
-      end
-    end
-
-    def title
-      render FlatPack::PageTitle::Component.new(
-        title: @handle.meter.label,
-        variant: :h3,
-        class: "mb-0 pb-0"
+    def meter
+      render UsageMeterComponent.new(
+        label: @handle.meter.label,
+        used: @handle.usage,
+        limit: meter_limit,
+        description: pack_split
       )
     end
 
-    def combined?
-      @handle.included.positive? && @handle.purchased.positive?
+    def meter_limit
+      included = @handle.included
+      purchased = @handle.purchased
+      return nil if included.nil? && purchased.nil?
+
+      included.to_i + purchased.to_i
     end
 
-    def breakdown
-      render FlatPack::Button::Dropdown::Component.new(
-        text: Copy.t("usage.breakdown"),
-        style: :default,
-        size: :md,
-        placement: :bottom_right
-      ) do |dropdown|
-        dropdown.menu_item(text: Copy.t("usage.on_this_plan"), badge: stripe_quantity_label(@handle.included))
-        dropdown.menu_item(text: Copy.t("usage.extra_packs"), badge: stripe_quantity_label(@handle.purchased))
-        dropdown.menu_divider
-        dropdown.menu_item(text: Copy.t("usage.total_this_period"), badge: stripe_quantity_label(period_total))
-      end
-    end
+    def pack_split
+      return unless @handle.included.to_i.positive? && @handle.purchased.to_i.positive?
 
-    def period_total
-      @handle.included + @handle.purchased
-    end
-
-    def details
-      cap = [period_total, 1].max
-      used = [@handle.usage, cap].min
-      render FlatPack::Progress::Component.new(
-        value: used,
-        max: cap,
-        style: progress_style,
-        size: :md,
-        label: credits_used_label(used, cap),
-        show_label: true
+      Copy.t(
+        "usage.pack_split",
+        included: stripe_quantity_label(@handle.included),
+        purchased: stripe_quantity_label(@handle.purchased)
       )
-    end
-
-    def credits_used_label(used, cap)
-      return unless @handle.meter.name == "credits"
-      return if period_total <= 0
-
-      Copy.t("usage.credits_used", percent: (used * 100) / cap)
     end
 
     def limit_notice
       notice = LimitStatusComponent.new(handle: @handle)
       render(notice) if notice.render?
-    end
-
-    def progress_style
-      return :default if period_total.zero?
-      return :danger if @handle.remaining <= 0
-      return :warning if @handle.included.positive? && @handle.remaining < (@handle.included * 0.15)
-
-      :default
     end
   end
 end
