@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.1] - 2026-11-13
+
+### Changed
+- Development and dummy pins: Recording Studio `v6.7.0`, Accessible `v0.32.0`, FlatPack `v0.1.356`, Metrics `v0.8.0`, Trashable `v0.14.0`, Admin `v2.13.0`, Root Switchable `v0.15.0`, Cache `v0.6.3`. Logs stay `v0.7.4`. Internationalization stays `v0.2.2`
+- Accessible runtime range is `>= 0.32.0, < 1.0` (open lower bound for this 0.x gem). `recording_studio` stays `>= 6.5.0`. `flat_pack` stays `>= 0.1.341`
+
+### Upgrade notes
+- Bump to **0.23.1**. No database migration. No webhook change
+- Hosts on Accessible 0.24 through 0.31 need `0.32.0` or newer, below `1.0`
+
 ## [0.23.0] - 2026-11-13
 
 ### Added

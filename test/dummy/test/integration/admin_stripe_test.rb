@@ -28,7 +28,8 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Products"
     assert_includes response.body, "Past due"
     assert_includes response.body, "Active subscriptions"
-    assert_includes response.body, "min-h-28 max-h-28"
+    assert_includes response.body, "min-h-28"
+    refute_includes response.body, "max-h-28"
     assert_includes response.body, "widget_view_variant=compact"
     assert_includes response.body, "Paywalls"
     assert_includes response.body, "Gates"
@@ -42,8 +43,9 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     }
 
     assert_response :success
-    assert_includes response.body, "text-4xl"
-    assert_includes response.body, "min-h-28 max-h-28"
+    assert_includes response.body, "text-3xl"
+    assert_includes response.body, "min-h-28"
+    refute_includes response.body, "max-h-28"
   end
 
   test "products screen lists the demo catalogue" do
