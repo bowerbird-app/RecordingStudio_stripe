@@ -22,9 +22,10 @@ module RecordingStudioStripe
     end
 
     def confirm_button
-      helpers.button_to recording_studio_stripe.subscription_cancel_path,
-                        params: { subscription_type: @cancel.subscription_type },
-                        class: "inline-flex" do
+      helpers.stripe_action_form(
+        recording_studio_stripe.subscription_cancel_path,
+        hidden: { subscription_type: @cancel.subscription_type }
+      ) do
         render FlatPack::Button::Component.new(
           text: @cancel.confirm_label,
           style: :primary,

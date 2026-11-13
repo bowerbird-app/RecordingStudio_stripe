@@ -2,6 +2,8 @@
 
 module RecordingStudioStripe
   module ApplicationHelper
+    include ActionForm
+
     def stripe_quantity_label(quantity)
       PlanFeatures.quantity_label(quantity)
     end

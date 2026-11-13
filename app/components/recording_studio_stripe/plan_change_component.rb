@@ -22,11 +22,17 @@ module RecordingStudioStripe
     end
 
     def confirm_button
-      helpers.button_to recording_studio_stripe.subscription_path,
-                        method: :patch,
-                        params: { price_id: @change.to_price.id },
-                        class: "inline-flex" do
-        render FlatPack::Button::Component.new(text: @change.confirm_label, style: :primary, size: :md, type: "submit")
+      helpers.stripe_action_form(
+        recording_studio_stripe.subscription_path,
+        method: :patch,
+        hidden: { price_id: @change.to_price.id }
+      ) do
+        render FlatPack::Button::Component.new(
+          text: @change.confirm_label,
+          style: :primary,
+          size: :md,
+          type: "submit"
+        )
       end
     end
 

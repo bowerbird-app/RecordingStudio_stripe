@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.2] - 2026-11-13
+
+### Fixed
+- Billing actions render one Flatpack button. Plan confirm, update card, stay, keep this plan, cancel, pack checkout, and Manage billing are a form with one submit. The dummy Admin switch uses the same form
+- Portal and checkout forms set `data-turbo="false"` so the browser can leave for Stripe. Plan change, cancel, stay, and keep still post back here
+
+### Upgrade notes
+- Bump to **0.23.2**. No database migration. No webhook change
+- A host that copied these buttons should use one form and one Flatpack submit. Do not put a button inside `button_to`. Set `data-turbo="false"` on portal and checkout forms
+
 ## [0.23.1] - 2026-11-13
 
 ### Changed

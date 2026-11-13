@@ -124,25 +124,19 @@ module RecordingStudioStripe
     def update_card_button
       return unless @can_manage && @subscription.past_due?
 
-      helpers.button_to recording_studio_stripe.portal_path,
-                        class: "inline-flex",
-                        form: { data: { turbo: false } } do
-        render FlatPack::Button::Component.new(
-          text: Copy.t("billing.update_card"),
-          style: :primary,
-          size: :md,
-          type: "submit"
-        )
+      helpers.stripe_action_form(recording_studio_stripe.portal_path, turbo: false) do
+        submit_button(Copy.t("billing.update_card"))
       end
     end
 
     def stay_button
       return unless @can_manage && @subscription.scheduled_downgrade? && !@subscription.canceling?
 
-      helpers.button_to recording_studio_stripe.subscription_keep_path,
-                        params: { subscription_type: @subscription.subscription_type },
-                        class: "inline-flex" do
-        render FlatPack::Button::Component.new(text: stay_label, style: :primary, size: :md, type: "submit")
+      helpers.stripe_action_form(
+        recording_studio_stripe.subscription_keep_path,
+        hidden: { subscription_type: @subscription.subscription_type }
+      ) do
+        submit_button(stay_label)
       end
     end
 
@@ -154,16 +148,16 @@ module RecordingStudioStripe
     def keep_plan_button
       return unless @can_manage && @subscription.canceling?
 
-      helpers.button_to recording_studio_stripe.subscription_resume_path,
-                        params: { subscription_type: @subscription.subscription_type },
-                        class: "inline-flex" do
-        render FlatPack::Button::Component.new(
-          text: Copy.t("billing.keep_this_plan"),
-          style: :primary,
-          size: :md,
-          type: "submit"
-        )
+      helpers.stripe_action_form(
+        recording_studio_stripe.subscription_resume_path,
+        hidden: { subscription_type: @subscription.subscription_type }
+      ) do
+        submit_button(Copy.t("billing.keep_this_plan"))
       end
+    end
+
+    def submit_button(text)
+      render FlatPack::Button::Component.new(text: text, style: :primary, size: :md, type: "submit")
     end
 
     def cancel_link
