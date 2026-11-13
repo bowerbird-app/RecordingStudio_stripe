@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.23.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.23.1", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -21,7 +21,7 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.341"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.5.0"'
-    assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", "~> 0.32"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", ">= 0.32.0", "< 1.0"'
     assert_includes gemspec, 'spec.add_dependency "view_component", ">= 4.14", "< 5"'
     assert_includes gemspec, 'spec.add_dependency "stripe"'
     refute_includes gemspec, "recording_studio_conversions"

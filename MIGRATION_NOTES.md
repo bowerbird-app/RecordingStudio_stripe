@@ -5,7 +5,7 @@
 - Ruby 3.3 or newer
 - Rails 8.1 or newer
 - Recording Studio `>= 6.5.0` (gemspec). Development pin is GitHub tag `v6.7.0`
-- Accessible `~> 0.32` (GitHub tag `v0.32.0`)
+- Accessible `>= 0.32.0, < 1.0` (GitHub tag `v0.32.0`)
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
 - FlatPack `>= 0.1.341`. This repo pins GitHub tag `v0.1.356`
 - Trashable GitHub tag `v0.14.0` (`require: false`)
