@@ -72,7 +72,7 @@ module RecordingStudioStripe
         Stripe::Event.construct_from(JSON.parse(@payload))
       else
         raise Stripe::SignatureVerificationError.new(
-          "Set STRIPE_WEBHOOK_SECRET when Stripe is configured",
+          "Missing Stripe webhook signature",
           @signature.to_s
         )
       end

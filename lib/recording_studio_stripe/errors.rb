@@ -3,6 +3,7 @@
 module RecordingStudioStripe
   class Error < StandardError; end
   class MissingStripeKey < Error; end
+  class MissingWebhookSecret < Error; end
   class Forbidden < Error; end
   class InvalidPrice < Error; end
   class NoSubscription < Error; end

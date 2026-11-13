@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.1] - 2026-11-13
+
+### Security
+- Unsigned Stripe webhooks are accepted only in development and test local mode. A missing or invalid signature is rejected with 400 everywhere else
+- Production raises `RecordingStudioStripe::MissingWebhookSecret` on boot when `STRIPE_WEBHOOK_SECRET` is blank
+
+### Changed
+- Local mode is development or test with no Stripe secret key and no client. A missing key in any other environment is not local mode
+
+### Upgrade notes
+- Bump to **0.24.1**. No database migration
+- Set `STRIPE_WEBHOOK_SECRET` before production boot. `assets:precompile`, `assets:clean`, `assets:clobber`, and a boot with `SECRET_KEY_BASE_DUMMY` do not raise, so a build can compile files without the runtime secret. The running app still rejects unsigned events
+- Unsigned JSON is accepted only when Rails is in development or test, Stripe is not configured, and `STRIPE_WEBHOOK_SECRET` is blank. A Stripe key or client with no webhook secret is rejected in every environment, including development
+- Production no longer writes local Checkout rows when the Stripe key is blank
+
 ## [0.23.2] - 2026-11-13
 
 ### Fixed
