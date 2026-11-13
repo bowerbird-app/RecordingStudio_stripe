@@ -311,6 +311,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "plan_downgraded.recording_studio_stripe"
     assert_includes readme, "downgrade_timing"
     assert_includes readme, "payload[:id]"
+    assert_includes readme, "nil means unlimited"
     assert_includes readme, "ProcessWebhook.replay"
     assert_includes readme, "kind` is `trial_fee"
     assert_includes readme, "does not call Stripe"

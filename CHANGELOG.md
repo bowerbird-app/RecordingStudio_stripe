@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Upgrade notes
 - Bump to **0.23.0**. No database migration. Leave `downgrade_timing` unset to keep today's renewal and period-end behavior
 - Set `"downgrade_timing" => "immediately"` on a plan group that should switch and cancel now. Any other value raises when config loads
-- Subscribe to `plan_downgraded.recording_studio_stripe` to react when access is actually lost. Dedupe on `payload[:id]`. The payload lists `paywalls_lost`, `limits_lowered`, `reason`, `timing`, and `effective_at`. It does not include Stripe objects
+- Subscribe to `plan_downgraded.recording_studio_stripe` to react when access is actually lost. Dedupe on `payload[:id]`. The payload lists `paywalls_lost`, `limits_lowered`, `reason`, `timing`, and `effective_at`. It does not include Stripe objects. In `limits_lowered`, nil on a per-item limit means unlimited. On cancel that ceiling is `no_plan_ceiling`. Nil on a count or quantity limit means the cap is gone
 - `trial_started` and `invoice_paid` are unchanged. A `$0` invoice still does not emit `invoice_paid`
 
 ## [0.22.0] - 2026-11-12

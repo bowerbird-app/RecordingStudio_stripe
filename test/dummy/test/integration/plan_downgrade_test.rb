@@ -28,6 +28,7 @@ class PlanDowngradeTest < ActionDispatch::IntegrationTest
 
   teardown do
     RecordingStudioStripe.configuration.subscription_types = @previous_types
+    RecordingStudioStripe.configuration.limits = @previous_limits if @previous_limits
     RecordingStudioStripe.configuration.client = nil
   end
 
@@ -214,7 +215,7 @@ class PlanDowngradeTest < ActionDispatch::IntegrationTest
     assert_equal "at_period_end", payload[:timing]
     assert_equal ["generate_image"], payload[:paywalls_lost]
     assert_equal [
-      { name: "max_file_bytes", from: 2.gigabytes, to: nil },
+      { name: "max_file_bytes", from: 2.gigabytes, to: 10.megabytes },
       { name: "press_kits", from: 10, to: nil }
     ], payload[:limits_lowered]
     assert_equal "canceled", subscription.reload.status
@@ -267,15 +268,112 @@ class PlanDowngradeTest < ActionDispatch::IntegrationTest
     assert_equal 0, RecordingStudioStripe::DomainEvent.where(name: "plan_downgraded").count
   end
 
-  test "a higher price that drops a limit still emits that loss" do
+  test "a higher price that drops a count limit still emits that loss" do
+    @team.assign_limits("press_kits" => 1)
+    @team.save!
     subscribe!("sub_team", @pro.monthly_price)
 
     events = capture { post_price("evt_team", "sub_team", @team.monthly_price) }
 
     assert_equal 1, events.size
     assert_equal [], events.first.payload[:paywalls_lost]
-    assert_equal [{ name: "max_file_bytes", from: 2.gigabytes, to: nil }], events.first.payload[:limits_lowered]
+    assert_equal [{ name: "press_kits", from: 10, to: 1 }], events.first.payload[:limits_lowered]
     assert_equal "downgrade", events.first.payload[:reason]
+  end
+
+  test "a per-item cap that becomes unlimited does not emit" do
+    align_file_plan!(@pro, bytes: 50.megabytes)
+    align_file_plan!(@starter, bytes: nil)
+    subscribe!("sub_uncap", @pro.monthly_price)
+
+    events = capture { post_price("evt_uncap", "sub_uncap", @starter.monthly_price) }
+
+    assert_empty events
+    assert_equal 0, RecordingStudioStripe::DomainEvent.where(name: "plan_downgraded").count
+  end
+
+  test "an unlimited per-item ceiling that becomes a cap emits" do
+    align_file_plan!(@pro, bytes: nil)
+    align_file_plan!(@starter, bytes: 50.megabytes)
+    subscribe!("sub_new_cap", @pro.monthly_price)
+
+    events = capture { post_price("evt_new_cap", "sub_new_cap", @starter.monthly_price) }
+
+    assert_equal 1, events.size
+    assert_equal [], events.first.payload[:paywalls_lost]
+    assert_equal [{ name: "max_file_bytes", from: nil, to: 50.megabytes }], events.first.payload[:limits_lowered]
+  end
+
+  test "a lower per-item cap emits" do
+    align_file_plan!(@pro, bytes: 2.gigabytes)
+    align_file_plan!(@starter, bytes: 50.megabytes)
+    subscribe!("sub_lower_cap", @pro.monthly_price)
+
+    events = capture { post_price("evt_lower_cap", "sub_lower_cap", @starter.monthly_price) }
+
+    assert_equal [{ name: "max_file_bytes", from: 2.gigabytes, to: 50.megabytes }],
+                 events.first.payload[:limits_lowered]
+  end
+
+  test "cancel without no_plan_ceiling treats a per-item cap as unlimited" do
+    drop_no_plan_ceiling
+    subscribe!("sub_cancel_open", @pro.monthly_price)
+
+    events = capture { post_deleted("evt_cancel_open", "sub_cancel_open") }
+    names = events.first.payload[:limits_lowered].map { |row| row[:name] }
+
+    refute_includes names, "max_file_bytes"
+    assert_includes names, "press_kits"
+  end
+
+  test "the same Stripe event delivered twice stores and publishes plan_downgraded once" do
+    subscribe!("sub_twice", @pro.monthly_price)
+
+    events = capture { post_price("evt_twice", "sub_twice", @starter.monthly_price) }
+    again = capture { post_price("evt_twice", "sub_twice", @starter.monthly_price) }
+
+    assert_equal 1, events.size
+    assert_empty again
+    stored = RecordingStudioStripe::DomainEvent.where(idempotency_key: "plan_downgraded/evt_twice")
+    assert_equal 1, stored.count
+    assert stored.sole.published_at
+  end
+
+  test "an unsigned or badly signed subscription update is rejected and emits nothing" do
+    configuration = RecordingStudioStripe.configuration
+    subscribe!("sub_bad_sign", @pro.monthly_price)
+    previous_client = configuration.client
+    previous_secret = configuration.webhook_secret
+    configuration.client = RecordingStudioStripe::Testing::Client.new
+    body = stripe_event(
+      "evt_unsigned_down",
+      "customer.subscription.updated",
+      subscription_object("sub_bad_sign", @starter.monthly_price, "active", false)
+    )
+
+    unsigned = capture do
+      post "/webhooks/stripe", params: body, as: :json
+    end
+
+    assert_response :bad_request
+    assert_empty unsigned
+    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_unsigned_down")
+
+    configuration.webhook_secret = "whsec_downgrade_test"
+    badly_signed = capture do
+      post "/webhooks/stripe",
+           params: body.to_json,
+           headers: { "CONTENT_TYPE" => "application/json", "HTTP_STRIPE_SIGNATURE" => "t=1,v1=not-a-signature" }
+    end
+
+    assert_response :bad_request
+    assert_empty badly_signed
+    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_unsigned_down")
+    assert_equal 0, RecordingStudioStripe::DomainEvent.where(name: "plan_downgraded").count
+    assert_equal @pro.monthly_price.id, RecordingStudioStripe::Subscription.find_by!(stripe_id: "sub_bad_sign").price_id
+  ensure
+    configuration.client = previous_client if configuration
+    configuration.webhook_secret = previous_secret if configuration
   end
 
   test "undoing a pending cancel or downgrade emits nothing" do
@@ -326,6 +424,19 @@ class PlanDowngradeTest < ActionDispatch::IntegrationTest
     client = RecordingStudioStripe::Testing::Client.new
     RecordingStudioStripe.configuration.client = client
     client
+  end
+
+  def align_file_plan!(product, bytes:)
+    product.assign_paywalls(%w[generate_image])
+    product.assign_limits("press_kits" => 10, "max_file_bytes" => bytes)
+    product.save!
+  end
+
+  def drop_no_plan_ceiling
+    @previous_limits = RecordingStudioStripe.configuration.limits
+    limits = @previous_limits.to_h.deep_stringify_keys
+    limits["max_file_bytes"] = limits["max_file_bytes"].except("no_plan_ceiling")
+    RecordingStudioStripe.configuration.limits = limits
   end
 
   def use_immediate_studio

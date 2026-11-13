@@ -26,7 +26,7 @@ module RecordingStudioStripe
 
     def lowered_rows
       Limits.for_subscription_type(@subscription_type).filter_map do |definition|
-        lowered_limit(definition.name)
+        lowered_limit(definition)
       end
     end
 
@@ -36,27 +36,49 @@ module RecordingStudioStripe
       product.paywalls.map(&:name)
     end
 
-    def lowered_limit(name)
-      from = limit_number(@from_product, name)
-      return if from.nil?
+    def lowered_limit(definition)
+      from = ceiling_for(definition, @from_product)
+      to = @to_product.nil? ? empty_ceiling(definition) : ceiling_for(definition, @to_product)
+      return unless lower?(definition, from, to)
 
-      to = limit_number(@to_product, name)
-      return if to && to >= from
-
-      { name: name, from: from, to: to }
+      { name: definition.name, from: from, to: to }
     end
 
-    def limit_number(product, name)
+    def empty_ceiling(definition)
+      definition.per_item? ? definition.no_plan_ceiling : nil
+    end
+
+    def ceiling_for(definition, product)
       return if product.nil?
 
-      data = product.metadata.to_h.stringify_keys
-      key = "limit_#{name}"
-      return unless data.key?(key)
+      raw = product.metadata.to_h.stringify_keys["limit_#{definition.name}"]
+      definition.per_item? ? per_item_number(raw) : count_number(raw)
+    end
 
-      number = Integer(data[key], exception: false)
+    def per_item_number(raw)
+      return if raw.nil? || raw.to_s.strip.empty?
+
+      Integer(raw, exception: false)
+    end
+
+    def count_number(raw)
+      number = Integer(raw.to_s, exception: false)
       return if number.nil? || number <= 0
 
       number
+    end
+
+    def lower?(definition, from, to)
+      return per_item_lower?(from, to) if definition.per_item?
+
+      from && (to.nil? || to < from)
+    end
+
+    def per_item_lower?(from, to)
+      return false if to.nil?
+      return true if from.nil?
+
+      to < from
     end
   end
 end

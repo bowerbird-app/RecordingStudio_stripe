@@ -20,7 +20,7 @@
 
 `0.23.0` adds optional `downgrade_timing` on each `config.subscription_types` entry. Omit it, or set `at_period_end`, and downgrades still wait for renewal and cancels still wait for period end. Set `immediately` to switch the Stripe Price now (proration credit) and to end a cancel now. Unknown values raise when the initializer assigns `subscription_types`.
 
-No database migration. Webhook projection now also emits `plan_downgraded.recording_studio_stripe` when a change that has taken effect drops a paywall or lowers a limit, including a cancel and a Subscription Stripe ends after failed payments. Subscribe if another gem should clean up. Handlers must be safe to run twice. Dedupe on `payload[:id]`. `trial_started` and `invoice_paid` are unchanged. A `$0` invoice still does not emit `invoice_paid`.
+No database migration. Webhook projection now also emits `plan_downgraded.recording_studio_stripe` when a change that has taken effect drops a paywall or lowers a limit, including a cancel and a Subscription Stripe ends after failed payments. A per-item `limit_<name>` that is missing or blank is unlimited, same as `LimitHandle#raw_ceiling`. Cancel compares that ceiling with `no_plan_ceiling` (nil is unlimited). Count and quantity still treat missing or 0 as none. In the payload, `from: nil` on a per-item row means the old plan was unlimited. Subscribe if another gem should clean up. Handlers must be safe to run twice. Dedupe on `payload[:id]`. `trial_started` and `invoice_paid` are unchanged. A `$0` invoice still does not emit `invoice_paid`.
 
 ## Whole-credit usage
 
