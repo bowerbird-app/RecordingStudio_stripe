@@ -16,6 +16,10 @@ module RecordingStudioStripe
   end
 
   module RecordingBilling
+    extend ActiveSupport::Concern
+
+    include PlanLimitGuard
+
     def billing
       RecordingStudioStripe::Billing.for_recording(self)
     end
