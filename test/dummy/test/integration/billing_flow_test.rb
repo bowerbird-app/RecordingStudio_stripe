@@ -625,25 +625,21 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "See usage"
     refute_includes response.body, "Studio usage"
     refute_includes response.body, "0%"
-    assert_includes response.body, ">Current</"
-    refute_includes response.body, ">Active</"
+    assert_includes response.body, ">Active</"
+    refute_includes response.body, ">Current</"
     assert_includes response.body, "badge-success-background-color"
     refute_includes response.body, "badge-primary-background-color"
     refute_includes response.body, "badge-info-background-color"
-    assert_select "h2", text: "Pro"
-    assert_select ".fp-card ul > li"
+    assert_select "h3", text: "Pro"
+    assert_select ".fp-card"
     assert_includes response.body, "text-[length:var(--text-xs)]"
     assert_includes response.body, "justify-between"
-    assert_includes response.body, "justify-end"
-    studio_at = response.body.index(">Studio</")
-    current_at = response.body.index(">Current</")
+    active_at = response.body.index(">Active</")
     name_at = response.body.index(">Pro</")
 
-    assert studio_at
-    assert current_at
+    assert active_at
     assert name_at
-    assert_operator studio_at, :<, name_at
-    assert_operator name_at, :<, current_at
+    assert_operator name_at, :<, active_at
     assert_includes response.body, "md:grid-cols-2"
   end
 
@@ -939,11 +935,13 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "recording_studio_stripe/button"
     assert_select '[data-fp-style="stripe"]', text: /Manage billing on Stripe/
     assert_select '[data-fp-style="primary"]', text: /Update card/
-    assert_includes response.body, "The card for Pro did not go through."
+    assert_includes response.body, "Update your payment method to keep this workspace on its plan."
+    assert_includes response.body, "You’re on Pro."
+    refute_includes response.body, "The card for Pro did not go through."
     refute_includes response.body, "Trial ends"
     refute_includes response.body, "Renews in"
     refute_includes response.body, "Renews today"
-    assert_includes response.body, "badge-danger-background-color"
+    assert_includes response.body, "badge-warning-background-color"
     refute_includes response.body, ">Active</"
     assert_select "a[href*='subscription/cancel']", text: "Cancel"
   end
@@ -963,25 +961,24 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
       assert_response :success
       assert_includes response.body, "Trial"
       assert_includes response.body, "Trial until October 12, 2026. Then $29/month."
-      assert_includes response.body, "$29/month (Trial ends in 2 days)"
+      assert_includes response.body, "$29/month"
+      assert_includes response.body, "Trial ends in 2 days"
+      assert_includes response.body, "Trial ending soon"
+      refute_includes response.body, "$29/month (Trial ends"
       refute_includes response.body, "Trial runs until"
       refute_includes response.body, ">Active</"
       refute_includes response.body, ">Current</"
-      assert_includes response.body, "badge-primary-background-color"
+      assert_includes response.body, "badge-info-background-color"
+      refute_includes response.body, "badge-primary-background-color"
       refute_includes response.body, "badge-success-background-color"
-      refute_includes response.body, "badge-info-background-color"
-      assert_select "h2", text: "Pro"
+      assert_select "h3", text: "Pro"
       assert_includes response.body, "text-[length:var(--text-xs)]"
       assert_includes response.body, "justify-between"
-      assert_includes response.body, "justify-end"
-      studio_at = response.body.index(">Studio</")
       trial_at = response.body.index(">Trial</")
       name_at = response.body.index(">Pro</")
 
-      assert studio_at
       assert trial_at
       assert name_at
-      assert_operator studio_at, :<, name_at
       assert_operator name_at, :<, trial_at
     end
   end
@@ -998,7 +995,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
       get recording_studio_stripe.root_path
 
       assert_response :success
-      assert_includes response.body, "$29/month (Renews in 21 days)"
+      assert_includes response.body, "$29/month"
+      assert_includes response.body, "Renews in 21 days"
+      refute_includes response.body, "$29/month (Renews"
       refute_includes response.body, "Trial ends"
     end
   end
@@ -1014,14 +1013,16 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
       get recording_studio_stripe.root_path
 
-      assert_includes response.body, "$29/month (Renews in 1 day)"
+      assert_includes response.body, "Renews in 1 day"
       refute_includes response.body, "Renews in 1 days"
+      refute_includes response.body, "$29/month (Renews"
     end
 
     travel_to Time.utc(2026, 10, 22, 12, 0, 0) do
       get recording_studio_stripe.root_path
 
-      assert_includes response.body, "$29/month (Renews today)"
+      assert_includes response.body, "Renews today"
+      refute_includes response.body, "$29/month (Renews"
     end
   end
 
@@ -1037,14 +1038,16 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
       get recording_studio_stripe.root_path
 
-      assert_includes response.body, "$29/month (Trial ends in 1 day)"
+      assert_includes response.body, "Trial ends in 1 day"
       refute_includes response.body, "Trial ends in 1 days"
+      refute_includes response.body, "$29/month (Trial ends"
     end
 
     travel_to Time.utc(2026, 10, 12, 12, 0, 0) do
       get recording_studio_stripe.root_path
 
-      assert_includes response.body, "$29/month (Trial ends today)"
+      assert_includes response.body, "Trial ends today"
+      refute_includes response.body, "$29/month (Trial ends"
     end
   end
 
@@ -1095,8 +1098,9 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     follow_redirect!
     refute_predicate @workspace.billing.subscription.reload, :scheduled_downgrade?
     assert_includes response.body, "You’ll stay on this plan."
-    assert_includes response.body, "Current"
-    refute_includes response.body, ">Active</"
+    assert_includes response.body, ">Active</"
+    refute_includes response.body, ">Current</"
+    refute_includes response.body, "Change scheduled"
   end
 
   test "extra pack return asks people to refresh" do

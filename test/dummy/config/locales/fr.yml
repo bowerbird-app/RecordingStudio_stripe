@@ -112,6 +112,10 @@ fr:
         stay_on_this: Rester sur cette offre
         keep_this_plan: Garder cette offre
         cancel: Résilier
+        over_limit_title: Au-dessus de la limite
+        over_limit_description: "Cette offre dépasse son plafond de %{label}. Archivez-en, ou passez à l’offre au-dessus."
+        near_limit_title: Proche de la limite
+        near_limit_description: "Vous approchez du plafond de %{label}."
       usage:
         title: Conso
         resets_when_paid: La conso se réinitialise au début d’une période payante.

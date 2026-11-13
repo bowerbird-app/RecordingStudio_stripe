@@ -41,20 +41,9 @@ module RecordingStudioStripe
     end
 
     def single_line_subtitle(subscription)
-      return canceling_subtitle(subscription) if subscription.canceling?
-      return past_due_subtitle(subscription) if subscription.past_due?
       return trial_subtitle(subscription) if subscription.trialing?
-      return scheduled_subtitle(subscription) if subscription.scheduled_downgrade?
 
       Copy.t("billing.on_plan", name: subscription.price&.product&.name)
-    end
-
-    def canceling_subtitle(subscription)
-      Copy.t("billing.canceling", date: Copy.long_date(subscription.current_period_end))
-    end
-
-    def past_due_subtitle(subscription)
-      Copy.t("billing.past_due", name: subscription.price&.product&.name)
     end
 
     def trial_subtitle(subscription)
@@ -71,10 +60,6 @@ module RecordingStudioStripe
         interval: stripe_interval_label(price.interval)
       )
       Copy.t("billing.trial_until_then", date: labeled_date, amount: amount)
-    end
-
-    def scheduled_subtitle(subscription)
-      Copy.t("billing.scheduled", name: subscription.scheduled_price.product.name)
     end
 
     def usage_subtitle(lines)

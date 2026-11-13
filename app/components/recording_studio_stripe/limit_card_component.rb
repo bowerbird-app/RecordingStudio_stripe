@@ -11,7 +11,7 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(background: :default, border: :strong, shadow: :none) do |card|
-        card.body { helpers.stripe_card_stack(title, amount, details, over_hint) }
+        card.body { helpers.stripe_card_stack(title, amount, details, limit_notice) }
       end
     end
 
@@ -46,10 +46,9 @@ module RecordingStudioStripe
       )
     end
 
-    def over_hint
-      return unless @handle.over?
-
-      helpers.tag.p(Copy.t("usage.over_hint"), class: "text-sm leading-6")
+    def limit_notice
+      notice = LimitStatusComponent.new(handle: @handle)
+      render(notice) if notice.render?
     end
 
     def progress_max

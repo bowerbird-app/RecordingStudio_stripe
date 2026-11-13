@@ -11,7 +11,7 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(background: :default, border: :strong, shadow: :none) do |card|
-        card.body { helpers.stripe_card_stack(heading, details) }
+        card.body { helpers.stripe_card_stack(heading, details, limit_notice) }
       end
     end
 
@@ -73,6 +73,11 @@ module RecordingStudioStripe
       return if period_total <= 0
 
       Copy.t("usage.credits_used", percent: (used * 100) / cap)
+    end
+
+    def limit_notice
+      notice = LimitStatusComponent.new(handle: @handle)
+      render(notice) if notice.render?
     end
 
     def progress_style

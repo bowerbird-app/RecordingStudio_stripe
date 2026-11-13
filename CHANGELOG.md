@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-11-13
+
+### Changed
+- The current plan card is `FlatPack::Billing::PlanSummary`. Its badge reads Active, Trial, Past due, or Canceled. The price and the renewal or trial line are separate
+- Past due, a trial ending within 7 days, and a canceled plan use `FlatPack::Billing::StatusAlert` presets. Over a cap, and within 15% of a cap, use a custom title and style on the plan card and the usage card
+- The group name sits above the summary. Ends this period and Change scheduled are a badge in the actions row plus an alert above the card. Stay on this plan and Keep this plan stay single-submit forms in that row. PlanSummary's footer slot is empty in Flatpack 0.1.356, so those pieces are not inside the card footer
+
+### Fixed
+- The dummy Admin switch includes `stripe_action_form`, so the sidebar can render that form
+
+### Upgrade notes
+- Bump to **0.25.0**. No database migration. No webhook change
+- Hosts that copied the current plan card should render `FlatPack::Billing::PlanSummary`. The badge no longer says Current
+- Canceling at period end is not the canceled status. The card keeps an Ends this period badge, a footer alert with the end date, and Keep this plan
+- A scheduled change keeps a Change scheduled badge, a footer alert naming the next plan, and Stay on this plan
+- `invoice.payment_failed` still stores `past_due`. The page uses the past-due alert. It does not add a second payment-failed banner for that same state
+- Flatpack 0.1.356 `PlanSummary` renders an empty footer, so the group name and the end-of-period and scheduled-change alerts sit above the summary. The extra badges sit in the actions row
+
 ## [0.24.1] - 2026-11-13
 
 ### Security
