@@ -47,7 +47,7 @@ class QuantityLimitScreensTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Press kits"
     assert_includes response.body, "Storage"
-    assert_includes response.body, "3500000000/5000000000"
+    assert_includes response.body, "3500000000 of 5000000000"
   end
 
   test "admin plan forms keep quantity limits as integer fields" do

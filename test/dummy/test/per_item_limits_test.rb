@@ -159,7 +159,7 @@ class PerItemLimitsTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Press kits"
-    assert_includes response.body, "1/3"
+    assert_includes response.body, "1 of 3"
     refute_includes response.body, "Max file size"
   end
 
