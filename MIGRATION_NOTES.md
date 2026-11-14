@@ -4,10 +4,18 @@
 
 - Ruby 3.3 or newer
 - Rails 8.1 or newer
-- Recording Studio `>= 6.5.0` (gemspec). Development pin is GitHub tag `v6.7.0`
-- Accessible `>= 0.32.0, < 1.0` (GitHub tag `v0.32.0`)
+- Recording Studio `>= 6.14.0` (gemspec). Development pin is GitHub tag `v6.14.0`
+- Accessible `>= 0.42.0, < 1.0` (GitHub tag `v0.42.0`)
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
 - FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.360`
+
+## Kept recordings
+
+`0.28.0` counts live rows with `Recording.kept`. It no longer writes `where(trashed_at: nil)` or checks that the `trashed_at` column exists. Core `6.14.0` applies whatever filters an addon has registered. With none registered, `kept` returns every recording.
+
+Trashable is not a gemspec dependency. Development and the dummy pin GitHub tag `v0.16.0` (`require: false`). Accessible `0.42.0` requires Trashable `~> 0.10`, `>= 0.16.0` and loads its query entry, which registers the kept filter. That release no longer calls `recording_studio_trashable_kept_sql`. Hosts that count inventory need Trashable `0.16.0` so trashed rows stay out of the count.
+
+Copy core migration `20261114090000_add_root_recording_id_to_recording_studio_events` before writing events on Recording Studio `6.9.0` or newer. The dummy app includes that copy. No Stripe migration. No webhook change.
 
 ## No-plan base and byte sizes
 
@@ -20,7 +28,7 @@ No database migration. No webhook change.
 ## Usage meters
 
 `0.26.0` draws meter and limit cards with `FlatPack::Billing::UsageMeter`. The bar warns at 80% and turns danger at the cap. A zero cap is a muted line, because UsageMeter rejects a max of 0. A nil cap is Unlimited, with no bar. Count and quantity caps still use 0 for none. A meter that mixes included usage and extra packs puts that split in the meter's description. The percent label, the `used/included` line, and the Breakdown dropdown are gone. The status alert is unchanged: over the cap, and within 15% of the included amount. `AllowanceCardComponent` is still the pack checkout button. No database migration. No webhook change. Hosts need Flatpack `0.1.356` or newer.
-- Trashable GitHub tag `v0.14.0` (`require: false`)
+- Trashable GitHub tag `v0.16.0` (`require: false`)
 - Admin dummy tag `v2.13.0` and Logs dummy tag `v0.7.4`
 - Root Switchable GitHub tag `v0.15.0`
 - Metrics dummy tag `v0.8.0`

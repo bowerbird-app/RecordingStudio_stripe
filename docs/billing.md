@@ -267,7 +267,7 @@ A limit is a standing cap on the workspace right now. It is not a meter. Meters 
 
 `aggregation` is `count`, `quantity`, or `per_item`. Omit it and the limit stays a count, which is the existing behaviour. `per_item` is opt-in. A host that does not configure one sees no change.
 
-A **count** limit is how many live recordings of one type can exist. Example: 5 press kits. It requires `recordable_type`. `used` is `Recording.for_root(workspace).of_type("PressKit")` where `trashed_at` is nil. Nested recordings of that type share the cap. Trashed rows do not count.
+A **count** limit is how many live recordings of one type can exist. Example: 5 press kits. It requires `recordable_type`. `used` is `Recording.kept.for_root(workspace).of_type("PressKit")`. Nested recordings of that type share the cap. Trashable's kept filter leaves trashed rows out.
 
 A **quantity** limit is a current total, not a row count. Example: 5000000000 for storage. It does not need `recordable_type`. This gem does not know how the quantity is measured. The host, or another gem, registers that calculation. Register before anything reads `used`. A missing provider raises `ArgumentError` instead of pretending usage is 0. The block receives the workspace root recording and returns a non-negative integer.
 

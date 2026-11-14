@@ -32,7 +32,6 @@ module RecordingStudioStripe
     end
 
     def recording_studio_stripe_enforce_plan_limit_on_restore
-      return unless self.class.column_names.include?("trashed_at")
       return unless will_save_change_to_trashed_at?
       return unless trashed_at.nil?
       return if trashed_at_in_database.nil?

@@ -152,10 +152,7 @@ module RecordingStudioStripe
     private
 
     def live_recordings
-      scope = RecordingStudio::Recording.for_root(root_recording.id).of_type(recordable_type)
-      return scope unless RecordingStudio::Recording.column_names.include?("trashed_at")
-
-      scope.where(trashed_at: nil)
+      RecordingStudio::Recording.kept.for_root(root_recording.id).of_type(recordable_type)
     end
 
     def quantity_used
