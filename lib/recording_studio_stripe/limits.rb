@@ -11,6 +11,7 @@ module RecordingStudioStripe
     # UsageMeter requires a Numeric for the bar and calls to_s for the line.
     class ShownAmount < Numeric
       def initialize(amount, text)
+        super()
         @amount = Integer(amount)
         @text = text.to_s
       end

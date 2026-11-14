@@ -158,7 +158,7 @@ class LimitUsageTest < Minitest::Test
         "label" => "Storage",
         "aggregation" => "quantity",
         "unit" => "bytes",
-        "plan_line" => "%{quantity} storage"
+        "plan_line" => "%{quantity} storage" # rubocop:disable Style/FormatStringToken
       }
     }
     definition = RecordingStudioStripe::Limits.fetch(:storage_bytes)
