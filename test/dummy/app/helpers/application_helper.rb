@@ -86,7 +86,7 @@ module ApplicationHelper
   def dummy_press_kit_recordings
     return RecordingStudio::Recording.none unless current_root_recording
 
-    RecordingStudio::Recording.for_root(current_root_recording.id).of_type("PressKit").where(trashed_at: nil).order(:created_at)
+    RecordingStudio::Recording.kept.for_root(current_root_recording.id).of_type("PressKit").order(:created_at)
   end
 
   def dummy_press_kits_subtitle

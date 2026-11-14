@@ -43,3 +43,10 @@ RecordingStudio.configure do |config|
   # Recordable duplication strategy for revisions
   config.recordable_dup_strategy = :dup
 end
+
+# Trashable 0.14 does not register a recording filter. 0.16 does, and this
+# dummy cannot pin it yet: Accessible 0.32 still calls the helper 0.16 removed.
+RecordingStudio.register_recording_filter(
+  :trashable,
+  sql: ->(table) { "#{table}.trashed_at IS NULL" }
+) { |recordings| recordings.where(trashed_at: nil) }

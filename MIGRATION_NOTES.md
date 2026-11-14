@@ -4,10 +4,18 @@
 
 - Ruby 3.3 or newer
 - Rails 8.1 or newer
-- Recording Studio `>= 6.5.0` (gemspec). Development pin is GitHub tag `v6.7.0`
+- Recording Studio `>= 6.14.0` (gemspec). Development pin is GitHub tag `v6.14.0`
 - Accessible `>= 0.32.0, < 1.0` (GitHub tag `v0.32.0`)
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
 - FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.360`
+
+## Kept recordings
+
+`0.28.0` counts live rows with `Recording.kept`. It no longer writes `where(trashed_at: nil)` or checks that the `trashed_at` column exists. Core `6.14.0` applies whatever filters an addon has registered. With none registered, `kept` returns every recording.
+
+Trashable is not a gemspec dependency. Development and the dummy stay on GitHub tag `v0.14.0` (`require: false`). Trashable `0.16.0` is tagged and registers the kept filter, but this gem does not require `>= 0.16.0`. Accessible `0.32.0` still calls `recording_studio_trashable_kept_sql`, which `0.16.0` removed. The dummy registers that filter itself so count limits skip trashed rows. Hosts that count inventory should install Trashable `0.16.0` once Accessible allows it.
+
+Copy core migration `20261114090000_add_root_recording_id_to_recording_studio_events` before writing events on Recording Studio `6.9.0` or newer. The dummy app includes that copy. No Stripe migration. No webhook change.
 
 ## No-plan base and byte sizes
 
