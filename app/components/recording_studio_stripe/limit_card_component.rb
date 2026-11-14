@@ -18,9 +18,31 @@ module RecordingStudioStripe
     def meter
       render UsageMeterComponent.new(
         label: @handle.label,
-        used: @handle.used,
-        limit: limit_amount
+        used: shown(@handle.used),
+        limit: shown_limit
       )
+    end
+
+    def shown_limit
+      amount = limit_amount
+      return nil if amount.nil?
+
+      shown(amount)
+    end
+
+    def shown(amount)
+      return amount unless bytes?
+
+      text = if @handle.respond_to?(:display_quantity)
+        @handle.display_quantity(amount)
+      else
+        ActiveSupport::NumberHelper.number_to_human_size(amount.to_i)
+      end
+      Limits::ShownAmount.new(amount.to_i, text)
+    end
+
+    def bytes?
+      @handle.respond_to?(:unit) && @handle.unit == "bytes"
     end
 
     def limit_amount

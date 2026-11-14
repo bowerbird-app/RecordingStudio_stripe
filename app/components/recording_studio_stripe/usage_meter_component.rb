@@ -30,7 +30,13 @@ module RecordingStudioStripe
     def zero_copy
       return Copy.t("usage.none_named", label: @label) unless @used.to_i.positive?
 
-      Copy.t("usage.used_none_on_plan", label: @label, used: @used.to_i)
+      Copy.t("usage.used_none_on_plan", label: @label, used: used_words)
+    end
+
+    def used_words
+      return @used.to_s if @used.is_a?(Limits::ShownAmount)
+
+      @used.to_i
     end
   end
 end

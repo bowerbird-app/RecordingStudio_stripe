@@ -90,12 +90,12 @@ class LimitUsageTest < Minitest::Test
     refute_predicate definition, :count?
     assert_equal "", definition.recordable_type
     assert_equal "bytes", definition.unit
-    assert_equal 10 * 1024 * 1024, definition.no_plan_ceiling
+    assert_equal 10 * 1024 * 1024, definition.no_plan_limit
     refute definition.covers_type?("PressKit")
     refute RecordingStudioStripe::Limits.covers_type?("Attachment")
     assert_empty RecordingStudioStripe::Limits.for_recordable_type("Attachment")
     assert_equal "Up to 50 MB per file", definition.card_text(50 * 1024 * 1024)
-    assert_equal "10 MB", definition.display_quantity(definition.no_plan_ceiling)
+    assert_equal "10 MB", definition.display_quantity(definition.no_plan_limit)
   end
 
   def test_per_item_without_a_unit_is_a_plain_number
@@ -106,7 +106,7 @@ class LimitUsageTest < Minitest::Test
     definition = RecordingStudioStripe::Limits.fetch(:max_pages)
 
     assert_nil definition.unit
-    assert_nil definition.no_plan_ceiling
+    assert_nil definition.no_plan_limit
     assert_equal "Up to 12", definition.card_text(12)
     refute_includes definition.card_text(12), " of "
   end
@@ -126,32 +126,50 @@ class LimitUsageTest < Minitest::Test
     refute_includes text, " of "
   end
 
-  def test_no_plan_ceiling_is_only_a_positive_integer_on_per_item
-    RecordingStudioStripe.configuration.limits = {
-      "press_kits" => {
-        "label" => "Press kits",
-        "recordable_type" => "PressKit",
-        "no_plan_ceiling" => 3
-      }
-    }
-    error = assert_raises(ArgumentError) { RecordingStudioStripe::Limits.fetch(:press_kits) }
-    assert_match(/no_plan_ceiling is only valid on a per_item limit/, error.message)
+  def test_no_plan_limit_is_an_optional_positive_integer_on_every_kind
+    {
+      "press_kits" => { "label" => "Press kits", "recordable_type" => "PressKit", "no_plan_limit" => 2 },
+      "storage_bytes" => { "label" => "Storage", "aggregation" => "quantity", "no_plan_limit" => 1024 * 1024 * 1024 },
+      "max_file_bytes" => { "aggregation" => "per_item", "no_plan_limit" => 10 * 1024 * 1024 }
+    }.each do |name, attrs|
+      RecordingStudioStripe.configuration.limits = { name => attrs }
+      assert_equal attrs["no_plan_limit"], RecordingStudioStripe::Limits.fetch(name).no_plan_limit
+    end
 
-    [0, -1, 1.5, "10", true].each do |value|
-      RecordingStudioStripe.configuration.limits = {
-        "max_file_bytes" => {
-          "aggregation" => "per_item",
-          "no_plan_ceiling" => value
-        }
-      }
-      bad = assert_raises(ArgumentError) { RecordingStudioStripe::Limits.fetch(:max_file_bytes) }
-      assert_match(/positive integer or nil/, bad.message)
+    %w[count quantity per_item].each do |aggregation|
+      [0, -1, 1.5, "10", true].each do |value|
+        attrs = { "aggregation" => aggregation, "no_plan_limit" => value }
+        attrs["recordable_type"] = "PressKit" if aggregation == "count"
+        RecordingStudioStripe.configuration.limits = { "rooms" => attrs }
+        bad = assert_raises(ArgumentError) { RecordingStudioStripe::Limits.fetch(:rooms) }
+        assert_match(/no_plan_limit for limit rooms must be a positive integer or nil/, bad.message)
+      end
     end
 
     RecordingStudioStripe.configuration.limits = {
-      "max_file_bytes" => { "aggregation" => "per_item", "no_plan_ceiling" => nil }
+      "max_file_bytes" => { "aggregation" => "per_item", "no_plan_limit" => nil }
     }
-    assert_nil RecordingStudioStripe::Limits.fetch(:max_file_bytes).no_plan_ceiling
+    assert_nil RecordingStudioStripe::Limits.fetch(:max_file_bytes).no_plan_limit
+  end
+
+  def test_bytes_display_on_a_quantity_limit
+    RecordingStudioStripe.configuration.limits = {
+      "storage_bytes" => {
+        "label" => "Storage",
+        "aggregation" => "quantity",
+        "unit" => "bytes",
+        "plan_line" => "%{quantity} storage"
+      }
+    }
+    definition = RecordingStudioStripe::Limits.fetch(:storage_bytes)
+
+    bytes = 5 * 1024 * 1024 * 1024
+    assert_equal "5 GB", definition.display_quantity(bytes)
+    assert_equal "5 GB storage", definition.card_text(bytes)
+    shown = definition.shown_amount(bytes)
+    assert_equal "5 GB", shown.to_s
+    assert_equal bytes, shown.to_i
+    assert_operator shown, :>, 0
   end
 
   def test_unknown_unit_raises
@@ -165,7 +183,7 @@ class LimitUsageTest < Minitest::Test
     assert_match(/bytes/, error.message)
   end
 
-  def test_per_item_ceiling_without_a_plan_uses_no_plan_ceiling
+  def test_per_item_ceiling_without_a_plan_uses_no_plan_limit
     configure_per_item
     handle = per_item_handle
 
@@ -180,7 +198,7 @@ class LimitUsageTest < Minitest::Test
     assert_equal error.user_message, error.message
   end
 
-  def test_per_item_without_no_plan_ceiling_allows_any_positive_amount
+  def test_per_item_without_no_plan_limit_allows_any_positive_amount
     RecordingStudioStripe.configuration.limits = {
       "max_file_bytes" => { "aggregation" => "per_item", "unit" => "bytes" }
     }
@@ -401,7 +419,7 @@ class LimitUsageTest < Minitest::Test
         "aggregation" => "per_item",
         "unit" => "bytes",
         "plan_line" => "Up to %{quantity} per file", # rubocop:disable Style/FormatStringToken
-        "no_plan_ceiling" => 10 * 1024 * 1024
+        "no_plan_limit" => 10 * 1024 * 1024
       }
     }
   end

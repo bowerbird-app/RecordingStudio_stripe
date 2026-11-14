@@ -54,7 +54,7 @@ RecordingStudioStripe.configure do |config|
       "subscription_type" => "studio",
       "icon" => "document",
       "plan_line" => "Up to %{quantity} per file",
-      "no_plan_ceiling" => 10.megabytes
+      "no_plan_limit" => 10.megabytes
     }
   }
 end

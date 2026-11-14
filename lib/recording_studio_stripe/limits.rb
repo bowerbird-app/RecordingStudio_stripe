@@ -7,16 +7,49 @@ module RecordingStudioStripe
     AGGREGATIONS = %w[count quantity per_item].freeze
     UNITS = ["bytes"].freeze
 
+    # A number that still compares as bytes, and prints as a size.
+    # UsageMeter requires a Numeric for the bar and calls to_s for the line.
+    class ShownAmount < Numeric
+      def initialize(amount, text)
+        @amount = Integer(amount)
+        @text = text.to_s
+      end
+
+      def to_s
+        @text
+      end
+
+      def to_i
+        @amount
+      end
+
+      def to_f
+        @amount.to_f
+      end
+
+      def <=>(other)
+        to_i <=> other.to_i
+      end
+
+      def coerce(other)
+        [other.to_i, @amount]
+      end
+
+      def positive?
+        @amount.positive?
+      end
+    end
+
     class Definition
       attr_reader :name, :label, :recordable_type, :subscription_type, :icon, :plan_line,
-                  :aggregation, :unit, :no_plan_ceiling
+                  :aggregation, :unit, :no_plan_limit
 
       def initialize(name, attrs)
         @name = name.to_s
         @label = attrs["label"].presence || @name.humanize
         @aggregation = aggregation_mode(attrs["aggregation"])
         @unit = unit_mode(attrs["unit"])
-        @no_plan_ceiling = ceiling_mode(attrs["no_plan_ceiling"])
+        @no_plan_limit = no_plan_limit_mode(attrs["no_plan_limit"])
         @recordable_type = attrs["recordable_type"].to_s
         @subscription_type = attrs["subscription_type"].presence || implied_subscription_type
         @icon = attrs["icon"].presence
@@ -41,11 +74,16 @@ module RecordingStudioStripe
 
       def display_quantity(quantity)
         number = quantity.to_i
-        return ActiveSupport::NumberHelper.number_to_human_size(number) if per_item? && unit == "bytes"
-
+        return ActiveSupport::NumberHelper.number_to_human_size(number) if unit == "bytes"
         return number.to_s if per_item?
 
         PlanFeatures.quantity_label(quantity)
+      end
+
+      def shown_amount(quantity)
+        return quantity unless unit == "bytes"
+
+        ShownAmount.new(quantity, display_quantity(quantity))
       end
 
       def card_text(quantity)
@@ -78,14 +116,11 @@ module RecordingStudioStripe
         raise ArgumentError, "Unsupported unit #{unit.inspect} for limit #{name}. Use \"bytes\" or omit it."
       end
 
-      def ceiling_mode(value)
+      def no_plan_limit_mode(value)
         return if value.nil?
-
-        raise ArgumentError, "no_plan_ceiling is only valid on a per_item limit (#{name})." unless per_item?
-
         return value if value.is_a?(Integer) && value.positive?
 
-        raise ArgumentError, "no_plan_ceiling for limit #{name} must be a positive integer or nil."
+        raise ArgumentError, "no_plan_limit for limit #{name} must be a positive integer or nil."
       end
 
       def format_plan_line(shown)

@@ -9,6 +9,12 @@
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
 - FlatPack `>= 0.1.356` (UsageMeter). This repo pins GitHub tag `v0.1.356`
 
+## No-plan base and byte sizes
+
+`0.27.0` renames `no_plan_ceiling` to `no_plan_limit`. There is no alias. Set it on a count, quantity, or per-item limit when a workspace with no live plan should keep a base. Omit it and that case stays none (nil ceiling for per-item). A live plan's `limit_<name>` wins, including a blank or 0, which means none. Cancel compares every kind with `no_plan_limit`. A lower base is a lowered limit. Nothing is deleted. New writes stay blocked, and `/billing/usage` shows the meter over the base. `unit: "bytes"` prints human sizes for every aggregation. The Admin field stays a raw integer.
+
+No database migration. No webhook change.
+
 ## Usage meters
 
 `0.26.0` draws meter and limit cards with `FlatPack::Billing::UsageMeter`. The bar warns at 80% and turns danger at the cap. A zero cap is a muted line, because UsageMeter rejects a max of 0. A nil cap is Unlimited, with no bar. Count and quantity caps still use 0 for none. A meter that mixes included usage and extra packs puts that split in the meter's description. The percent label, the `used/included` line, and the Breakdown dropdown are gone. The status alert is unchanged: over the cap, and within 15% of the included amount. `AllowanceCardComponent` is still the pack checkout button. No database migration. No webhook change. Hosts need Flatpack `0.1.356` or newer.
@@ -24,7 +30,7 @@
 
 `0.23.0` adds optional `downgrade_timing` on each `config.subscription_types` entry. Omit it, or set `at_period_end`, and downgrades still wait for renewal and cancels still wait for period end. Set `immediately` to switch the Stripe Price now (proration credit) and to end a cancel now. Unknown values raise when the initializer assigns `subscription_types`.
 
-No database migration. Webhook projection now also emits `plan_downgraded.recording_studio_stripe` when a change that has taken effect drops a paywall or lowers a limit, including a cancel and a Subscription Stripe ends after failed payments. A per-item `limit_<name>` that is missing or blank is unlimited, same as `LimitHandle#raw_ceiling`. Cancel compares that ceiling with `no_plan_ceiling` (nil is unlimited). Count and quantity still treat missing or 0 as none. In the payload, `from: nil` on a per-item row means the old plan was unlimited. Subscribe if another gem should clean up. Handlers must be safe to run twice. Dedupe on `payload[:id]`. `trial_started` and `invoice_paid` are unchanged. A `$0` invoice still does not emit `invoice_paid`.
+No database migration. Webhook projection now also emits `plan_downgraded.recording_studio_stripe` when a change that has taken effect drops a paywall or lowers a limit, including a cancel and a Subscription Stripe ends after failed payments. A per-item `limit_<name>` that is missing or blank is unlimited, same as `LimitHandle#raw_ceiling`. Cancel compares every kind with `no_plan_limit` (nil is unlimited for per-item, and none for count and quantity). A live plan still treats a missing or 0 count or quantity key as none. In the payload, `from: nil` on a per-item row means the old plan was unlimited. Subscribe if another gem should clean up. Handlers must be safe to run twice. Dedupe on `payload[:id]`. `trial_started` and `invoice_paid` are unchanged. A `$0` invoice still does not emit `invoice_paid`.
 
 ## Whole-credit usage
 
@@ -43,7 +49,7 @@ Existing `spend_usage` rows stay valid. They still store `usage_key`, `source_qu
 
 Configure it on `config.limits`. The plan number stays Product metadata `limit_<name>`. `LimitHandle#ceiling` is that number while the workspace has a live plan in the limit's subscription type (`active`, `trialing`, or `past_due`). A live plan that omits the key leaves `ceiling` nil. nil means the consumer gem applies its own max and this gem does not add one.
 
-A workspace with no live plan, including a canceled plan, receives `no_plan_ceiling` when that positive integer is set. Omit `no_plan_ceiling` and a plan-less workspace also has a nil ceiling. Call `enforce_item!`. The HTML redirect and JSON `403` `plan_limit_reached` response are the same as the other limits.
+A workspace with no live plan, including a canceled plan, receives `no_plan_limit` when that positive integer is set. Omit `no_plan_limit` and a plan-less workspace also has a nil ceiling. Call `enforce_item!`. The HTML redirect and JSON `403` `plan_limit_reached` response are the same as the other limits.
 
 ## Layout
 

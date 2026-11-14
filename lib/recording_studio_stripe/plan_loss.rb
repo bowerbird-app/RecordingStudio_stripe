@@ -45,7 +45,7 @@ module RecordingStudioStripe
     end
 
     def empty_ceiling(definition)
-      definition.per_item? ? definition.no_plan_ceiling : nil
+      definition.no_plan_limit
     end
 
     def ceiling_for(definition, product)

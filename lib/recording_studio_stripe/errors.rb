@@ -26,7 +26,7 @@ module RecordingStudioStripe
       Copy.t(
         "errors.plan_includes",
         plan: plan_label,
-        count: handle.included,
+        count: included_words,
         label: label,
         relief: relief
       )
@@ -36,6 +36,12 @@ module RecordingStudioStripe
 
     def plan_label
       handle.product&.name.presence || Copy.t("errors.this_plan")
+    end
+
+    def included_words
+      return handle.display_quantity(handle.included) if handle.respond_to?(:unit) && handle.unit == "bytes"
+
+      handle.included
     end
 
     def relief

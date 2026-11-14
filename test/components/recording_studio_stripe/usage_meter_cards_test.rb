@@ -13,6 +13,17 @@ module RecordingStudioStripe
         [included.to_i + purchased.to_i - usage.to_i, 0].max
       end
     end
+    ByteLimit = Struct.new(:label, :included, :used, :unit) do
+      def over?
+        included.is_a?(Numeric) && used > included
+      end
+
+      def remaining
+        return 0 unless included.is_a?(Numeric)
+
+        [included - used, 0].max
+      end
+    end
     LimitReading = Struct.new(:label, :included, :used) do
       def over?
         included.is_a?(Numeric) && used > included
@@ -195,6 +206,30 @@ module RecordingStudioStripe
       refute_includes html, "Unlimited"
     end
 
+    test "a byte quantity limit prints sizes on the meter" do
+      html = render_byte_limit(included: 2.gigabytes, used: 1.gigabyte)
+
+      assert_equal "default", bar_style(html)
+      assert_includes html, "Storage"
+      assert_includes html, "1 GB of 2 GB"
+    end
+
+    test "a byte quantity over the cap keeps the sizes and the over alert" do
+      html = render_byte_limit(included: 2.gigabytes, used: 3.gigabytes)
+
+      assert_equal "danger", bar_style(html)
+      assert_includes html, "3 GB of 2 GB"
+      assert_includes html, "Over the limit"
+    end
+
+    test "a zero byte cap with usage names the size" do
+      html = render_byte_limit(included: 0, used: 2.gigabytes)
+
+      assert_nil bar_style(html)
+      assert_includes html, "Storage. 2 GB used. None on this plan."
+      refute_includes html, "2147483648"
+    end
+
     test "a nil limit is unlimited" do
       html = render_limit(included: nil, used: 4)
 
@@ -232,6 +267,11 @@ module RecordingStudioStripe
 
     def render_limit(included:, used:)
       handle = LimitReading.new("Press kits", included, used)
+      ApplicationController.render(LimitCardComponent.new(handle: handle), layout: false)
+    end
+
+    def render_byte_limit(included:, used:)
+      handle = ByteLimit.new("Storage", included, used, "bytes")
       ApplicationController.render(LimitCardComponent.new(handle: handle), layout: false)
     end
 

@@ -35,17 +35,26 @@ module RecordingStudioStripe
       @definition.recordable_type
     end
 
+    def unit
+      @definition.unit
+    end
+
+    def display_quantity(quantity)
+      @definition.display_quantity(quantity)
+    end
+
     def included
       product = self.product
-      return 0 unless product&.plan?
+      return product.limit_quantity(name) if product&.plan?
+      return 0 if per_item?
 
-      product.limit_quantity(name)
+      @definition.no_plan_limit || 0
     end
 
     def ceiling
       reject_unless_per_item!(:ceiling)
       plan = product
-      return @definition.no_plan_ceiling unless plan&.plan?
+      return @definition.no_plan_limit unless plan&.plan?
 
       raw_ceiling(plan)
     end

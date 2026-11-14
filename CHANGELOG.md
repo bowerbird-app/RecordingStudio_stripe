@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-11-14
+
+### Added
+- Optional `no_plan_limit` on count and quantity limits. With no live plan, `included` is that base, so `used`, `remaining`, `available?`, `over?`, `with_capacity!`, and `enforce!` honor it. `/billing/usage` shows the meter
+
+### Changed
+- `no_plan_ceiling` is now `no_plan_limit` on per-item limits too. A live plan's `limit_<name>` still wins. Blank or 0 on that plan means none, with no fallback to the base
+- Ending a subscription compares every kind with `no_plan_limit`. Dropping onto a lower base is a lowered limit. Nothing is deleted. New writes stay blocked, and the usage page shows over the limit
+- `unit: "bytes"` prints human sizes for every aggregation: plan cards, the usage meter, `PlanLimitReached`, and Gates. The Admin field stays a raw integer
+
+### Upgrade notes
+- Bump to **0.27.0**. No database migration. No webhook change
+- Rename `no_plan_ceiling` to `no_plan_limit` in `config.limits`. The old key is ignored
+- A count or quantity limit with `no_plan_limit` now allows that much with no live plan. Omit the key to keep none
+- A plan that sets `limit_<name>` to blank or 0 does not fall back to `no_plan_limit`
+- `plan_downgraded` on cancel now puts `no_plan_limit` in `limits_lowered[].to` for every kind. Nil is still unlimited for per-item, and none for count and quantity
+- Byte quantities on cards, usage, and errors are sizes such as `5 GB`, not the raw integer
+
 ## [0.26.0] - 2026-11-13
 
 ### Changed
