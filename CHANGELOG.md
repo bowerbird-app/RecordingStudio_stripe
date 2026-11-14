@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-11-14
+
+### Added
+- Optional `no_plan_limit` on count and quantity limits. With no live plan, `included` is that base, so `used`, `remaining`, `available?`, `over?`, `with_capacity!`, and `enforce!` honor it. `/billing/usage` shows the meter
+- Optional `action` on a limit: `upgrade` (plans page) or `purchase` (a host path or callable). `action_label` overrides the button. `action_method` is a link unless it is `post`, `put`, `patch`, or `delete`. The button shows on a zero cap, and when the usage bar is warning or danger. No action means text only
+- Optional `display` on a limit or meter: `count` (default, `3 of 4`, bytes still sizes) or `percent` (`75%`)
+
+### Changed
+- `no_plan_ceiling` is now `no_plan_limit` on per-item limits too. A live plan's `limit_<name>` still wins. Blank or 0 on that plan means none, with no fallback to the base
+- Ending a subscription compares every kind with `no_plan_limit`. Dropping onto a lower base is a lowered limit. Nothing is deleted. New writes stay blocked, and the usage page shows over the limit
+- `unit: "bytes"` prints human sizes for every aggregation: plan cards, the usage meter, `PlanLimitReached`, and Gates. The Admin field stays a raw integer
+- A zero cap uses UsageMeter `limit: 0` ("None on plan"). A workspace with no live plan does not see "this plan" on `PlanLimitReached`
+- The usage meter no longer shows a near-limit or over-limit status alert. The bar still warns at 80% and turns danger at the cap. The billing plan card still shows that alert
+- `flat_pack` is now `>= 0.1.360`
+
+### Upgrade notes
+- Bump to **0.27.0**. No database migration. No webhook change
+- Rename `no_plan_ceiling` to `no_plan_limit` in `config.limits`. The old key is ignored
+- A count or quantity limit with `no_plan_limit` now allows that much with no live plan. Omit the key to keep none
+- A plan that sets `limit_<name>` to blank or 0 does not fall back to `no_plan_limit`
+- `plan_downgraded` on cancel now puts `no_plan_limit` in `limits_lowered[].to` for every kind. Nil is still unlimited for per-item, and none for count and quantity
+- Byte quantities on cards, usage, and errors are sizes such as `5 GB`, not the raw integer
+- `flat_pack` is now `>= 0.1.360`. UsageMeter accepts `limit: 0`, and Button `url:` submits a form
+- Set `action`, `action_url`, `action_label`, and `action_method` on a limit when the usage card should offer Upgrade or Buy more. Omit `action` to keep the text only. The button shows at 80% or more, and on a zero cap. The usage card no longer renders a status alert
+- Set `display` to `percent` on a limit or meter when the usage line should be a percentage. Omit it to keep `3 of 4`
+
 ## [0.26.0] - 2026-11-13
 
 ### Changed

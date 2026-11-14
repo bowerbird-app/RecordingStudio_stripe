@@ -102,7 +102,8 @@ module RecordingStudioStripe
         if definition.per_item?
           definition.card_text(quantity)
         else
-          "#{quantity} #{definition.label.downcase}"
+          shown = definition.unit == "bytes" ? definition.display_quantity(quantity) : quantity
+          "#{shown} #{definition.label.downcase}"
         end
       end
     end

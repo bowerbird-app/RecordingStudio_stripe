@@ -7,16 +7,66 @@ module RecordingStudioStripe
     AGGREGATIONS = %w[count quantity per_item].freeze
     UNITS = ["bytes"].freeze
 
+    # A number that still compares as bytes, and prints as a size.
+    # UsageMeter requires a Numeric for the bar and calls to_s for the line.
+    class ShownAmount < Numeric
+      def initialize(amount, text)
+        super()
+        @amount = Integer(amount)
+        @text = text.to_s
+      end
+
+      def to_s
+        @text
+      end
+
+      def to_i
+        @amount
+      end
+
+      def to_f
+        @amount.to_f
+      end
+
+      # Stay unequal to a raw integer so UsageMeter prints to_s ("5 GB"), not the byte count.
+      def ==(other)
+        other.is_a?(ShownAmount) && to_i == other.to_i
+      end
+
+      def zero?
+        to_i.zero?
+      end
+
+      def <=>(other)
+        to_i <=> other.to_i
+      end
+
+      def coerce(other)
+        [other.to_i, @amount]
+      end
+
+      def positive?
+        @amount.positive?
+      end
+    end
+
     class Definition
+      ACTIONS = %w[upgrade purchase].freeze
+      ACTION_METHODS = %w[get post put patch delete].freeze
+      DISPLAYS = %w[count percent].freeze
+
       attr_reader :name, :label, :recordable_type, :subscription_type, :icon, :plan_line,
-                  :aggregation, :unit, :no_plan_ceiling
+                  :aggregation, :unit, :no_plan_limit, :action, :action_label, :action_url,
+                  :action_method, :display
 
       def initialize(name, attrs)
         @name = name.to_s
         @label = attrs["label"].presence || @name.humanize
         @aggregation = aggregation_mode(attrs["aggregation"])
         @unit = unit_mode(attrs["unit"])
-        @no_plan_ceiling = ceiling_mode(attrs["no_plan_ceiling"])
+        @no_plan_limit = no_plan_limit_mode(attrs["no_plan_limit"])
+        assign_action!(attrs)
+        @display = display_mode(attrs["display"])
         @recordable_type = attrs["recordable_type"].to_s
         @subscription_type = attrs["subscription_type"].presence || implied_subscription_type
         @icon = attrs["icon"].presence
@@ -41,11 +91,16 @@ module RecordingStudioStripe
 
       def display_quantity(quantity)
         number = quantity.to_i
-        return ActiveSupport::NumberHelper.number_to_human_size(number) if per_item? && unit == "bytes"
-
+        return ActiveSupport::NumberHelper.number_to_human_size(number) if unit == "bytes"
         return number.to_s if per_item?
 
         PlanFeatures.quantity_label(quantity)
+      end
+
+      def shown_amount(quantity)
+        return quantity unless unit == "bytes"
+
+        ShownAmount.new(quantity, display_quantity(quantity))
       end
 
       def card_text(quantity)
@@ -78,14 +133,63 @@ module RecordingStudioStripe
         raise ArgumentError, "Unsupported unit #{unit.inspect} for limit #{name}. Use \"bytes\" or omit it."
       end
 
-      def ceiling_mode(value)
+      def no_plan_limit_mode(value)
         return if value.nil?
-
-        raise ArgumentError, "no_plan_ceiling is only valid on a per_item limit (#{name})." unless per_item?
-
         return value if value.is_a?(Integer) && value.positive?
 
-        raise ArgumentError, "no_plan_ceiling for limit #{name} must be a positive integer or nil."
+        raise ArgumentError, "no_plan_limit for limit #{name} must be a positive integer or nil."
+      end
+
+      def assign_action!(attrs)
+        @action = action_mode(attrs["action"])
+        @action_url = action_url_mode(attrs["action_url"])
+        @action_label = action_label_mode(attrs["action_label"])
+        @action_method = action_method_mode(attrs["action_method"])
+      end
+
+      def action_mode(value)
+        kind = value.presence&.to_s
+        return if kind.nil?
+        return kind if ACTIONS.include?(kind)
+
+        raise ArgumentError, "action for limit #{name} must be \"upgrade\", \"purchase\", or omitted."
+      end
+
+      def action_url_mode(value)
+        if value.nil?
+          return unless action == "purchase"
+
+          raise ArgumentError, "action_url for limit #{name} is required when action is purchase."
+        end
+        return value if value.is_a?(String) && value.present?
+        return value if value.respond_to?(:call)
+
+        raise ArgumentError, "action_url for limit #{name} must be a path or a callable."
+      end
+
+      def action_label_mode(value)
+        return if action.nil?
+
+        text = value.presence&.to_s
+        return text if text
+
+        action == "purchase" ? "Buy more" : "Upgrade"
+      end
+
+      def action_method_mode(value)
+        return if value.nil? || action.nil?
+
+        verb = value.to_s.downcase
+        return verb if ACTION_METHODS.include?(verb)
+
+        raise ArgumentError, "action_method for limit #{name} must be get, post, put, patch, or delete."
+      end
+
+      def display_mode(value)
+        mode = value.presence&.to_s || "count"
+        return mode if DISPLAYS.include?(mode)
+
+        raise ArgumentError, "display for limit #{name} must be \"count\" or \"percent\"."
       end
 
       def format_plan_line(shown)

@@ -18,9 +18,50 @@ module RecordingStudioStripe
     def meter
       render UsageMeterComponent.new(
         label: @handle.label,
-        used: @handle.used,
-        limit: limit_amount
+        used: shown_used,
+        limit: shown_limit,
+        display: usage_display
       )
+    end
+
+    def usage_display
+      return "count" unless @handle.respond_to?(:usage_display)
+
+      @handle.usage_display.presence || "count"
+    end
+
+    def percent?
+      usage_display == "percent"
+    end
+
+    def shown_used
+      amount = @handle.used
+      return amount.to_i if percent? || !bytes?
+
+      shown(amount)
+    end
+
+    def shown_limit
+      amount = limit_amount
+      return nil if amount.nil?
+      return amount unless amount.positive? && bytes? && !percent?
+
+      shown(amount)
+    end
+
+    def shown(amount)
+      return amount unless bytes?
+
+      text = if @handle.respond_to?(:display_quantity)
+               @handle.display_quantity(amount)
+             else
+               ActiveSupport::NumberHelper.number_to_human_size(amount.to_i)
+             end
+      Limits::ShownAmount.new(amount.to_i, text)
+    end
+
+    def bytes?
+      @handle.respond_to?(:unit) && @handle.unit == "bytes"
     end
 
     def limit_amount
@@ -31,8 +72,7 @@ module RecordingStudioStripe
     end
 
     def limit_notice
-      notice = LimitStatusComponent.new(handle: @handle)
-      render(notice) if notice.render?
+      helpers.stripe_usage_action(@handle)
     end
   end
 end

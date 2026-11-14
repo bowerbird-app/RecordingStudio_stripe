@@ -32,7 +32,10 @@ module RecordingStudioStripe
 
     def body
       blocks = subscribed_blocks
-      return helpers.safe_join(blocks) if blocks.any?
+      bases = unsubscribed_limit_blocks
+      return helpers.safe_join(blocks + bases) if blocks.any?
+      return helpers.safe_join(bases + [unsubscribed_meters].compact) if bases.any? && Meter.exists?
+      return helpers.safe_join(bases) if bases.any?
       return unsubscribed_meters if Meter.exists?
 
       empty_state
@@ -57,6 +60,20 @@ module RecordingStudioStripe
     def unsubscribed_meters
       meters = Meter.order(:name).map { |meter| @billing.meter(meter.name) }
       cards_grid([], meters)
+    end
+
+    def unsubscribed_limit_blocks
+      active_types = Array(@lines).map { |line| line.subscription_type.to_s }
+      @billing.lines.reject { |line| active_types.include?(line.subscription_type.to_s) }.filter_map do |line|
+        limits = billing_line_limits(line)
+        next if limits.empty?
+
+        helpers.tag.div(
+          cards_grid(limits, []),
+          class: "w-full",
+          data: { usage_line: line.subscription_type }
+        )
+      end
     end
 
     def cards_grid(limits, meters)

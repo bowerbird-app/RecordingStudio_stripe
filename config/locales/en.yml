@@ -88,6 +88,7 @@ en:
         cancel: Cancel
         over_limit_title: Over the limit
         over_limit_description: "This plan is past its %{label} cap. Archive some, or upgrade."
+        over_limit_no_plan: "You're past the %{label} cap."
         near_limit_title: Near the limit
         near_limit_description: "You’re close to the %{label} cap."
       usage:
@@ -101,6 +102,9 @@ en:
         none_named: "%{label}. None on this plan."
         used_none_on_plan: "%{label}. %{used} used. None on this plan."
         pack_split: "%{included} on this plan. %{purchased} from extra packs."
+      actions:
+        upgrade: Upgrade
+        purchase: Buy more
       allowances:
         pack_title: "+%{quantity} %{label}"
         add_this_pack: Add this pack
@@ -160,6 +164,7 @@ en:
       errors:
         pick_plan_to_add: "Pick a plan to add %{label}."
         plan_includes: "%{plan} includes %{count} %{label}. %{relief}"
+        cap_is: "The cap is %{count} %{label}. %{relief}"
         this_plan: This plan
         relief_quantity: Upgrade, or free some up.
         relief_count: Upgrade, or archive one.

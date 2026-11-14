@@ -22,11 +22,12 @@ module RecordingStudioStripe
 
       label = handle.label.downcase
       return Copy.t("errors.pick_plan_to_add", label: label) if handle.included <= 0
+      return cap_message(label) unless on_a_plan?
 
       Copy.t(
         "errors.plan_includes",
         plan: plan_label,
-        count: handle.included,
+        count: included_words,
         label: label,
         relief: relief
       )
@@ -36,6 +37,20 @@ module RecordingStudioStripe
 
     def plan_label
       handle.product&.name.presence || Copy.t("errors.this_plan")
+    end
+
+    def on_a_plan?
+      handle.respond_to?(:product) && handle.product&.plan?
+    end
+
+    def cap_message(label)
+      Copy.t("errors.cap_is", count: included_words, label: label, relief: relief)
+    end
+
+    def included_words
+      return handle.display_quantity(handle.included) if handle.respond_to?(:unit) && handle.unit == "bytes"
+
+      handle.included
     end
 
     def relief

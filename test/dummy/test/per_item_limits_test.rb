@@ -55,7 +55,7 @@ class PerItemLimitsTest < ActionDispatch::IntegrationTest
     handle.enforce_item!(2.gigabytes)
   end
 
-  test "no plan uses no_plan_ceiling and a canceled plan falls back to it" do
+  test "no plan uses no_plan_limit and a canceled plan falls back to it" do
     bare = @workspace.billing.limit(:max_file_bytes)
 
     assert_equal 10.megabytes, bare.ceiling
@@ -75,8 +75,8 @@ class PerItemLimitsTest < ActionDispatch::IntegrationTest
     refute canceled.allows?(10.megabytes + 1)
   end
 
-  test "no plan without no_plan_ceiling has no cap" do
-    drop_no_plan_ceiling
+  test "no plan without no_plan_limit has no cap" do
+    drop_no_plan_limit
 
     handle = @workspace.billing.limit(:max_file_bytes)
 
@@ -238,9 +238,9 @@ class PerItemLimitsTest < ActionDispatch::IntegrationTest
     RecordingStudioStripe::ApplySubscription.call(root_recording: @root, price: product.monthly_price)
   end
 
-  def drop_no_plan_ceiling
+  def drop_no_plan_limit
     limits = RecordingStudioStripe.configuration.limits.to_h.deep_stringify_keys
-    limits["max_file_bytes"] = limits["max_file_bytes"].except("no_plan_ceiling")
+    limits["max_file_bytes"] = limits["max_file_bytes"].except("no_plan_limit")
     RecordingStudioStripe.configuration.limits = limits
   end
 end

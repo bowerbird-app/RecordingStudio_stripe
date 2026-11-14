@@ -50,6 +50,14 @@ module RecordingStudioStripe
       RecordCredits.call(handle: self, amount:, breakdown:, idempotency_key:)
     end
 
+    def usage_display
+      attrs = RecordingStudioStripe.configuration.meters.to_h.stringify_keys[meter.name.to_s]
+      mode = attrs.to_h.stringify_keys["display"].presence&.to_s || "count"
+      return mode if Limits::Definition::DISPLAYS.include?(mode)
+
+      raise ArgumentError, "display for meter #{meter.name} must be \"count\" or \"percent\"."
+    end
+
     def credits_available?(minimum:)
       count = RecordCredits.positive_integer(minimum, "minimum")
       remaining >= count

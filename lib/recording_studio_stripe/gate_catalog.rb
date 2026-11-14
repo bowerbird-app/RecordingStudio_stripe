@@ -98,9 +98,9 @@ module RecordingStudioStripe
     end
 
     def ceiling_note(definition)
-      return unless definition.per_item? && definition.no_plan_ceiling
+      return if definition.no_plan_limit.nil?
 
-      "#{definition.display_quantity(definition.no_plan_ceiling)} with no plan"
+      "#{definition.display_quantity(definition.no_plan_limit)} with no plan"
     end
 
     def meter_on_price?(price, name)

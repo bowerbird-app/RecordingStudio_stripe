@@ -315,8 +315,8 @@ class PlanDowngradeTest < ActionDispatch::IntegrationTest
                  events.first.payload[:limits_lowered]
   end
 
-  test "cancel without no_plan_ceiling treats a per-item cap as unlimited" do
-    drop_no_plan_ceiling
+  test "cancel without no_plan_limit treats a per-item cap as unlimited" do
+    drop_no_plan_limit
     subscribe!("sub_cancel_open", @pro.monthly_price)
 
     events = capture { post_deleted("evt_cancel_open", "sub_cancel_open") }
@@ -432,10 +432,10 @@ class PlanDowngradeTest < ActionDispatch::IntegrationTest
     product.save!
   end
 
-  def drop_no_plan_ceiling
+  def drop_no_plan_limit
     @previous_limits = RecordingStudioStripe.configuration.limits
     limits = @previous_limits.to_h.deep_stringify_keys
-    limits["max_file_bytes"] = limits["max_file_bytes"].except("no_plan_ceiling")
+    limits["max_file_bytes"] = limits["max_file_bytes"].except("no_plan_limit")
     RecordingStudioStripe.configuration.limits = limits
   end
 

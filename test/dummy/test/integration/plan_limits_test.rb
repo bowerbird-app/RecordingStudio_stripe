@@ -191,7 +191,8 @@ class PlanLimitsTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "4 of 3"
-    assert_includes response.body, "Archive some, or upgrade."
+    refute_includes response.body, "Archive some, or upgrade."
+    refute_includes response.body, "Over the limit"
     refute_includes response.body, "4 of 3 on this plan."
     kits = @workspace.billing.limit(:press_kits)
     assert kits.over?

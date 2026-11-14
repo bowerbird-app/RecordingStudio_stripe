@@ -40,11 +40,11 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.7.0"
 gem "recording_studio_stripe", github: "bowerbird-app/RecordingStudio_stripe"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.32.0"
-gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.356"
+gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.360"
 gem "view_component", "4.19.0"
 ```
 
-This gem requires `recording_studio` `>= 6.5.0`, Accessible `>= 0.32.0, < 1.0`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.356`. The pin above loads FlatPack `0.1.356`, which includes `FlatPack::Billing::UsageMeter`. Accessible `>= 0.32.0, < 1.0` no longer matches 0.24 through 0.31.
+This gem requires `recording_studio` `>= 6.5.0`, Accessible `>= 0.32.0, < 1.0`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.360`. The pin above loads FlatPack `0.1.360`, which lets UsageMeter take `limit: 0` and lets Button submit a form with `url:`. Accessible `>= 0.32.0, < 1.0` no longer matches 0.24 through 0.31.
 
 `config.layout` chooses the screen chrome for this engine. `nil` uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. A String is a layout name. `false` renders with no layout. A callable must take `controller:` and return a String, `nil`, or `false`.
 
@@ -132,7 +132,8 @@ config.meters = {
   "credits" => {
     "label" => "Credits",
     "icon" => "sparkles",
-    "plan_line" => "%{quantity} credits each period"
+    "plan_line" => "%{quantity} credits each period",
+    "display" => "percent"
   }
 }
 
@@ -200,7 +201,13 @@ A count limit is how many live recordings of `recordable_type` can exist under t
 
 A quantity limit is a current total, such as stored bytes. Leave `recordable_type` off. Register how to read that total. This gem does not measure it, and a Recording create does not enforce it. Call `with_capacity!` around the write so the check and the write share one transaction and, on Postgres, one advisory lock for that root and limit. `enforce!` is the same check when you are already inside that transaction. A later separate write can still race.
 
-A per-item limit is a ceiling on one item, such as the largest file a workspace can upload. Set `aggregation` to `"per_item"`. Leave `recordable_type` off. There is no usage reader. `ceiling` is the live plan's `limit_<name>` (`Subscription.current_for`, so a `past_due` plan still counts). When that plan omits the key, `ceiling` is nil. nil means this gem is not capping the item. The consumer applies its own code max. A workspace with no live plan, including a canceled plan, gets `no_plan_ceiling` when you set that positive integer, and nil when you do not. `allows?(amount)` is true when `ceiling` is nil or `amount` is within it. `enforce_item!` raises `PlanLimitReached` and does not take a lock. `used`, `remaining`, `over?`, `available?`, `enforce!`, and `with_capacity!` raise. The Recording create gate and `/billing/usage` skip per-item limits. Optional `unit: "bytes"` formats the plan card as a size (`Up to 50 MB`). Any other `unit` raises. Omit `unit` and the card shows a plain number (`Up to 12`). `plan_line` still interpolates `%{quantity}` after that formatting.
+A per-item limit is a ceiling on one item, such as the largest file a workspace can upload. Set `aggregation` to `"per_item"`. Leave `recordable_type` off. There is no usage reader. `ceiling` is the live plan's `limit_<name>` (`Subscription.current_for`, so a `past_due` plan still counts). When that plan omits the key, `ceiling` is nil. nil means this gem is not capping the item. The consumer applies its own code max. A workspace with no live plan, including a canceled plan, gets `no_plan_limit` when you set that positive integer, and nil when you do not. `allows?(amount)` is true when `ceiling` is nil or `amount` is within it. `enforce_item!` raises `PlanLimitReached` and does not take a lock. `used`, `remaining`, `over?`, `available?`, `enforce!`, and `with_capacity!` raise. The Recording create gate and `/billing/usage` skip per-item limits. Optional `unit: "bytes"` formats every aggregation as a size (`5 GB`, `Up to 50 MB`) on the plan card, the usage meter, the denial, and Gates. Any other `unit` raises. Omit `unit` and the card shows a plain number (`Up to 12`). `plan_line` still interpolates `%{quantity}` after that formatting.
+
+`no_plan_limit` is optional on count and quantity too. It is a positive integer or nil. Limits without it keep none when there is no live plan. With it, `included` is that base, so `used`, `remaining`, `available?`, `over?`, `with_capacity!`, and `enforce!` honor it. A live plan's `limit_<name>` always wins. Blank or 0 on that plan still means none, with no fallback to the base. `/billing/usage` shows the meter for a no-plan workspace when that base, or recorded usage, is positive. A later downgrade under the base blocks new writes and deletes nothing. A workspace with no live plan never sees the words "this plan" on that alert or on `PlanLimitReached`.
+
+Each limit can set `action` to `"upgrade"` or `"purchase"`. Omit it and the usage card stays text only. `upgrade` links to the plans page unless you set `action_url`. `purchase` needs `action_url`, a path or a callable. `action_label` replaces the button text (`Upgrade` or `Buy more`). `action_method` defaults to a link. `post`, `put`, `patch`, or `delete` submits a form. The button shows on a zero cap, and when the bar is warning or danger (80% or more). The usage card does not show a status alert. The bar carries that.
+
+`display` on a limit or a meter is `"count"` or `"percent"`. Omit it and the line stays a count, such as `3 of 4`, with byte caps still printed as sizes. `"percent"` prints the share of the cap, such as `75%`. A zero cap still reads `None on plan`. An unlimited meter still reads `Unlimited`.
 
 ```ruby
 RecordingStudioStripe.configure do |config|
@@ -216,7 +223,11 @@ RecordingStudioStripe.configure do |config|
     "storage_bytes" => {
       "label" => "Storage",
       "aggregation" => "quantity",
-      "subscription_type" => "studio"
+      "unit" => "bytes",
+      "subscription_type" => "studio",
+      "no_plan_limit" => 1.gigabyte,
+      "action" => "upgrade",
+      "display" => "count"
     },
     "max_file_bytes" => {
       "label" => "Max file size",
@@ -224,7 +235,7 @@ RecordingStudioStripe.configure do |config|
       "unit" => "bytes",
       "subscription_type" => "studio",
       "plan_line" => "Up to %{quantity} per file",
-      "no_plan_ceiling" => 10.megabytes
+      "no_plan_limit" => 10.megabytes
     }
   }
 end
@@ -325,7 +336,7 @@ Each `config.subscription_types` entry takes an optional `downgrade_timing`.
 
 Upgrades still charge the difference today. Unknown values raise `ArgumentError` when the host assigns `subscription_types`. Stripe remains the source of truth for the charge and for when the change is real.
 
-The gem compares plans when a webhook moves the Subscription onto a different Product, or when Stripe ends it (`customer.subscription.updated` with status `canceled`, or `customer.subscription.deleted`, including after failed payments). The comparison uses the Product already stored locally, before that row is overwritten. A cancel compares with an empty plan. Paywalls on the old Product and not the new one are `paywalls_lost`. Count and quantity limits whose `limit_<name>` went down, or disappeared, are `limits_lowered`. Missing or 0 means none for those. A per-item limit uses the same rule as `LimitHandle#raw_ceiling`: a missing or blank `limit_<name>` is unlimited, not zero. A cap that becomes unlimited is not a loss. Unlimited that becomes a number is. On cancel, a per-item limit compares with `no_plan_ceiling`, and nil there is unlimited. The gem emits `plan_downgraded.recording_studio_stripe` only when something was lost or lowered. A higher Price that drops a count or quantity cap still emits, because the event is the loss. An upgrade or any other change that keeps every paywall and every limit emits nothing. Undoing a pending cancel or downgrade before it takes effect emits nothing.
+The gem compares plans when a webhook moves the Subscription onto a different Product, or when Stripe ends it (`customer.subscription.updated` with status `canceled`, or `customer.subscription.deleted`, including after failed payments). The comparison uses the Product already stored locally, before that row is overwritten. A cancel compares with an empty plan. Paywalls on the old Product and not the new one are `paywalls_lost`. Count and quantity limits whose `limit_<name>` went down, or disappeared, are `limits_lowered`. Missing or 0 means none for those. A per-item limit uses the same rule as `LimitHandle#raw_ceiling`: a missing or blank `limit_<name>` is unlimited, not zero. A cap that becomes unlimited is not a loss. Unlimited that becomes a number is. On cancel, every kind compares with `no_plan_limit`. Nil there is unlimited for per-item, and none for count and quantity. The gem emits `plan_downgraded.recording_studio_stripe` only when something was lost or lowered. A higher Price that drops a count or quantity cap still emits, because the event is the loss. An upgrade or any other change that keeps every paywall and every limit emits nothing. Undoing a pending cancel or downgrade before it takes effect emits nothing.
 
 `RecordingStudioStripe::DomainEvents::PLAN_DOWNGRADED` is that name. Schema version stays `1`. The row is written in the webhook transaction and published after commit. Delivery is at-least-once. The idempotency key is `plan_downgraded/` plus the Stripe event id, so a redelivery does not store a second row. `ProcessWebhook.replay` rebuilds that row from the webhook snapshot and does not call Stripe. A second replay does not notify again once the row is published.
 
@@ -335,7 +346,7 @@ The notification includes the usual `schema_version`, `id`, `occurred_at`, `subs
 - `old_product_id` and `old_product_name` (local Product id and name)
 - `new_product_id` and `new_product_name` (both nil when the plan was canceled)
 - `paywalls_lost`
-- `limits_lowered`, each with `name`, `from`, and `to`. For a per-item limit, nil means unlimited (`from: nil` is an uncapped plan that gained a ceiling). For a count or quantity limit, nil means the cap is gone (none)
+- `limits_lowered`, each with `name`, `from`, and `to`. For a per-item limit, nil means unlimited (`from: nil` is an uncapped plan that gained a ceiling). For a count or quantity limit, nil means the cap is gone (none). A set `no_plan_limit` is that `to` after a cancel
 - `reason`, `downgrade` or `canceled`
 - `timing`, `immediately` or `at_period_end` (`at_period_end` when a downgrade was already scheduled, or the cancel was already set for period end)
 - `effective_at`, the Stripe event time in UTC

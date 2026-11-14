@@ -630,7 +630,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "badge-info-background-color"
     assert_select "h3", text: "Pro"
     assert_select ".fp-card"
-    assert_includes response.body, "text-[length:var(--text-xs)]"
+    assert_includes response.body, "fp-type-body--xs"
     assert_includes response.body, "justify-between"
     active_at = response.body.index(">Active</")
     name_at = response.body.index(">Pro</")
@@ -970,7 +970,7 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
       refute_includes response.body, "badge-primary-background-color"
       refute_includes response.body, "badge-success-background-color"
       assert_select "h3", text: "Pro"
-      assert_includes response.body, "text-[length:var(--text-xs)]"
+      assert_includes response.body, "fp-type-body--xs"
       assert_includes response.body, "justify-between"
       trial_at = response.body.index(">Trial</")
       name_at = response.body.index(">Pro</")

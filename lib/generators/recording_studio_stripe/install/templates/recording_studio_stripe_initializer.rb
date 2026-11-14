@@ -19,9 +19,11 @@ RecordingStudioStripe.configure do |config|
   #   "credits" => {
   #     "label" => "Credits",
   #     "icon" => "sparkles",
-  #     "plan_line" => "%{quantity} credits each period"
+  #     "plan_line" => "%{quantity} credits each period",
+  #     "display" => "percent"
   #   }
   # }
+  # display is count (default, "3 of 4") or percent ("75%"). Byte caps in count mode stay sizes.
   # config.usage_costs = {
   #   "ai.jev" => 1,
   #   "web.brave" => 5
@@ -45,7 +47,9 @@ RecordingStudioStripe.configure do |config|
   # aggregation defaults to count: live recordings of recordable_type. No billing-period reset.
   # quantity is a current total. Register how to read it. Enforce it with with_capacity!.
   # per_item is a ceiling on one item. ceiling is nil when the plan omits limit_<name>.
-  # no_plan_ceiling applies only with no live plan. Enforce it with enforce_item!.
+  # no_plan_limit is optional on count, quantity, and per_item. It applies only with no live plan.
+  # A live plan's limit_<name> wins. Blank or 0 on that plan means none, with no fallback.
+  # Count and quantity use it as included. Per-item uses it as the ceiling. Enforce per-item with enforce_item!.
   # Do not reuse a plan group name as a limit name unless they are the same thing.
   # config.limits = {
   #   "press_kits" => {
@@ -59,7 +63,19 @@ RecordingStudioStripe.configure do |config|
   #   "storage_bytes" => {
   #     "label" => "Storage",
   #     "aggregation" => "quantity",
-  #     "subscription_type" => "studio"
+  #     "unit" => "bytes",
+  #     "subscription_type" => "studio",
+  #     "no_plan_limit" => 1.gigabyte,
+  #     "action" => "upgrade",
+  #     "display" => "count"
+  #   },
+  #   "credits_balance" => {
+  #     "label" => "Credits",
+  #     "aggregation" => "quantity",
+  #     "subscription_type" => "studio",
+  #     "action" => "purchase",
+  #     "action_label" => "Buy credits",
+  #     "action_url" => "/credits"
   #   },
   #   "max_file_bytes" => {
   #     "label" => "Max file size",
@@ -67,7 +83,7 @@ RecordingStudioStripe.configure do |config|
   #     "unit" => "bytes",
   #     "subscription_type" => "studio",
   #     "plan_line" => "Up to %{quantity} per file",
-  #     "no_plan_ceiling" => 10.megabytes
+  #     "no_plan_limit" => 10.megabytes
   #   }
   # }
   # RecordingStudioStripe.register_limit_usage(:storage_bytes) do |root_recording|
