@@ -37,14 +37,14 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 
 ```ruby
 # Gemfile
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.7.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.14.0"
 gem "recording_studio_stripe", github: "bowerbird-app/RecordingStudio_stripe"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.32.0"
 gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.360"
 gem "view_component", "4.19.0"
 ```
 
-This gem requires `recording_studio` `>= 6.5.0`, Accessible `>= 0.32.0, < 1.0`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.360`. The pin above loads FlatPack `0.1.360`, which lets UsageMeter take `limit: 0` and lets Button submit a form with `url:`. Accessible `>= 0.32.0, < 1.0` no longer matches 0.24 through 0.31.
+This gem requires `recording_studio` `>= 6.14.0`, Accessible `>= 0.32.0, < 1.0`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.360`. The pin above loads FlatPack `0.1.360`, which lets UsageMeter take `limit: 0` and lets Button submit a form with `url:`. Accessible `>= 0.32.0, < 1.0` no longer matches 0.24 through 0.31. Count limits use `Recording.kept`. Trashable `0.16.0` registers the filter that leaves trashed rows out. This gem does not require that release.
 
 `config.layout` chooses the screen chrome for this engine. `nil` uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. A String is a layout name. `false` renders with no layout. A callable must take `controller:` and return a String, `nil`, or `false`.
 

@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.27.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.28.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -20,7 +20,7 @@ class RecordingStudioStripeTest < Minitest::Test
     gemspec = File.read(File.expand_path("../recording_studio_stripe.gemspec", __dir__))
 
     assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.360"'
-    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.5.0"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.14.0"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", ">= 0.32.0", "< 1.0"'
     assert_includes gemspec, 'spec.add_dependency "view_component", ">= 4.14", "< 5"'
     assert_includes gemspec, 'spec.add_dependency "stripe"'
@@ -56,7 +56,7 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_dummy_gemfile_pins_recording_studio_6_2
     gemfile = File.read(File.expand_path("dummy/Gemfile", __dir__))
 
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.7.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.14.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.32.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.13.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.14.0"'
@@ -73,7 +73,7 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_root_gemfile_pins_accessible_and_recording_studio_6_2
     gemfile = File.read(File.expand_path("../Gemfile", __dir__))
 
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.7.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.14.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.32.0"'
     assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.360"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.8.0"'
@@ -260,7 +260,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "UsageComponent"
     assert_includes readme, "recording_studio.stripe"
     assert_includes readme, "config.layout"
-    assert_includes readme, ">= 6.5.0"
+    assert_includes readme, ">= 6.14.0"
     assert_includes readme, "config.site_admin_recording"
     refute_includes readme, "ExampleService"
   end
