@@ -7,11 +7,13 @@
 - Recording Studio `>= 6.5.0` (gemspec). Development pin is GitHub tag `v6.7.0`
 - Accessible `>= 0.32.0, < 1.0` (GitHub tag `v0.32.0`)
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
-- FlatPack `>= 0.1.356` (UsageMeter). This repo pins GitHub tag `v0.1.356`
+- FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.360`
 
 ## No-plan base and byte sizes
 
 `0.27.0` renames `no_plan_ceiling` to `no_plan_limit`. There is no alias. Set it on a count, quantity, or per-item limit when a workspace with no live plan should keep a base. Omit it and that case stays none (nil ceiling for per-item). A live plan's `limit_<name>` wins, including a blank or 0, which means none. Cancel compares every kind with `no_plan_limit`. A lower base is a lowered limit. Nothing is deleted. New writes stay blocked, and `/billing/usage` shows the meter over the base. `unit: "bytes"` prints human sizes for every aggregation. The Admin field stays a raw integer.
+
+A limit may set `action` to `upgrade` or `purchase`. `upgrade` links to the plans page. `purchase` needs `action_url` (a path or a callable). `action_label` replaces the button text. Leave `action_method` off for a link. `post`, `put`, `patch`, or `delete` submits a form. The button appears on a zero cap, a near-limit alert, and an over-limit alert. Omit `action` and the card stays text only. A zero cap uses UsageMeter `limit: 0` ("None on plan"). Copy for a workspace with no live plan does not say "this plan". Hosts need Flatpack `0.1.360` or newer.
 
 No database migration. No webhook change.
 

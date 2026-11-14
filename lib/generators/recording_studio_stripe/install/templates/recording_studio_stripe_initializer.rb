@@ -63,7 +63,16 @@ RecordingStudioStripe.configure do |config|
   #     "aggregation" => "quantity",
   #     "unit" => "bytes",
   #     "subscription_type" => "studio",
-  #     "no_plan_limit" => 1.gigabyte
+  #     "no_plan_limit" => 1.gigabyte,
+  #     "action" => "upgrade"
+  #   },
+  #   "credits_balance" => {
+  #     "label" => "Credits",
+  #     "aggregation" => "quantity",
+  #     "subscription_type" => "studio",
+  #     "action" => "purchase",
+  #     "action_label" => "Buy credits",
+  #     "action_url" => "/credits"
   #   },
   #   "max_file_bytes" => {
   #     "label" => "Max file size",

@@ -114,6 +114,7 @@ fr:
         cancel: Résilier
         over_limit_title: Au-dessus de la limite
         over_limit_description: "Cette offre dépasse son plafond de %{label}. Archivez-en, ou passez à l’offre au-dessus."
+        over_limit_no_plan: "Vous avez dépassé le plafond de %{label}."
         near_limit_title: Proche de la limite
         near_limit_description: "Vous approchez du plafond de %{label}."
       usage:
@@ -127,6 +128,9 @@ fr:
         none_named: "%{label}. Aucun sur cette offre."
         used_none_on_plan: "%{label}. %{used} utilisés. Aucun sur cette offre."
         pack_split: "%{included} sur cette offre. %{purchased} en packs extra."
+      actions:
+        upgrade: Changer d’offre
+        purchase: Acheter plus
       allowances:
         pack_title: "+%{quantity} %{label}"
         add_this_pack: Ajouter ce pack
@@ -186,6 +190,7 @@ fr:
       errors:
         pick_plan_to_add: "Choisissez une offre pour ajouter %{label}."
         plan_includes: "%{plan} inclut %{count} %{label}. %{relief}"
+        cap_is: "Le plafond est %{count} %{label}. %{relief}"
         this_plan: Cette offre
         relief_quantity: Passez au-dessus, ou libérez de la place.
         relief_count: Passez au-dessus, ou archivez-en un.

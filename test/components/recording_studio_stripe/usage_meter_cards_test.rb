@@ -13,6 +13,17 @@ module RecordingStudioStripe
         [included.to_i + purchased.to_i - usage.to_i, 0].max
       end
     end
+    ActionLimit = Struct.new(:label, :included, :used, :product, :action, :action_label, :action_url, :action_method) do
+      def over?
+        included.is_a?(Numeric) && used > included
+      end
+
+      def remaining
+        return 0 unless included.is_a?(Numeric)
+
+        [included - used, 0].max
+      end
+    end
     ByteLimit = Struct.new(:label, :included, :used, :unit) do
       def over?
         included.is_a?(Numeric) && used > included
@@ -78,21 +89,26 @@ module RecordingStudioStripe
       refute_includes html, "Over the limit"
     end
 
-    test "a zero meter cap is a muted line" do
+    test "a zero meter cap uses the none-on-plan meter" do
       html = render_meter(included: 0, purchased: 0, usage: 0)
 
       assert_nil bar_style(html)
-      assert_includes html, "AI tokens. None on this plan."
-      assert_includes html, "fp-text"
+      assert_includes html, "AI tokens"
+      assert_includes html, "None on plan"
+      refute_includes html, "None on this plan"
       refute_includes html, "Unlimited"
       refute_includes html, "Over the limit"
+      refute_includes html, ">Upgrade<"
+      refute_includes html, ">Buy more<"
     end
 
-    test "recorded usage on a zero meter cap stays a muted line" do
+    test "recorded usage on a zero meter cap stays none on plan" do
       html = render_meter(included: 0, purchased: 0, usage: 5)
 
       assert_nil bar_style(html)
-      assert_includes html, "AI tokens. 5 used. None on this plan."
+      assert_includes html, "AI tokens"
+      assert_includes html, "None on plan"
+      refute_includes html, "None on this plan"
       refute_includes html, "Unlimited"
       refute_includes html, 'role="progressbar"'
     end
@@ -189,21 +205,75 @@ module RecordingStudioStripe
       assert_includes html, "Over the limit"
     end
 
-    test "a zero limit is a muted line" do
+    test "a zero limit is none on plan and has no button without an action" do
       html = render_limit(included: 0, used: 0)
 
       assert_nil bar_style(html)
-      assert_includes html, "Press kits. None on this plan."
+      assert_includes html, "Press kits"
+      assert_includes html, "None on plan"
+      refute_includes html, "None on this plan"
       refute_includes html, "Unlimited"
+      refute_includes html, ">Upgrade<"
+      refute_includes html, ">Buy more<"
     end
 
-    test "a zero limit with usage stays a muted line and shows the over alert" do
+    test "a zero limit with usage stays none on plan and shows the over alert" do
       html = render_limit(included: 0, used: 2)
 
       assert_nil bar_style(html)
-      assert_includes html, "Press kits. 2 used. None on this plan."
+      assert_includes html, "None on plan"
       assert_includes html, "Over the limit"
+      refute_includes html, "None on this plan"
       refute_includes html, "Unlimited"
+    end
+
+    test "an upgrade action without a url links to the plans page" do
+      html = render_action_limit(included: 2, used: 3, action: "upgrade", action_url: nil)
+
+      assert_includes html, 'href="/plans"'
+      assert_includes html, ">Upgrade<"
+    end
+
+    test "an upgrade action is a link on the over-limit alert" do
+      html = render_action_limit(included: 2, used: 3, action: "upgrade", action_url: "/plans")
+
+      assert_includes html, "Over the limit"
+      assert_includes html, "past the Press kits cap."
+      refute_includes html, "This plan"
+      assert_includes html, 'href="/plans"'
+      assert_includes html, ">Upgrade<"
+      refute_includes html, "<form"
+    end
+
+    test "a purchase action is a link on a zero limit" do
+      html = render_action_limit(
+        included: 0,
+        used: 0,
+        action: "purchase",
+        action_label: "Buy credits",
+        action_url: "/credits"
+      )
+
+      assert_includes html, "None on plan"
+      assert_includes html, 'href="/credits"'
+      assert_includes html, ">Buy credits<"
+      refute_includes html, ">Upgrade<"
+      refute_includes html, "<form"
+    end
+
+    test "a purchase action that posts uses a form submit" do
+      html = render_action_limit(
+        included: 0,
+        used: 0,
+        action: "purchase",
+        action_url: "/credits",
+        action_method: "post"
+      )
+
+      assert_includes html, 'action="/credits"'
+      assert_includes html, 'method="post"'
+      assert_includes html, ">Buy more<"
+      refute_includes html, 'href="/credits"'
     end
 
     test "a byte quantity limit prints sizes on the meter" do
@@ -222,12 +292,14 @@ module RecordingStudioStripe
       assert_includes html, "Over the limit"
     end
 
-    test "a zero byte cap with usage names the size" do
+    test "a zero byte cap uses none on plan" do
       html = render_byte_limit(included: 0, used: 2.gigabytes)
 
       assert_nil bar_style(html)
-      assert_includes html, "Storage. 2 GB used. None on this plan."
-      refute_includes html, "2147483648"
+      assert_includes html, "Storage"
+      assert_includes html, "None on plan"
+      assert_includes html, "Over the limit"
+      refute_includes html, "None on this plan"
     end
 
     test "a nil limit is unlimited" do
@@ -272,6 +344,11 @@ module RecordingStudioStripe
 
     def render_byte_limit(included:, used:)
       handle = ByteLimit.new("Storage", included, used, "bytes")
+      ApplicationController.render(LimitCardComponent.new(handle: handle), layout: false)
+    end
+
+    def render_action_limit(included:, used:, action:, action_url:, action_label: nil, action_method: nil)
+      handle = ActionLimit.new("Press kits", included, used, nil, action, action_label, action_url, action_method)
       ApplicationController.render(LimitCardComponent.new(handle: handle), layout: false)
     end
 

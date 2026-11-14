@@ -172,6 +172,62 @@ class LimitUsageTest < Minitest::Test
     assert_operator shown, :>, 0
   end
 
+  def test_limit_action_is_upgrade_purchase_or_omitted
+    RecordingStudioStripe.configuration.limits = {
+      "storage_bytes" => {
+        "label" => "Storage",
+        "aggregation" => "quantity",
+        "action" => "upgrade"
+      }
+    }
+    definition = RecordingStudioStripe::Limits.fetch(:storage_bytes)
+    assert_equal "upgrade", definition.action
+    assert_equal "Upgrade", definition.action_label
+    assert_nil definition.action_url
+    assert_nil definition.action_method
+
+    RecordingStudioStripe.configuration.limits = {
+      "credits" => {
+        "label" => "Credits",
+        "aggregation" => "quantity",
+        "action" => "purchase",
+        "action_label" => "Buy credits",
+        "action_url" => "/credits",
+        "action_method" => "post"
+      }
+    }
+    credits = RecordingStudioStripe::Limits.fetch(:credits)
+    assert_equal "purchase", credits.action
+    assert_equal "Buy credits", credits.action_label
+    assert_equal "/credits", credits.action_url
+    assert_equal "post", credits.action_method
+
+    callable = -> { "/addons" }
+    RecordingStudioStripe.configuration.limits = {
+      "storage_bytes" => {
+        "aggregation" => "quantity",
+        "action" => "purchase",
+        "action_url" => callable
+      }
+    }
+    assert_equal callable, RecordingStudioStripe::Limits.fetch(:storage_bytes).action_url
+    assert_equal "Buy more", RecordingStudioStripe::Limits.fetch(:storage_bytes).action_label
+
+    ["widgets", 1, true].each do |value|
+      RecordingStudioStripe.configuration.limits = {
+        "storage_bytes" => { "aggregation" => "quantity", "action" => value }
+      }
+      error = assert_raises(ArgumentError) { RecordingStudioStripe::Limits.fetch(:storage_bytes) }
+      assert_match(/action for limit storage_bytes must be "upgrade", "purchase", or omitted/, error.message)
+    end
+
+    RecordingStudioStripe.configuration.limits = {
+      "storage_bytes" => { "aggregation" => "quantity", "action" => "purchase" }
+    }
+    missing = assert_raises(ArgumentError) { RecordingStudioStripe::Limits.fetch(:storage_bytes) }
+    assert_match(/action_url for limit storage_bytes is required when action is purchase/, missing.message)
+  end
+
   def test_unknown_unit_raises
     RecordingStudioStripe.configuration.limits = {
       "max_file_bytes" => { "aggregation" => "per_item", "unit" => "widgets" }

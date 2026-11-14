@@ -11,32 +11,12 @@ module RecordingStudioStripe
     end
 
     def call
-      return zero_limit if @limit.is_a?(Numeric) && !@limit.positive?
-
       render FlatPack::Billing::UsageMeter::Component.new(
         label: @label,
         used: @used,
         limit: @limit,
         description: @description
       )
-    end
-
-    private
-
-    def zero_limit
-      render FlatPack::Text::Component.new(text: zero_copy, size: :sm, style: :muted)
-    end
-
-    def zero_copy
-      return Copy.t("usage.none_named", label: @label) unless @used.to_i.positive?
-
-      Copy.t("usage.used_none_on_plan", label: @label, used: used_words)
-    end
-
-    def used_words
-      return @used.to_s if @used.is_a?(Limits::ShownAmount)
-
-      @used.to_i
     end
   end
 end

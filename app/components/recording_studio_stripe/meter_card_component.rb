@@ -46,7 +46,17 @@ module RecordingStudioStripe
 
     def limit_notice
       notice = LimitStatusComponent.new(handle: @handle)
-      render(notice) if notice.render?
+      return render(notice) if notice.render?
+
+      helpers.stripe_limit_action(@handle) if zero_cap?
+    end
+
+    def zero_cap?
+      included = @handle.included
+      purchased = @handle.purchased
+      return false if included.nil? && purchased.nil?
+
+      (included.to_i + purchased.to_i) <= 0
     end
   end
 end

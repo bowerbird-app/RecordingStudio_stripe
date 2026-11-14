@@ -40,11 +40,11 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.7.0"
 gem "recording_studio_stripe", github: "bowerbird-app/RecordingStudio_stripe"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.32.0"
-gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.356"
+gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.360"
 gem "view_component", "4.19.0"
 ```
 
-This gem requires `recording_studio` `>= 6.5.0`, Accessible `>= 0.32.0, < 1.0`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.356`. The pin above loads FlatPack `0.1.356`, which includes `FlatPack::Billing::UsageMeter`. Accessible `>= 0.32.0, < 1.0` no longer matches 0.24 through 0.31.
+This gem requires `recording_studio` `>= 6.5.0`, Accessible `>= 0.32.0, < 1.0`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.360`. The pin above loads FlatPack `0.1.360`, which lets UsageMeter take `limit: 0` and lets Button submit a form with `url:`. Accessible `>= 0.32.0, < 1.0` no longer matches 0.24 through 0.31.
 
 `config.layout` chooses the screen chrome for this engine. `nil` uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. A String is a layout name. `false` renders with no layout. A callable must take `controller:` and return a String, `nil`, or `false`.
 
@@ -202,7 +202,9 @@ A quantity limit is a current total, such as stored bytes. Leave `recordable_typ
 
 A per-item limit is a ceiling on one item, such as the largest file a workspace can upload. Set `aggregation` to `"per_item"`. Leave `recordable_type` off. There is no usage reader. `ceiling` is the live plan's `limit_<name>` (`Subscription.current_for`, so a `past_due` plan still counts). When that plan omits the key, `ceiling` is nil. nil means this gem is not capping the item. The consumer applies its own code max. A workspace with no live plan, including a canceled plan, gets `no_plan_limit` when you set that positive integer, and nil when you do not. `allows?(amount)` is true when `ceiling` is nil or `amount` is within it. `enforce_item!` raises `PlanLimitReached` and does not take a lock. `used`, `remaining`, `over?`, `available?`, `enforce!`, and `with_capacity!` raise. The Recording create gate and `/billing/usage` skip per-item limits. Optional `unit: "bytes"` formats every aggregation as a size (`5 GB`, `Up to 50 MB`) on the plan card, the usage meter, the denial, and Gates. Any other `unit` raises. Omit `unit` and the card shows a plain number (`Up to 12`). `plan_line` still interpolates `%{quantity}` after that formatting.
 
-`no_plan_limit` is optional on count and quantity too. It is a positive integer or nil. Limits without it keep none when there is no live plan. With it, `included` is that base, so `used`, `remaining`, `available?`, `over?`, `with_capacity!`, and `enforce!` honor it. A live plan's `limit_<name>` always wins. Blank or 0 on that plan still means none, with no fallback to the base. `/billing/usage` shows the meter for a no-plan workspace when that base, or recorded usage, is positive. A later downgrade under the base blocks new writes and deletes nothing.
+`no_plan_limit` is optional on count and quantity too. It is a positive integer or nil. Limits without it keep none when there is no live plan. With it, `included` is that base, so `used`, `remaining`, `available?`, `over?`, `with_capacity!`, and `enforce!` honor it. A live plan's `limit_<name>` always wins. Blank or 0 on that plan still means none, with no fallback to the base. `/billing/usage` shows the meter for a no-plan workspace when that base, or recorded usage, is positive. A later downgrade under the base blocks new writes and deletes nothing. A workspace with no live plan never sees the words "this plan" on that alert or on `PlanLimitReached`.
+
+Each limit can set `action` to `"upgrade"` or `"purchase"`. Omit it and the usage card stays text only. `upgrade` links to the plans page unless you set `action_url`. `purchase` needs `action_url`, a path or a callable. `action_label` replaces the button text (`Upgrade` or `Buy more`). `action_method` defaults to a link. `post`, `put`, `patch`, or `delete` submits a form. The button shows on a zero cap, a near-limit alert, and an over-limit alert.
 
 ```ruby
 RecordingStudioStripe.configure do |config|
@@ -220,7 +222,8 @@ RecordingStudioStripe.configure do |config|
       "aggregation" => "quantity",
       "unit" => "bytes",
       "subscription_type" => "studio",
-      "no_plan_limit" => 1.gigabyte
+      "no_plan_limit" => 1.gigabyte,
+      "action" => "upgrade"
     },
     "max_file_bytes" => {
       "label" => "Max file size",

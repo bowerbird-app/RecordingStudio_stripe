@@ -26,6 +26,7 @@ module RecordingStudioStripe
     def shown_limit
       amount = limit_amount
       return nil if amount.nil?
+      return amount unless amount.positive?
 
       shown(amount)
     end
@@ -54,7 +55,14 @@ module RecordingStudioStripe
 
     def limit_notice
       notice = LimitStatusComponent.new(handle: @handle)
-      render(notice) if notice.render?
+      return render(notice) if notice.render?
+
+      helpers.stripe_limit_action(@handle) if zero_cap?
+    end
+
+    def zero_cap?
+      amount = @handle.included
+      amount.is_a?(Numeric) && !amount.to_i.positive?
     end
   end
 end

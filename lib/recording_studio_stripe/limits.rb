@@ -28,6 +28,15 @@ module RecordingStudioStripe
         @amount.to_f
       end
 
+      # Stay unequal to a raw integer so UsageMeter prints to_s ("5 GB"), not the byte count.
+      def ==(other)
+        other.is_a?(ShownAmount) && to_i == other.to_i
+      end
+
+      def zero?
+        to_i.zero?
+      end
+
       def <=>(other)
         to_i <=> other.to_i
       end
@@ -42,8 +51,12 @@ module RecordingStudioStripe
     end
 
     class Definition
+      ACTIONS = %w[upgrade purchase].freeze
+      ACTION_METHODS = %w[get post put patch delete].freeze
+
       attr_reader :name, :label, :recordable_type, :subscription_type, :icon, :plan_line,
-                  :aggregation, :unit, :no_plan_limit
+                  :aggregation, :unit, :no_plan_limit, :action, :action_label, :action_url,
+                  :action_method
 
       def initialize(name, attrs)
         @name = name.to_s
@@ -51,6 +64,7 @@ module RecordingStudioStripe
         @aggregation = aggregation_mode(attrs["aggregation"])
         @unit = unit_mode(attrs["unit"])
         @no_plan_limit = no_plan_limit_mode(attrs["no_plan_limit"])
+        assign_action!(attrs)
         @recordable_type = attrs["recordable_type"].to_s
         @subscription_type = attrs["subscription_type"].presence || implied_subscription_type
         @icon = attrs["icon"].presence
@@ -122,6 +136,51 @@ module RecordingStudioStripe
         return value if value.is_a?(Integer) && value.positive?
 
         raise ArgumentError, "no_plan_limit for limit #{name} must be a positive integer or nil."
+      end
+
+      def assign_action!(attrs)
+        @action = action_mode(attrs["action"])
+        @action_url = action_url_mode(attrs["action_url"])
+        @action_label = action_label_mode(attrs["action_label"])
+        @action_method = action_method_mode(attrs["action_method"])
+      end
+
+      def action_mode(value)
+        kind = value.presence&.to_s
+        return if kind.nil?
+        return kind if ACTIONS.include?(kind)
+
+        raise ArgumentError, "action for limit #{name} must be \"upgrade\", \"purchase\", or omitted."
+      end
+
+      def action_url_mode(value)
+        if value.nil?
+          return unless action == "purchase"
+
+          raise ArgumentError, "action_url for limit #{name} is required when action is purchase."
+        end
+        return value if value.is_a?(String) && value.present?
+        return value if value.respond_to?(:call)
+
+        raise ArgumentError, "action_url for limit #{name} must be a path or a callable."
+      end
+
+      def action_label_mode(value)
+        return if action.nil?
+
+        text = value.presence&.to_s
+        return text if text
+
+        action == "purchase" ? "Buy more" : "Upgrade"
+      end
+
+      def action_method_mode(value)
+        return if value.nil? || action.nil?
+
+        verb = value.to_s.downcase
+        return verb if ACTION_METHODS.include?(verb)
+
+        raise ArgumentError, "action_method for limit #{name} must be get, post, put, patch, or delete."
       end
 
       def format_plan_line(shown)

@@ -47,7 +47,8 @@ class NoPlanLimitTest < ActionDispatch::IntegrationTest
     end
 
     assert_equal 1.gigabyte, @usage
-    assert_equal "This plan includes 1 GB storage. Upgrade, or free some up.", error.user_message
+    assert_equal "The cap is 1 GB storage. Upgrade, or free some up.", error.user_message
+    refute_includes error.user_message, "this plan"
   end
 
   test "a live plan overrides the base, including a lower number and zero" do
@@ -130,7 +131,8 @@ class NoPlanLimitTest < ActionDispatch::IntegrationTest
     assert_equal 2, @workspace.billing.limit(:press_kits).used
 
     error = assert_raises(RecordingStudioStripe::PlanLimitReached) { record_press_kit!("One too many") }
-    assert_equal "This plan includes 2 press kits. Upgrade, or archive one.", error.user_message
+    assert_equal "The cap is 2 press kits. Upgrade, or archive one.", error.user_message
+    refute_includes error.user_message, "this plan"
     assert_equal 2, @workspace.billing.limit(:press_kits).used
 
     @starter.assign_limits("press_kits" => 4)
@@ -171,6 +173,29 @@ class NoPlanLimitTest < ActionDispatch::IntegrationTest
     assert_equal 3, @workspace.billing.limit(:press_kits).used
     assert_raises(RecordingStudioStripe::PlanLimitReached) { record_press_kit!("After cancel") }
     assert_equal 3, @workspace.billing.limit(:press_kits).used
+  end
+
+  test "a zero limit with a purchase action shows the button and does not say this plan" do
+    limits = @previous_limits.to_h.deep_stringify_keys
+    limits["bonus_credits"] = {
+      "label" => "Bonus credits",
+      "aggregation" => "quantity",
+      "subscription_type" => "studio",
+      "action" => "purchase",
+      "action_label" => "Buy credits",
+      "action_url" => "/credits"
+    }
+    RecordingStudioStripe.configuration.limits = limits
+    RecordingStudioStripe.register_limit_usage(:bonus_credits) { 0 }
+    switch_to_root!(@root)
+
+    get recording_studio_stripe.usage_path
+
+    assert_response :success
+    assert_includes response.body, "None on plan"
+    assert_includes response.body, "Buy credits"
+    assert_includes response.body, 'href="/credits"'
+    refute_includes response.body, "this plan"
   end
 
   test "plan cards and gates print a byte quantity as a size" do

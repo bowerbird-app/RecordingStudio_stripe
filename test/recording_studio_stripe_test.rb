@@ -19,7 +19,7 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_gemspec_pins_recording_studio_accessible_and_stripe
     gemspec = File.read(File.expand_path("../recording_studio_stripe.gemspec", __dir__))
 
-    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.356"'
+    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.360"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.5.0"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", ">= 0.32.0", "< 1.0"'
     assert_includes gemspec, 'spec.add_dependency "view_component", ">= 4.14", "< 5"'
@@ -64,7 +64,7 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.8.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.6.3"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.4"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.356"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.360"'
     assert_includes gemfile, 'gem "view_component", "4.19.0"'
     refute_includes gemfile, "widen_recording_studio_requirement"
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.2.2"'
@@ -75,7 +75,7 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.7.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.32.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.356"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.360"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.8.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.14.0"'
     assert_includes gemfile, 'gem "view_component", "4.19.0"'
@@ -86,8 +86,8 @@ class RecordingStudioStripeTest < Minitest::Test
     ["../Gemfile.lock", "dummy/Gemfile.lock"].each do |path|
       lock = File.read(File.expand_path(path, __dir__))
 
-      assert_includes lock, "flat_pack (0.1.356)"
-      assert_includes lock, "tag: v0.1.356"
+      assert_includes lock, "flat_pack (0.1.360)"
+      assert_includes lock, "tag: v0.1.360"
     end
   end
 

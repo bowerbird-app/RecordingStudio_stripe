@@ -84,7 +84,9 @@ class CreditUsagePageTest < ActionDispatch::IntegrationTest
     get recording_studio_stripe.usage_path
 
     assert_response :success
-    assert_includes response.body, "Credits. 5 used. None on this plan."
+    assert_includes response.body, "Credits"
+    assert_includes response.body, "None on plan"
+    refute_includes response.body, "None on this plan"
     refute_includes response.body, "Unlimited"
     refute_includes response.body, "% left"
     assert_select "[role=progressbar]", count: 1

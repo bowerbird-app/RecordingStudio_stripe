@@ -4,6 +4,26 @@ module RecordingStudioStripe
   module ApplicationHelper
     include ActionForm
 
+    def stripe_limit_action_destination(handle)
+      raw = handle.action_url if handle.respond_to?(:action_url)
+      if raw.respond_to?(:call)
+        raw.arity.zero? ? raw.call : raw.call(self)
+      elsif raw.present?
+        raw.to_s
+      elsif handle.action.to_s == "upgrade"
+        stripe_plans_href
+      end
+    end
+
+    def stripe_plans_href
+      return main_app.plans_path if respond_to?(:main_app) && main_app.respond_to?(:plans_path)
+      return plans_path if respond_to?(:plans_path)
+
+      "/plans"
+    rescue NoMethodError
+      "/plans"
+    end
+
     def stripe_quantity_label(quantity)
       PlanFeatures.quantity_label(quantity)
     end
@@ -23,6 +43,29 @@ module RecordingStudioStripe
 
     def stripe_plan_inclusion_lines(product, price)
       stripe_plan_feature_lines(product, price).map(&:text)
+    end
+
+    def stripe_limit_action(handle)
+      return unless handle.respond_to?(:action)
+
+      kind = handle.action.presence
+      return if kind.blank?
+
+      destination = stripe_limit_action_destination(handle)
+      return if destination.blank?
+
+      render stripe_limit_action_button(handle, kind, destination)
+    end
+
+    def stripe_limit_action_button(handle, kind, destination)
+      label = handle.action_label.presence || Copy.t("actions.#{kind}")
+      verb = handle.action_method.to_s.downcase if handle.respond_to?(:action_method)
+      options = { text: label, style: :primary, size: :sm }
+      if verb.present? && verb != "get"
+        FlatPack::Button::Component.new(**options, url: destination, method: verb.to_sym)
+      else
+        FlatPack::Button::Component.new(**options, href: destination)
+      end
     end
 
     def stripe_card_stack(*parts)
@@ -84,7 +127,7 @@ module RecordingStudioStripe
         next if definition.per_item?
 
         handle = line.limit(definition.name)
-        handle if handle.included.positive? || handle.used.positive?
+        handle if handle.included.positive? || handle.used.positive? || handle.action.present?
       end
     end
 

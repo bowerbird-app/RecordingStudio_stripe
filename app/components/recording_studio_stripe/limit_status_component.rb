@@ -17,17 +17,38 @@ module RecordingStudioStripe
       render FlatPack::Billing::StatusAlert::Component.new(
         style: over? ? :danger : :warning,
         title: Copy.t(over? ? "billing.over_limit_title" : "billing.near_limit_title"),
-        description: Copy.t(
-          over? ? "billing.over_limit_description" : "billing.near_limit_description",
-          label: label
-        )
-      )
+        description: description
+      ) do |alert|
+        button = action_button
+        alert.actions { button } if button
+      end
     end
 
     private
 
     def label
       @handle.respond_to?(:label) ? @handle.label : @handle.meter.label
+    end
+
+    def description
+      Copy.t(description_key, label: label)
+    end
+
+    def description_key
+      return "billing.over_limit_no_plan" if over? && !on_a_plan?
+      return "billing.over_limit_description" if over?
+
+      "billing.near_limit_description"
+    end
+
+    def on_a_plan?
+      return true unless @handle.respond_to?(:product)
+
+      @handle.product&.plan?
+    end
+
+    def action_button
+      helpers.stripe_limit_action(@handle)
     end
 
     def over?

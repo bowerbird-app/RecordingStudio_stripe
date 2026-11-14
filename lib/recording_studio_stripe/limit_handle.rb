@@ -43,6 +43,22 @@ module RecordingStudioStripe
       @definition.display_quantity(quantity)
     end
 
+    def action
+      @definition.action
+    end
+
+    def action_label
+      @definition.action_label
+    end
+
+    def action_url
+      @definition.action_url
+    end
+
+    def action_method
+      @definition.action_method
+    end
+
     def included
       product = self.product
       return product.limit_quantity(name) if product&.plan?
