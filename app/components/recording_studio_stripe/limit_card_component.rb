@@ -2,8 +2,6 @@
 
 module RecordingStudioStripe
   class LimitCardComponent < ViewComponent::Base
-    include RecordingStudioStripe::ApplicationHelper
-
     def initialize(handle:)
       super()
       @handle = handle
@@ -11,55 +9,30 @@ module RecordingStudioStripe
 
     def call
       render FlatPack::Card::Component.new(background: :default, border: :strong, shadow: :none) do |card|
-        card.body { helpers.stripe_card_stack(title, amount, details, limit_notice) }
+        card.body { helpers.stripe_card_stack(meter, limit_notice) }
       end
     end
 
     private
 
-    def title
-      render FlatPack::PageTitle::Component.new(
-        title: @handle.label,
-        variant: :h3,
-        class: "mb-0 pb-0"
+    def meter
+      render UsageMeterComponent.new(
+        label: @handle.label,
+        used: @handle.used,
+        limit: limit_amount
       )
     end
 
-    def amount
-      helpers.tag.p(amount_text, class: "text-sm leading-6")
-    end
+    def limit_amount
+      included = @handle.included
+      return nil if included.nil?
 
-    def amount_text
-      return Copy.t("usage.none_on_plan") if @handle.included <= 0
-
-      Copy.t("usage.used_of_included", used: @handle.used, included: @handle.included)
-    end
-
-    def details
-      cap = progress_max
-      render FlatPack::Progress::Component.new(
-        value: [@handle.used, cap].min,
-        max: cap,
-        style: progress_style,
-        size: :md,
-        show_label: false
-      )
+      included.to_i
     end
 
     def limit_notice
       notice = LimitStatusComponent.new(handle: @handle)
       render(notice) if notice.render?
-    end
-
-    def progress_max
-      [@handle.included, 1].max
-    end
-
-    def progress_style
-      return :danger if @handle.over? || @handle.remaining <= 0
-      return :warning if @handle.included.positive? && @handle.remaining < (@handle.included * 0.15)
-
-      :default
     end
   end
 end

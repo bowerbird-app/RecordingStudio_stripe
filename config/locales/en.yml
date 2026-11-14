@@ -98,13 +98,9 @@ en:
         empty_title: Nothing to count yet
         empty_description: Meters show up once staff add them.
         none_on_plan: None on this plan.
-        over_hint: Archive some, or upgrade.
-        used_of_included: "%{used}/%{included}"
-        breakdown: Breakdown
-        on_this_plan: On this plan
-        extra_packs: Extra packs
-        total_this_period: Total this period
-        credits_used: "%{percent}% used"
+        none_named: "%{label}. None on this plan."
+        used_none_on_plan: "%{label}. %{used} used. None on this plan."
+        pack_split: "%{included} on this plan. %{purchased} from extra packs."
       allowances:
         pack_title: "+%{quantity} %{label}"
         add_this_pack: Add this pack

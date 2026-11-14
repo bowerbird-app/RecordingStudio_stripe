@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.25.1", ::RecordingStudioStripe::VERSION
+    assert_equal "0.26.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -19,7 +19,7 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_gemspec_pins_recording_studio_accessible_and_stripe
     gemspec = File.read(File.expand_path("../recording_studio_stripe.gemspec", __dir__))
 
-    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.341"'
+    assert_includes gemspec, 'spec.add_dependency "flat_pack", ">= 0.1.356"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.5.0"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_accessible", ">= 0.32.0", "< 1.0"'
     assert_includes gemspec, 'spec.add_dependency "view_component", ">= 4.14", "< 5"'
@@ -461,36 +461,32 @@ class RecordingStudioStripeTest < Minitest::Test
     refute_includes source, "subscription_cancel_path"
   end
 
-  def test_meter_card_shows_percent_used
+  def test_meter_card_uses_usage_meter
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/meter_card_component.rb", __dir__))
 
-    assert_includes source, "show_label: true"
-    assert_includes source, '"usage.credits_used"'
+    assert_includes source, "UsageMeterComponent"
+    assert_includes source, "Copy.t("
+    assert_includes source, '"usage.pack_split"'
+    refute_includes source, "Progress::Component"
+    refute_includes source, "PageTitle::Component"
+    refute_includes source, "Dropdown"
+    refute_includes source, "credits_used"
     refute_includes source, "credits_left"
     refute_includes source, "10m left"
-    refute_includes source, "Included"
+    refute_includes source, 'class: "flex'
   end
 
-  def test_meter_card_offers_breakdown_when_include_and_packs_combine
-    source = File.read(File.expand_path("../app/components/recording_studio_stripe/meter_card_component.rb", __dir__))
-
-    assert_includes source, "combined?"
-    assert_includes source, 'Copy.t("usage.breakdown")'
-    assert_includes source, "style: :default"
-    assert_includes source, 'Copy.t("usage.on_this_plan")'
-    assert_includes source, 'Copy.t("usage.extra_packs")'
-    assert_includes source, 'Copy.t("usage.total_this_period")'
-  end
-
-  def test_limit_card_shows_used_of_included_when_over
+  def test_limit_card_uses_usage_meter
     source = File.read(File.expand_path("../app/components/recording_studio_stripe/limit_card_component.rb", __dir__))
 
-    assert_includes source, "amount_text"
-    assert_includes source, "stripe_card_stack(title, amount, details, limit_notice)"
+    assert_includes source, "UsageMeterComponent"
+    assert_includes source, "stripe_card_stack(meter, limit_notice)"
     assert_includes source, "LimitStatusComponent"
-    assert_includes source, 'Copy.t("usage.used_of_included"'
+    refute_includes source, "Progress::Component"
+    refute_includes source, "PageTitle::Component"
+    refute_includes source, "used_of_included"
     refute_includes source, "over_hint"
-    refute_includes source, " of "
+    refute_includes source, 'class: "text-sm'
   end
 
   def test_dummy_home_page_points_at_plans

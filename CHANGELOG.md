@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-11-13
+
+### Changed
+- Meter and limit cards on `/billing/usage` use `FlatPack::Billing::UsageMeter`. The line reads usage of the cap, such as `63 of 100`. The bar warns at 80% and turns danger at the cap
+- A zero cap stays off UsageMeter. The card shows one muted line, such as `Credits. None on this plan.` Usage already recorded reads `Credits. 5 used. None on this plan.`
+- A meter that mixes plan include and extra packs keeps that split as the meter's description, such as `10m on this plan. 5m from extra packs.` The meter total is still included plus purchased
+- The percent-used label, the `used/included` line, and the Breakdown dropdown are gone. `AllowanceCardComponent` is still the pack checkout button. It has no usage reading
+
+### Upgrade notes
+- Bump to **0.26.0**. No database migration. No webhook change
+- `flat_pack` is now `>= 0.1.356`. UsageMeter shipped in that Flatpack version
+- Hosts that copied these cards should render UsageMeter and drop the old progress bar. Do not keep a local 15% bar warning, a zero max, or a Breakdown menu. The status alert is still within 15% of the included amount, and still fires when usage is over the cap
+- Dropped copy keys: `usage.credits_used`, `usage.used_of_included`, `usage.breakdown`, `usage.on_this_plan`, `usage.extra_packs`, `usage.total_this_period`, `usage.over_hint`. Added `usage.none_named`, `usage.used_none_on_plan`, and `usage.pack_split`. `usage.none_on_plan` remains
+
 ## [0.25.1] - 2026-11-13
 
 ### Changed

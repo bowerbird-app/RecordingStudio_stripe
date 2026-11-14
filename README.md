@@ -44,7 +44,7 @@ gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.356"
 gem "view_component", "4.19.0"
 ```
 
-This gem requires `recording_studio` `>= 6.5.0`, Accessible `>= 0.32.0, < 1.0`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.341`. The pin above loads FlatPack `0.1.356`. Accessible `>= 0.32.0, < 1.0` no longer matches 0.24 through 0.31.
+This gem requires `recording_studio` `>= 6.5.0`, Accessible `>= 0.32.0, < 1.0`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.356`. The pin above loads FlatPack `0.1.356`, which includes `FlatPack::Billing::UsageMeter`. Accessible `>= 0.32.0, < 1.0` no longer matches 0.24 through 0.31.
 
 `config.layout` chooses the screen chrome for this engine. `nil` uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. A String is a layout name. `false` renders with no layout. A callable must take `controller:` and return a String, `nil`, or `false`.
 
@@ -176,7 +176,7 @@ end
 
 `record_credits` writes that many credits on the credits meter. It does not check the remaining balance, because the work already ran. It does not call Stripe. `amount` is a positive integer. `breakdown` is a Hash stored as JSON and is not read back for pricing. The serialized Hash must be 16KB or smaller, and keys are stored as strings. `idempotency_key` is required. Keys from Recording Studio AI look like `ai-attempt:<id>`, `ai-batch-item:<id>`, and `ai-hosted-agent-turn:<id>`. The usage row stores `usage_key` `ai`, the amount in `quantity`, and leaves `source_quantity` and `credit_rate` empty. A repeated key returns the first row and writes nothing. A repeat with a different amount returns that same row, logs a warning, and does not overwrite it. There is no actor check and no charge screen. Call `billing.line` when the workspace can hold more than one plan. `billing.record_credits` follows the same line rules as `billing.spend_usage`.
 
-`/billing/usage` shows the credits meter as a bar labeled with the percent used: usage divided by included plus purchased, capped at 100. Over the total, the bar says `100% used`. A credits meter whose included plus purchased is 0 does not show that used label. Other meters keep the plain bar percent.
+`/billing/usage` shows each meter and standing cap with `FlatPack::Billing::UsageMeter`. The line is usage of the cap, such as `63 of 100`. The bar warns at 80% and turns danger at the cap. Over the total, the line keeps the real usage (`150 of 100`). A cap of 0 is a muted line, not a bar and not Unlimited. A nil cap is Unlimited. Count and quantity caps use 0 for none. A meter that mixes plan include and extra packs names both in the meter's description. The pack checkout card does not draw a meter.
 
 Admin Stripe has a read-only **Cents per credit** screen. For each active price that grants credits, cents per credit is the price amount divided by the credits on that price. A pack is a one-time allowance price with `meter` `credits`. A plan price uses `included_credits` for that billing period, so an annual price divides by its own included amount. The figure is before tax and coupons. A plan row says the whole price is treated as the credit price. Trial prices, `kind=trial_fee` prices, $0 prices, prices with no credits, and inactive prices are left out. The cheapest price in each currency is marked. Prices in different currencies are not compared.
 
