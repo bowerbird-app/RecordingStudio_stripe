@@ -132,7 +132,8 @@ config.meters = {
   "credits" => {
     "label" => "Credits",
     "icon" => "sparkles",
-    "plan_line" => "%{quantity} credits each period"
+    "plan_line" => "%{quantity} credits each period",
+    "display" => "percent"
   }
 }
 
@@ -204,7 +205,9 @@ A per-item limit is a ceiling on one item, such as the largest file a workspace 
 
 `no_plan_limit` is optional on count and quantity too. It is a positive integer or nil. Limits without it keep none when there is no live plan. With it, `included` is that base, so `used`, `remaining`, `available?`, `over?`, `with_capacity!`, and `enforce!` honor it. A live plan's `limit_<name>` always wins. Blank or 0 on that plan still means none, with no fallback to the base. `/billing/usage` shows the meter for a no-plan workspace when that base, or recorded usage, is positive. A later downgrade under the base blocks new writes and deletes nothing. A workspace with no live plan never sees the words "this plan" on that alert or on `PlanLimitReached`.
 
-Each limit can set `action` to `"upgrade"` or `"purchase"`. Omit it and the usage card stays text only. `upgrade` links to the plans page unless you set `action_url`. `purchase` needs `action_url`, a path or a callable. `action_label` replaces the button text (`Upgrade` or `Buy more`). `action_method` defaults to a link. `post`, `put`, `patch`, or `delete` submits a form. The button shows on a zero cap, a near-limit alert, and an over-limit alert.
+Each limit can set `action` to `"upgrade"` or `"purchase"`. Omit it and the usage card stays text only. `upgrade` links to the plans page unless you set `action_url`. `purchase` needs `action_url`, a path or a callable. `action_label` replaces the button text (`Upgrade` or `Buy more`). `action_method` defaults to a link. `post`, `put`, `patch`, or `delete` submits a form. The button shows on a zero cap, and when the bar is warning or danger (80% or more). The usage card does not show a status alert. The bar carries that.
+
+`display` on a limit or a meter is `"count"` or `"percent"`. Omit it and the line stays a count, such as `3 of 4`, with byte caps still printed as sizes. `"percent"` prints the share of the cap, such as `75%`. A zero cap still reads `None on plan`. An unlimited meter still reads `Unlimited`.
 
 ```ruby
 RecordingStudioStripe.configure do |config|
@@ -223,7 +226,8 @@ RecordingStudioStripe.configure do |config|
       "unit" => "bytes",
       "subscription_type" => "studio",
       "no_plan_limit" => 1.gigabyte,
-      "action" => "upgrade"
+      "action" => "upgrade",
+      "display" => "count"
     },
     "max_file_bytes" => {
       "label" => "Max file size",

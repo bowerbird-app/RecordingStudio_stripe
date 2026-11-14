@@ -481,7 +481,8 @@ class RecordingStudioStripeTest < Minitest::Test
 
     assert_includes source, "UsageMeterComponent"
     assert_includes source, "stripe_card_stack(meter, limit_notice)"
-    assert_includes source, "LimitStatusComponent"
+    assert_includes source, "stripe_usage_action"
+    refute_includes source, "LimitStatusComponent"
     refute_includes source, "Progress::Component"
     refute_includes source, "PageTitle::Component"
     refute_includes source, "used_of_included"

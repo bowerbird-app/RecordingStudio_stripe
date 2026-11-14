@@ -19,9 +19,11 @@ RecordingStudioStripe.configure do |config|
   #   "credits" => {
   #     "label" => "Credits",
   #     "icon" => "sparkles",
-  #     "plan_line" => "%{quantity} credits each period"
+  #     "plan_line" => "%{quantity} credits each period",
+  #     "display" => "percent"
   #   }
   # }
+  # display is count (default, "3 of 4") or percent ("75%"). Byte caps in count mode stay sizes.
   # config.usage_costs = {
   #   "ai.jev" => 1,
   #   "web.brave" => 5
@@ -64,7 +66,8 @@ RecordingStudioStripe.configure do |config|
   #     "unit" => "bytes",
   #     "subscription_type" => "studio",
   #     "no_plan_limit" => 1.gigabyte,
-  #     "action" => "upgrade"
+  #     "action" => "upgrade",
+  #     "display" => "count"
   #   },
   #   "credits_balance" => {
   #     "label" => "Credits",

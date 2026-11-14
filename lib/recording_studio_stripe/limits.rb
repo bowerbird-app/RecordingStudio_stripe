@@ -53,10 +53,11 @@ module RecordingStudioStripe
     class Definition
       ACTIONS = %w[upgrade purchase].freeze
       ACTION_METHODS = %w[get post put patch delete].freeze
+      DISPLAYS = %w[count percent].freeze
 
       attr_reader :name, :label, :recordable_type, :subscription_type, :icon, :plan_line,
                   :aggregation, :unit, :no_plan_limit, :action, :action_label, :action_url,
-                  :action_method
+                  :action_method, :display
 
       def initialize(name, attrs)
         @name = name.to_s
@@ -65,6 +66,7 @@ module RecordingStudioStripe
         @unit = unit_mode(attrs["unit"])
         @no_plan_limit = no_plan_limit_mode(attrs["no_plan_limit"])
         assign_action!(attrs)
+        @display = display_mode(attrs["display"])
         @recordable_type = attrs["recordable_type"].to_s
         @subscription_type = attrs["subscription_type"].presence || implied_subscription_type
         @icon = attrs["icon"].presence
@@ -181,6 +183,13 @@ module RecordingStudioStripe
         return verb if ACTION_METHODS.include?(verb)
 
         raise ArgumentError, "action_method for limit #{name} must be get, post, put, patch, or delete."
+      end
+
+      def display_mode(value)
+        mode = value.presence&.to_s || "count"
+        return mode if DISPLAYS.include?(mode)
+
+        raise ArgumentError, "display for limit #{name} must be \"count\" or \"percent\"."
       end
 
       def format_plan_line(shown)

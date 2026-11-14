@@ -121,7 +121,7 @@ class NoPlanLimitTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "2 GB of 1 GB"
-    assert_includes response.body, "Over the limit"
+    refute_includes response.body, "Over the limit"
   end
 
   test "a count base allows that many recordings and a plan of zero blocks" do

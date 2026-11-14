@@ -212,6 +212,7 @@ class LimitUsageTest < Minitest::Test
     }
     assert_equal callable, RecordingStudioStripe::Limits.fetch(:storage_bytes).action_url
     assert_equal "Buy more", RecordingStudioStripe::Limits.fetch(:storage_bytes).action_label
+    assert_equal "count", RecordingStudioStripe::Limits.fetch(:storage_bytes).display
 
     ["widgets", 1, true].each do |value|
       RecordingStudioStripe.configuration.limits = {
@@ -226,6 +227,35 @@ class LimitUsageTest < Minitest::Test
     }
     missing = assert_raises(ArgumentError) { RecordingStudioStripe::Limits.fetch(:storage_bytes) }
     assert_match(/action_url for limit storage_bytes is required when action is purchase/, missing.message)
+  end
+
+  def test_limit_display_is_count_or_percent
+    RecordingStudioStripe.configuration.limits = {
+      "storage_bytes" => { "aggregation" => "quantity", "display" => "percent" }
+    }
+    assert_equal "percent", RecordingStudioStripe::Limits.fetch(:storage_bytes).display
+
+    RecordingStudioStripe.configuration.limits = {
+      "storage_bytes" => { "aggregation" => "quantity" }
+    }
+    assert_equal "count", RecordingStudioStripe::Limits.fetch(:storage_bytes).display
+
+    RecordingStudioStripe.configuration.limits = {
+      "storage_bytes" => { "aggregation" => "quantity", "display" => "ratio" }
+    }
+    error = assert_raises(ArgumentError) { RecordingStudioStripe::Limits.fetch(:storage_bytes) }
+    assert_match(/display for limit storage_bytes must be "count" or "percent"/, error.message)
+
+    previous_meters = RecordingStudioStripe.configuration.meters
+    RecordingStudioStripe.configuration.meters = { "ai_tokens" => { "label" => "AI tokens", "display" => "percent" } }
+    meter = Struct.new(:name).new("ai_tokens")
+    handle = RecordingStudioStripe::MeterHandle.new(root_recording: nil, meter: meter)
+    assert_equal "percent", handle.usage_display
+    RecordingStudioStripe.configuration.meters = { "ai_tokens" => { "label" => "AI tokens", "display" => "shares" } }
+    bad = assert_raises(ArgumentError) { handle.usage_display }
+    assert_match(/display for meter ai_tokens must be "count" or "percent"/, bad.message)
+  ensure
+    RecordingStudioStripe.configuration.meters = previous_meters if previous_meters
   end
 
   def test_unknown_unit_raises

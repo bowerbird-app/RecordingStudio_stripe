@@ -45,6 +45,12 @@ module RecordingStudioStripe
       stripe_plan_feature_lines(product, price).map(&:text)
     end
 
+    def stripe_usage_action(handle)
+      return unless UsageMeterComponent.needs_action?(handle)
+
+      stripe_limit_action(handle)
+    end
+
     def stripe_limit_action(handle)
       return unless handle.respond_to?(:action)
 

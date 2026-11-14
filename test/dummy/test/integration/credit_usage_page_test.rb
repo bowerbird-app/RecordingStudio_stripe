@@ -68,7 +68,7 @@ class CreditUsagePageTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "150 of 100"
     assert_includes response.body, "fp-progress-fill--danger"
-    assert_includes response.body, "Over the limit"
+    refute_includes response.body, "Over the limit"
     refute_includes response.body, "100% used"
     refute_includes response.body, "% left"
   end

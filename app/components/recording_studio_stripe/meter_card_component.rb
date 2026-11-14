@@ -22,7 +22,8 @@ module RecordingStudioStripe
         label: @handle.meter.label,
         used: @handle.usage,
         limit: meter_limit,
-        description: pack_split
+        description: pack_split,
+        display: usage_display
       )
     end
 
@@ -44,19 +45,14 @@ module RecordingStudioStripe
       )
     end
 
-    def limit_notice
-      notice = LimitStatusComponent.new(handle: @handle)
-      return render(notice) if notice.render?
+    def usage_display
+      return "count" unless @handle.respond_to?(:usage_display)
 
-      helpers.stripe_limit_action(@handle) if zero_cap?
+      @handle.usage_display.presence || "count"
     end
 
-    def zero_cap?
-      included = @handle.included
-      purchased = @handle.purchased
-      return false if included.nil? && purchased.nil?
-
-      (included.to_i + purchased.to_i) <= 0
+    def limit_notice
+      helpers.stripe_usage_action(@handle)
     end
   end
 end
