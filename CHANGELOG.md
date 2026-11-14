@@ -12,12 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Count limits use `Recording.kept`. The gem no longer filters `trashed_at` itself, and it no longer checks that the column exists. Restoring a trashed recording still enforces the cap
 - Requires `recording_studio` `>= 6.14.0`. Development and dummy pin tag `v6.14.0`
-- Trashable stays a development pin at tag `v0.14.0`, not a gemspec dependency
+- Requires Accessible `>= 0.42.0, < 1.0`. Development and dummy pin tag `v0.42.0`
+- Trashable stays a development pin, now tag `v0.16.0`, not a gemspec dependency. Accessible loads Trashable's query entry, which registers the kept filter
 
 ### Upgrade notes
 - Bump to **0.28.0**. No Stripe migration. No webhook change
-- Require Recording Studio **6.14.0** or newer. Copy core migration `20261114090000_add_root_recording_id_to_recording_studio_events` if events do not yet store `root_recording_id`
-- Install Trashable **0.16.0** so `Recording.kept` skips trashed rows. Without that filter, a count limit includes trashed recordings. This gem does not declare `recording_studio_trashable >= 0.16.0`. Development stays on `v0.14.0` because Accessible `0.32.0` still calls `recording_studio_trashable_kept_sql`, which Trashable `0.16.0` removed. The dummy registers the filter locally until that pin can move
+- Require Recording Studio **6.14.0** or newer and Accessible **0.42.0** or newer, below **1.0**. Copy core migration `20261114090000_add_root_recording_id_to_recording_studio_events` if events do not yet store `root_recording_id`
+- Install Trashable **0.16.0** so `Recording.kept` skips trashed rows. Without that filter, a count limit includes trashed recordings. This gem does not declare `recording_studio_trashable`. Accessible `0.42.0` requires Trashable `~> 0.10`, `>= 0.16.0` and no longer calls `recording_studio_trashable_kept_sql`
 
 ## [0.27.0] - 2026-11-14
 
