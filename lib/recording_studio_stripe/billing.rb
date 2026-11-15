@@ -5,7 +5,7 @@ module RecordingStudioStripe
     attr_reader :root_recording
 
     def self.for(recordable)
-      recording = RecordingStudio.root_recording_for(recordable)
+      recording = RecordingStudio.create_root_recording!(recordable)
       new(root_recording: recording)
     end
 

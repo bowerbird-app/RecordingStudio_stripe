@@ -18,6 +18,8 @@ Stripe is the source of truth for Products, Prices, Customers, Subscriptions, in
 
 Usage is a fact table, not a Recording. High volume stays off the tree. Paywalls and limits are not Recordings either.
 
+The workspace root is a Recording. `account.billing` calls `Billing.for`, which calls `RecordingStudio.create_root_recording!`. When the root is missing, that creates it and appends one `created` event. The actor comes from `RecordingStudio.configuration.actor`. `authorize_write` sees `root_recording: nil` on that create. When the root is already there, the same call returns it and does not authorize, run hooks, or append an event. `config.site_admin_recording` does not create a root. It uses `root_recording_for` and returns nil when the admin root recording is missing.
+
 ## Products and Prices
 
 Stripe's shape is the shape here. A **Product** is the plan or pack. A **Price** is one way to pay for it.

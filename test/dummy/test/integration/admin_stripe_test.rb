@@ -14,7 +14,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
       user.password_confirmation = "Password"
     end
     @admin_root = AdminRoot.find_or_create_by!(name: "Studio Admin")
-    @admin_recording = RecordingStudio.root_recording_for(@admin_root)
+    @admin_recording = RecordingStudio.create_root_recording!(@admin_root, actor: root_actor)
     grant_owner_access!(recording: @admin_recording, actor: @user)
     sign_in @user
     switch_to_root!(@admin_recording)
@@ -220,7 +220,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
 
   test "configured site-admin workspace grants Stripe Admin forms" do
     decoy = AdminRoot.create!(name: "Wrong Admin #{SecureRandom.hex(4)}")
-    decoy_recording = RecordingStudio.root_recording_for(decoy)
+    decoy_recording = RecordingStudio.create_root_recording!(decoy, actor: root_actor)
 
     previous = RecordingStudioStripe.configuration.site_admin_recording
     RecordingStudioStripe.configuration.site_admin_recording = -> { decoy_recording }
@@ -247,7 +247,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
 
   test "site_admin_recording whose type lacks stripe_admin denies Stripe Admin forms" do
     workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
-    root = RecordingStudio.root_recording_for(workspace)
+    root = RecordingStudio.create_root_recording!(workspace, actor: root_actor)
     refute RecordingStudio.capability_enabled?(:stripe_admin, for: Workspace)
 
     previous = RecordingStudioStripe.configuration.site_admin_recording
@@ -262,8 +262,8 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
   end
 
   test "Admin stripe section uses the default resolver through Admin context" do
-    previous_resolver = RecordingStudioAdmin.configuration.site_admin_recording_resolver
-    RecordingStudioAdmin.configuration.site_admin_recording_resolver = lambda do |context|
+    previous_resolver = RecordingStudioAccessible.configuration.admin_root_resolver
+    RecordingStudioAccessible.configuration.admin_root_resolver = lambda do |context: nil|
       RecordingStudioStripe::AdminSupport.default_site_admin_recording_for(context)
     end
 
@@ -273,12 +273,12 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Stripe"
     assert_includes response.body, "Products"
   ensure
-    RecordingStudioAdmin.configuration.site_admin_recording_resolver = previous_resolver
+    RecordingStudioAccessible.configuration.admin_root_resolver = previous_resolver
   end
 
   test "default Admin resolver returns nil when access_recording lacks stripe_admin" do
     workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
-    root = RecordingStudio.root_recording_for(workspace)
+    root = RecordingStudio.create_root_recording!(workspace, actor: root_actor)
     refute RecordingStudio.capability_enabled?(:stripe_admin, for: Workspace)
 
     previous = RecordingStudioStripe.configuration.site_admin_recording
@@ -290,13 +290,9 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     RecordingStudioStripe.configuration.site_admin_recording = previous
   end
 
-  test "Admin stripe section falls back to access_recording when site_admin_recording is unset" do
+  test "Admin stripe section stays on the admin root when site_admin_recording is unset" do
     previous = RecordingStudioStripe.configuration.site_admin_recording
-    previous_resolver = RecordingStudioAdmin.configuration.site_admin_recording_resolver
     RecordingStudioStripe.configuration.site_admin_recording = nil
-    RecordingStudioAdmin.configuration.site_admin_recording_resolver = lambda do |context|
-      RecordingStudioStripe::AdminSupport.default_site_admin_recording_for(context)
-    end
 
     get "/admin"
 
@@ -304,7 +300,6 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Stripe"
   ensure
     RecordingStudioStripe.configuration.site_admin_recording = previous
-    RecordingStudioAdmin.configuration.site_admin_recording_resolver = previous_resolver
   end
 
   test "missing site_admin_recording denies Stripe Admin forms" do
@@ -328,7 +323,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
 
   test "an unconfigured admin root of the same type is not granted" do
     decoy = AdminRoot.create!(name: "Wrong Admin #{SecureRandom.hex(4)}")
-    decoy_recording = RecordingStudio.root_recording_for(decoy)
+    decoy_recording = RecordingStudio.create_root_recording!(decoy, actor: root_actor)
 
     outsider = User.find_or_create_by!(email: "first-row@example.com") do |user|
       user.password = "Password"
@@ -349,7 +344,7 @@ class AdminStripeTest < ActionDispatch::IntegrationTest
 
   test "plans stay on the billing workspace when site_admin_recording is unset" do
     workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
-    root = RecordingStudio.root_recording_for(workspace)
+    root = RecordingStudio.create_root_recording!(workspace, actor: root_actor)
     grant_owner_access!(recording: root, actor: @user, role: :admin)
     switch_to_root!(root)
 

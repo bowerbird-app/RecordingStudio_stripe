@@ -12,7 +12,7 @@ class CreditUsagePageTest < ActionDispatch::IntegrationTest
       user.password_confirmation = "Password"
     end
     @workspace = Workspace.create!(name: "Credit usage #{SecureRandom.hex(4)}")
-    @root = RecordingStudio.root_recording_for(@workspace)
+    @root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     grant_owner_access!(recording: @root, actor: @user)
     sign_in @user
     switch_to_root!(@root)

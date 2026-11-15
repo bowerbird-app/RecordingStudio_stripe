@@ -14,7 +14,7 @@ class PerItemLimitsTest < ActionDispatch::IntegrationTest
       user.password_confirmation = "Password"
     end
     @workspace = Workspace.create!(name: "File Ceiling #{SecureRandom.hex(4)}")
-    @root = RecordingStudio.root_recording_for(@workspace)
+    @root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     grant_owner_access!(recording: @root, actor: @user)
     Current.actor = @user
     sign_in @user
@@ -186,7 +186,7 @@ class PerItemLimitsTest < ActionDispatch::IntegrationTest
 
   test "admin product form stores the per-item byte integer" do
     admin_root = AdminRoot.find_or_create_by!(name: "Studio Admin")
-    admin_recording = RecordingStudio.root_recording_for(admin_root)
+    admin_recording = RecordingStudio.create_root_recording!(admin_root, actor: root_actor)
     grant_owner_access!(recording: admin_recording, actor: @user)
     switch_to_root!(admin_recording)
 
@@ -219,7 +219,7 @@ class PerItemLimitsTest < ActionDispatch::IntegrationTest
 
   test "gates screen shows the per-item row and the no-plan ceiling" do
     admin_root = AdminRoot.find_or_create_by!(name: "Studio Admin")
-    admin_recording = RecordingStudio.root_recording_for(admin_root)
+    admin_recording = RecordingStudio.create_root_recording!(admin_root, actor: root_actor)
     grant_owner_access!(recording: admin_recording, actor: @user)
     switch_to_root!(admin_recording)
 

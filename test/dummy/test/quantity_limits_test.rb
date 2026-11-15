@@ -26,7 +26,7 @@ class QuantityLimitsTest < ActiveSupport::TestCase
       user.password_confirmation = "Password"
     end
     @workspace = Workspace.create!(name: "Quantity Studio #{SecureRandom.hex(4)}")
-    @root = RecordingStudio.root_recording_for(@workspace)
+    @root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     grant_owner_access!(recording: @root, actor: @user)
     Current.actor = @user
     @starter = RecordingStudioStripe::Product.find_by!(name: "Starter")
@@ -155,7 +155,7 @@ class QuantityLimitsTest < ActiveSupport::TestCase
 
   test "a missing plan tells you to pick one" do
     bare = Workspace.create!(name: "No Plan #{SecureRandom.hex(4)}")
-    root = RecordingStudio.root_recording_for(bare)
+    root = RecordingStudio.create_root_recording!(bare, actor: root_actor)
     error = assert_raises(RecordingStudioStripe::PlanLimitReached) do
       bare.billing.limit(:storage_bytes).enforce!(1)
     end
@@ -194,7 +194,7 @@ class QuantityLimitsTest < ActiveSupport::TestCase
     kit.update!(trashed_at: nil)
 
     other = Workspace.create!(name: "Quantity Other #{SecureRandom.hex(4)}")
-    other_root = RecordingStudio.root_recording_for(other)
+    other_root = RecordingStudio.create_root_recording!(other, actor: root_actor)
     grant_owner_access!(recording: other_root, actor: @user)
     moving = other_root.record(Folder) { |folder| folder.name = "Traveler" }
     moving.update!(parent_recording_id: @root.id, root_recording_id: @root.id)
@@ -327,7 +327,7 @@ class QuantityLimitConcurrencyTest < ActiveSupport::TestCase
     }
     RecordingStudioStripe.configuration.limits = limits
     @workspace = Workspace.create!(name: "Quantity Lock #{SecureRandom.hex(4)}")
-    @root = RecordingStudio.root_recording_for(@workspace)
+    @root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     @product = RecordingStudioStripe::Product.create!(
       name: "Quantity Cap #{SecureRandom.hex(4)}",
       kind: "plan",

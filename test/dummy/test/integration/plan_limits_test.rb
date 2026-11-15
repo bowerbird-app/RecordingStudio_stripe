@@ -13,7 +13,7 @@ class PlanLimitsTest < ActionDispatch::IntegrationTest
       user.password_confirmation = "Password"
     end
     @workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
-    @root = RecordingStudio.root_recording_for(@workspace)
+    @root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     grant_owner_access!(recording: @root, actor: @user)
     sign_in @user
     switch_to_root!(@root)
@@ -224,7 +224,7 @@ class PlanLimitsTest < ActionDispatch::IntegrationTest
     3.times { |index| record_press_kit!("Kit #{index + 1}") }
 
     other = Workspace.create!(name: "Other Studio #{SecureRandom.hex(4)}")
-    other_root = RecordingStudio.root_recording_for(other)
+    other_root = RecordingStudio.create_root_recording!(other, actor: root_actor)
     grant_owner_access!(recording: other_root, actor: @user)
     RecordingStudioStripe::ApplySubscription.call(root_recording: other_root, price: starter)
     moving = other_root.record(PressKit) { |kit| kit.name = "Traveler" }

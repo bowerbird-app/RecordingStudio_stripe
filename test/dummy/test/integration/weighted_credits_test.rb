@@ -38,7 +38,7 @@ class WeightedCreditsTest < ActiveSupport::TestCase
     config.subscription_types = @previous_types.merge("pressbot" => { "label" => "Pressbot" })
     RecordingStudioStripe::Meter.sync_from_config!
     @workspace = Workspace.create!(name: "Credits #{SecureRandom.hex(4)}")
-    @root = RecordingStudio.root_recording_for(@workspace)
+    @root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     @billing = @workspace.billing
   end
 

@@ -9,7 +9,7 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
   setup do
     RecordingStudioStripe::SeedDemoCatalog.call
     @workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
-    @root = RecordingStudio.root_recording_for(@workspace)
+    @root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     @pro = RecordingStudioStripe::Product.find_by!(name: "Pro")
     @price = @pro.monthly_price
     @fee = @pro.trial.fee_price
@@ -516,7 +516,7 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
 
   test "one failing webhook does not stop the prices_pending sweep" do
     subscribe!("sub_sweep_fault", "cus_sweep_fault", status: "active")
-    good_root = RecordingStudio.root_recording_for(Workspace.create!(name: "Sweep Fault #{SecureRandom.hex(4)}"))
+    good_root = RecordingStudio.create_root_recording!(Workspace.create!(name: "Sweep Fault #{SecureRandom.hex(4)}"), actor: root_actor)
     RecordingStudioStripe::ApplySubscription.call(
       root_recording: good_root,
       price: @price,
@@ -677,7 +677,7 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
     end
     refute renewal.first.payload[:first_payment]
 
-    created_root = RecordingStudio.root_recording_for(Workspace.create!(name: "Create Workspace"))
+    created_root = RecordingStudio.create_root_recording!(Workspace.create!(name: "Create Workspace"), actor: root_actor)
     RecordingStudioStripe::ApplySubscription.call(
       root_recording: created_root,
       price: @price,
@@ -694,7 +694,7 @@ class DomainEventsTest < ActionDispatch::IntegrationTest
     assert_equal "subscription_create", created.first.payload[:billing_reason]
     assert_equal "active", created.first.payload[:subscription_status]
 
-    tracked_root = RecordingStudio.root_recording_for(Workspace.create!(name: "Upgrade Workspace"))
+    tracked_root = RecordingStudio.create_root_recording!(Workspace.create!(name: "Upgrade Workspace"), actor: root_actor)
     tracked = RecordingStudioStripe::ApplySubscription.call(
       root_recording: tracked_root,
       price: @price,
@@ -1151,7 +1151,7 @@ class PricesPendingReportTest < ActiveSupport::TestCase
   setup do
     RecordingStudioStripe::SeedDemoCatalog.call
     @workspace = Workspace.create!(name: "Pending report #{SecureRandom.hex(4)}")
-    root = RecordingStudio.root_recording_for(@workspace)
+    root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     @price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
     @subscription = RecordingStudioStripe::ApplySubscription.call(
       root_recording: root,
@@ -1179,7 +1179,9 @@ class PricesPendingReportTest < ActiveSupport::TestCase
     @subscription&.delete
     customer&.delete
     if @workspace
-      RecordingStudio::Recording.where(recordable: @workspace).delete_all
+      recordings = RecordingStudio::Recording.where(recordable: @workspace)
+      RecordingStudio::Event.where(recording_id: recordings.select(:id)).delete_all
+      recordings.delete_all
       @workspace.delete
     end
   end
@@ -1287,7 +1289,7 @@ class PricesPendingLiveRaceTest < ActiveSupport::TestCase
   setup do
     RecordingStudioStripe::SeedDemoCatalog.call
     @workspace = Workspace.create!(name: "Live race #{SecureRandom.hex(4)}")
-    root = RecordingStudio.root_recording_for(@workspace)
+    root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     @price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
     @subscription = RecordingStudioStripe::ApplySubscription.call(
       root_recording: root,
@@ -1310,7 +1312,9 @@ class PricesPendingLiveRaceTest < ActiveSupport::TestCase
     @subscription&.delete
     customer&.delete
     if @workspace
-      RecordingStudio::Recording.where(recordable: @workspace).delete_all
+      recordings = RecordingStudio::Recording.where(recordable: @workspace)
+      RecordingStudio::Event.where(recording_id: recordings.select(:id)).delete_all
+      recordings.delete_all
       @workspace.delete
     end
     restore_price_gates
@@ -1411,7 +1415,7 @@ class PricesPendingSweepConcurrencyTest < ActiveSupport::TestCase
   setup do
     RecordingStudioStripe::SeedDemoCatalog.call
     @workspace = Workspace.create!(name: "Sweep #{SecureRandom.hex(4)}")
-    root = RecordingStudio.root_recording_for(@workspace)
+    root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
     @subscription = RecordingStudioStripe::ApplySubscription.call(
       root_recording: root,
@@ -1450,7 +1454,9 @@ class PricesPendingSweepConcurrencyTest < ActiveSupport::TestCase
     @subscription&.delete
     customer&.delete
     if @workspace
-      RecordingStudio::Recording.where(recordable: @workspace).delete_all
+      recordings = RecordingStudio::Recording.where(recordable: @workspace)
+      RecordingStudio::Event.where(recording_id: recordings.select(:id)).delete_all
+      recordings.delete_all
       @workspace.delete
     end
   end
@@ -1492,7 +1498,7 @@ class DomainEventConcurrentPublishTest < ActiveSupport::TestCase
   setup do
     RecordingStudioStripe::SeedDemoCatalog.call
     workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
-    root = RecordingStudio.root_recording_for(workspace)
+    root = RecordingStudio.create_root_recording!(workspace, actor: root_actor)
     price = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
     @subscription = RecordingStudioStripe::ApplySubscription.call(
       root_recording: root,

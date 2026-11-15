@@ -15,7 +15,7 @@ class HostLocaleOverrideTest < ActionDispatch::IntegrationTest
       user.password_confirmation = "Password"
     end
     @admin_root = AdminRoot.find_or_create_by!(name: "Studio Admin")
-    @admin_recording = RecordingStudio.root_recording_for(@admin_root)
+    @admin_recording = RecordingStudio.create_root_recording!(@admin_root, actor: root_actor)
     grant_owner_access!(recording: @admin_recording, actor: @user)
     sign_in @user
     switch_to_root!(@admin_recording)
