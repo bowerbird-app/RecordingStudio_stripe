@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.1] - 2026-11-15
+
+### Fixed
+- Checkout webhook replay ordering. A later subscription change stays in place when an older `checkout.session.completed` arrives again. When Stripe is configured, checkout reads the Subscription for the price, status, and period. A failed read returns 503 and does not store an active plan
+
+### Upgrade notes
+- Bump to **0.29.1**. No migration. No host change beyond the pin bump
+
 ## [0.29.0] - 2026-11-15
 
 ### Changed
