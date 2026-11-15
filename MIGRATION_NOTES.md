@@ -9,6 +9,10 @@
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
 - FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.360`
 
+## Checkout webhooks
+
+`0.29.1` does not add a migration. Bump the gem pin. There is no host config change. When Stripe is configured, checkout stores the price, status, and period from the Subscription, and it stores the event time. An older checkout does not replace a later subscription change. A failed Subscription read returns 503 so Stripe retries. Local mode still uses the price on the checkout session.
+
 ## Roots
 
 `0.29.0` follows Recording Studio 7. `root_recording_for` only finds a root. `Billing.for`, which `Billable#billing` calls, uses `create_root_recording!`. The first call creates the workspace root and one `created` event when `config.actor` (or an explicit actor) is present and `authorize_write` allows `root_recording: nil`. A later call returns that root and does not append another event. `config.site_admin_recording` stays a lookup. A missing admin root is nil.

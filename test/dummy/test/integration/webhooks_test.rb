@@ -337,6 +337,87 @@ class WebhooksTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "a resent checkout does not restore an older plan" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    secret = "whsec_replay_order"
+    client = CheckoutReadClient.new(subscription: subscription_snapshot("sub_replay", pro.stripe_id, status: "active"))
+
+    with_webhook_settings(client: client, webhook_secret: secret) do
+      post_signed(checkout_event("evt_replay_checkout", "sub_replay", pro, created: 1_000), secret)
+      assert_response :success
+      assert_equal pro.id, @workspace.billing.subscription.price_id
+      assert @workspace.billing.unlocked?(:generate_image)
+
+      post_signed(subscription_updated_event("evt_replay_downgrade", "sub_replay", starter, created: 2_000), secret)
+      assert_response :success
+      assert_equal starter.id, @workspace.billing.subscription.reload.price_id
+      refute @workspace.billing.unlocked?(:generate_image)
+
+      client.subscription = subscription_snapshot("sub_replay", pro.stripe_id, status: "active")
+      post_signed(checkout_event("evt_replay_checkout_again", "sub_replay", pro, created: 1_000), secret)
+    end
+
+    assert_response :success
+    subscription = RecordingStudioStripe::Subscription.find_by!(stripe_id: "sub_replay")
+    assert_equal starter.id, subscription.price_id
+    assert_equal "active", subscription.status
+    refute @workspace.billing.unlocked?(:generate_image)
+  end
+
+  test "a resent checkout does not reactivate a canceled plan when Stripe cannot be read" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    secret = "whsec_replay_cancel"
+    client = CheckoutReadClient.new(subscription: subscription_snapshot("sub_cancel", pro.stripe_id, status: "active"))
+
+    with_webhook_settings(client: client, webhook_secret: secret) do
+      post_signed(checkout_event("evt_cancel_checkout", "sub_cancel", pro, created: 1_000), secret)
+      assert_response :success
+      post_signed(subscription_deleted_event("evt_cancel_deleted", "sub_cancel"), secret)
+      assert_response :success
+      assert_equal "canceled", RecordingStudioStripe::Subscription.find_by!(stripe_id: "sub_cancel").status
+
+      client.failure = Stripe::StripeError.new("unavailable")
+      post_signed(checkout_event("evt_cancel_replay", "sub_cancel", pro, created: 1_000), secret)
+    end
+
+    assert_response :service_unavailable
+    assert_equal "canceled", RecordingStudioStripe::Subscription.find_by!(stripe_id: "sub_cancel").status
+    refute @workspace.billing.unlocked?(:generate_image)
+    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_cancel_replay")
+  end
+
+  test "configured checkout stores the subscription price" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price
+    secret = "whsec_live_price"
+    client = CheckoutReadClient.new(subscription: subscription_snapshot("sub_live_price", starter.stripe_id, status: "active"))
+
+    with_webhook_settings(client: client, webhook_secret: secret) do
+      post_signed(checkout_event("evt_live_price", "sub_live_price", pro, created: 1_700_000_000), secret)
+    end
+
+    assert_response :success
+    subscription = @workspace.billing.subscription
+    assert_equal starter.id, subscription.price_id
+    assert_equal "active", subscription.status
+    refute @workspace.billing.unlocked?(:generate_image)
+  end
+
+  test "a checkout with no event time does not store a plan when Stripe is configured" do
+    pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
+    secret = "whsec_no_time"
+    client = CheckoutReadClient.new(subscription: subscription_snapshot("sub_no_time", pro.stripe_id, status: "active"))
+
+    with_webhook_settings(client: client, webhook_secret: secret) do
+      post_signed(checkout_event("evt_no_time", "sub_no_time", pro, created: nil), secret)
+    end
+
+    assert_response :service_unavailable
+    assert_nil @workspace.billing.subscription
+    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_no_time")
+  end
+
   test "a stripe key without a webhook secret is rejected outside local mode" do
     with_webhook_settings(secret_key: "sk_test_fixture", client: nil, webhook_secret: nil) do
       Rails.stub(:env, ActiveSupport::StringInquirer.new("development")) do
@@ -350,6 +431,91 @@ class WebhooksTest < ActionDispatch::IntegrationTest
   end
 
   private
+
+  def post_signed(event, secret)
+    payload = event.to_json
+    post "/webhooks/stripe",
+         params: payload,
+         headers: {
+           "CONTENT_TYPE" => "application/json",
+           "HTTP_STRIPE_SIGNATURE" => signed_header(payload, secret)
+         }
+  end
+
+  def checkout_event(id, subscription_id, price, created:)
+    stripe_event(
+      id,
+      "checkout.session.completed",
+      {
+        "id" => "cs_#{subscription_id}",
+        "mode" => "subscription",
+        "payment_status" => "paid",
+        "subscription" => subscription_id,
+        "customer" => "cus_#{subscription_id}",
+        "client_reference_id" => @root.id.to_s,
+        "metadata" => {
+          "root_recording_id" => @root.id.to_s,
+          "price_id" => price.stripe_id
+        }
+      },
+      created: created
+    )
+  end
+
+  def subscription_updated_event(id, subscription_id, price, created:)
+    stripe_event(
+      id,
+      "customer.subscription.updated",
+      {
+        "id" => subscription_id,
+        "customer" => "cus_#{subscription_id}",
+        "status" => "active",
+        "cancel_at_period_end" => false,
+        "metadata" => { "root_recording_id" => @root.id.to_s },
+        "items" => {
+          "data" => [
+            {
+              "id" => "si_#{subscription_id}",
+              "price" => { "id" => price.stripe_id },
+              "current_period_start" => 1_700_000_000,
+              "current_period_end" => 1_702_592_000
+            }
+          ]
+        }
+      },
+      created: created
+    )
+  end
+
+  def subscription_deleted_event(id, subscription_id)
+    stripe_event(
+      id,
+      "customer.subscription.deleted",
+      {
+        "id" => subscription_id,
+        "customer" => "cus_#{subscription_id}",
+        "status" => "canceled"
+      }
+    )
+  end
+
+  def subscription_snapshot(id, price_id, status:)
+    Stripe::StripeObject.construct_from(
+      "id" => id,
+      "status" => status,
+      "customer" => "cus_#{id}",
+      "items" => {
+        "data" => [
+          {
+            "id" => "si_#{id}",
+            "price" => { "id" => price_id },
+            "current_period_start" => 1_700_000_000,
+            "current_period_end" => 1_702_592_000
+          }
+        ]
+      }
+    )
+  end
 
   def post_unsigned(event_id)
     post "/webhooks/stripe", params: JSON.parse(unsigned_body(event_id)), as: :json
@@ -383,6 +549,31 @@ class WebhooksTest < ActionDispatch::IntegrationTest
   end
 
   def stripe_event(id, type, object, created: 1_700_000_000)
-    { "id" => id, "object" => "event", "type" => type, "created" => created, "data" => { "object" => object } }
+    event = { "id" => id, "object" => "event", "type" => type, "data" => { "object" => object } }
+    event["created"] = created unless created.nil?
+    event
+  end
+end
+
+class CheckoutReadClient
+  attr_accessor :subscription, :failure
+
+  def initialize(subscription: nil, failure: nil)
+    @subscription = subscription
+    @failure = failure
+  end
+
+  def v1
+    self
+  end
+
+  def subscriptions
+    self
+  end
+
+  def retrieve(_id)
+    raise failure if failure
+
+    subscription
   end
 end

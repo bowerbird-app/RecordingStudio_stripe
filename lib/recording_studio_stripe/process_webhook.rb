@@ -143,7 +143,9 @@ module RecordingStudioStripe
       object = event.data.object
       created = stripe_get(event, :created)
       if method_name == :handle_subscription
-        handle_subscription(object, event_created: created)
+        handle_subscription(object, event_created: require_event_time(created))
+      elsif method_name == :handle_checkout
+        handle_checkout(object, event_created: created)
       else
         send(method_name, object)
       end
@@ -161,13 +163,13 @@ module RecordingStudioStripe
       Price.find_by(stripe_id: stripe_price.id)&.update!(active: false)
     end
 
-    def handle_checkout(session)
+    def handle_checkout(session, event_created: nil)
       return if stripe_get(session, :status).to_s == "expired"
       return unless checkout_paid?(session)
 
       price = price_from_session(session)
       if checkout_subscription?(session, price)
-        handle_checkout_subscription(session, price)
+        handle_checkout_subscription(session, price, event_created: event_created)
       else
         handle_checkout_allowance(session, price)
       end
@@ -184,10 +186,11 @@ module RecordingStudioStripe
       session.mode == "subscription" || price&.recurring?
     end
 
-    def handle_checkout_subscription(session, price)
+    def handle_checkout_subscription(session, session_price, event_created:)
+      created = require_event_time(event_created)
       root = require_root!(root_from(session))
-      require_price!(price)
       stripe_subscription = checkout_subscription(session)
+      price = require_price!(price_for_checkout(stripe_subscription, session_price))
       remember_retrieved_subscription!(stripe_subscription)
       stripe_subscription_id = checkout_subscription_id(stripe_subscription) ||
                                checkout_subscription_id(stripe_get(session, :subscription))
@@ -204,7 +207,8 @@ module RecordingStudioStripe
         status: checkout_subscription_status(stripe_subscription),
         current_period_start: period_start,
         current_period_end: period_end,
-        checkout_session_id: stripe_get(session, :id)
+        checkout_session_id: stripe_get(session, :id),
+        stripe_event_created: created
       )
     end
 
@@ -391,9 +395,29 @@ module RecordingStudioStripe
     def checkout_subscription(session)
       raw = stripe_get(session, :subscription)
       return if raw.blank?
+      return read_live_subscription(raw) if RecordingStudioStripe.configuration.stripe_configured?
       return raw if checkout_subscription_expanded?(raw)
 
-      retrieve_stripe_subscription(checkout_subscription_id(raw)) || raw
+      raw
+    end
+
+    def read_live_subscription(raw)
+      id = checkout_subscription_id(raw)
+      raise OrderingRace, "Checkout has no Subscription yet" if id.blank?
+
+      retrieve_stripe_subscription(id)
+    end
+
+    def price_for_checkout(stripe_subscription, session_price)
+      return session_price unless RecordingStudioStripe.configuration.stripe_configured?
+
+      price_from_subscription(stripe_subscription)
+    end
+
+    def require_event_time(created)
+      raise OrderingRace, "Stripe event has no created time" if created.blank?
+
+      created
     end
 
     def checkout_subscription_expanded?(raw)
@@ -410,9 +434,17 @@ module RecordingStudioStripe
     end
 
     def checkout_subscription_status(stripe_subscription)
-      return "active" if stripe_subscription.blank? || stripe_subscription.is_a?(String)
+      status = read_subscription_status(stripe_subscription)
+      return status if status.present?
+      return "active" unless RecordingStudioStripe.configuration.stripe_configured?
 
-      stripe_get(stripe_subscription, :status).presence || "active"
+      raise OrderingRace, "Subscription could not be read from Stripe"
+    end
+
+    def read_subscription_status(stripe_subscription)
+      return if stripe_subscription.blank? || stripe_subscription.is_a?(String)
+
+      stripe_get(stripe_subscription, :status).to_s.presence
     end
 
     def checkout_subscription_period(stripe_subscription)
@@ -427,8 +459,8 @@ module RecordingStudioStripe
       return unless RecordingStudioStripe.configuration.stripe_configured?
 
       Client.current.v1.subscriptions.retrieve(id)
-    rescue MissingStripeKey, Stripe::StripeError
-      nil
+    rescue Stripe::StripeError
+      raise OrderingRace, "Subscription could not be read from Stripe"
     end
 
     def timestamp(value)

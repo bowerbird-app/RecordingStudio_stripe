@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.1] - 2026-11-15
+
+### Fixed
+- Checkout webhook replay ordering. A later subscription change stays in place when an older `checkout.session.completed` arrives again. When Stripe is configured, checkout reads the Subscription for the price, status, and period. A failed read returns 503 and does not store an active plan
+
+### Security
+- Dummy lockfile: `msgpack` 1.8.7 clears GHSA-73v3-wf97-vpgj. `puma` 8.0.3 clears the advisories reported against 8.0.2, including GHSA-86xc-wrr9-xmmq
+- Development lockfile: `puma` 7.2.2. That is the first 7.x release that clears the same advisories. 7.1.0 has no later patch
+
+### Upgrade notes
+- Bump to **0.29.1**. No migration. No host change beyond the pin bump
+- The gemspec does not depend on `msgpack` or `puma`. The lockfile updates above stay in this repo
+
 ## [0.29.0] - 2026-11-15
 
 ### Changed
