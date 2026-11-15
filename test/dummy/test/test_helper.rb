@@ -6,6 +6,16 @@ require_relative "../config/environment"
 require "rails/test_help"
 
 module StripeBillingTestHelpers
+  def root_actor
+    return Current.actor if defined?(Current) && Current.actor
+    return @user if instance_variable_defined?(:@user) && @user
+
+    @root_actor ||= User.find_or_create_by!(email: "root-writer@example.com") do |user|
+      user.password = "Password123!"
+      user.password_confirmation = "Password123!"
+    end
+  end
+
   def grant_owner_access!(recording:, actor:, role: :admin, manager_actor: nil)
     return if RecordingStudioAccessible.authorized?(actor: actor, recording: recording, role: role)
 

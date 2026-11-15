@@ -12,6 +12,7 @@ class AuthorizeWriteTest < ActiveSupport::TestCase
     refute_includes initializer, "recordable.actor == actor"
     refute_match(/authorize_write\s*=\s*->\(actor:, \*\*\) \{ actor\.present\? \}/, initializer)
     refute_includes initializer, "allow_unauthorized_writes = true"
+    assert_includes initializer, "root_recording.nil?"
   end
 
   test "dummy authorize_write requires a persisted user with accessible edit on the root" do
@@ -24,9 +25,12 @@ class AuthorizeWriteTest < ActiveSupport::TestCase
       record.password_confirmation = "Password123!"
     end
     workspace = Workspace.create!(name: "Write policy #{SecureRandom.hex(4)}")
-    root_recording = RecordingStudio.root_recording_for(workspace)
+    root_recording = RecordingStudio.create_root_recording!(workspace, actor: actor)
     folder = Folder.new(name: "Write policy folder")
 
+    assert authorizer.call(actor: actor, root_recording: nil, recordable: workspace)
+    refute authorizer.call(actor: nil, root_recording: nil, recordable: workspace)
+    refute authorizer.call(actor: User.new, root_recording: nil, recordable: workspace)
     refute authorizer.call(actor: nil, root_recording: root_recording, recordable: folder)
     refute authorizer.call(actor: actor, root_recording: root_recording, recordable: folder)
 
@@ -42,7 +46,7 @@ class AuthorizeWriteTest < ActiveSupport::TestCase
       record.password_confirmation = "Password123!"
     end
     workspace = Workspace.create!(name: "Access write #{SecureRandom.hex(4)}")
-    root_recording = RecordingStudio.root_recording_for(workspace)
+    root_recording = RecordingStudio.create_root_recording!(workspace, actor: actor)
     access = RecordingStudio::Access.new(actor: actor, role: "admin")
 
     refute authorizer.call(actor: actor, root_recording: root_recording, recordable: access)

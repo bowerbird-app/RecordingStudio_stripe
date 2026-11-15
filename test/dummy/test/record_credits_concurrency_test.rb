@@ -9,7 +9,7 @@ class RecordCreditsConcurrencyTest < ActiveSupport::TestCase
   setup do
     RecordingStudioStripe::Meter.sync_from_config!
     @workspace = Workspace.create!(name: "Credit lock #{SecureRandom.hex(4)}")
-    @root = RecordingStudio.root_recording_for(@workspace)
+    @root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     @product = RecordingStudioStripe::Product.create!(
       stripe_id: "prod_#{SecureRandom.hex(6)}",
       name: "Lock plan #{SecureRandom.hex(3)}",

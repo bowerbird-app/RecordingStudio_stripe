@@ -12,7 +12,7 @@ module RecordingStudioStripe
         user.password_confirmation = "Password"
       end
       @workspace = Workspace.find_or_create_by!(name: "Plan Card Workspace")
-      @root = RecordingStudio.root_recording_for(@workspace)
+      @root = RecordingStudio.create_root_recording!(@workspace, actor: Current.actor || @user)
       grant_owner_access!(recording: @root, actor: @user)
       @pro = RecordingStudioStripe::Product.find_by!(name: "Pro").monthly_price
       @starter = RecordingStudioStripe::Product.find_by!(name: "Starter").monthly_price

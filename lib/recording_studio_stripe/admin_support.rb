@@ -5,10 +5,11 @@ module RecordingStudioStripe
     extend ActiveSupport::Concern
 
     def self.default_site_admin_recording_for(context)
-      named = RecordingStudioStripe.site_admin_recording_for(context.controller)
+      controller = context.respond_to?(:controller) ? context.controller : nil
+      named = RecordingStudioStripe.site_admin_recording_for(controller)
       return named if named
 
-      fallback = context.access_recording
+      fallback = context.respond_to?(:access_recording) ? context.access_recording : nil
       fallback if SiteAdminRecording.stripe_admin?(fallback)
     end
 
@@ -21,8 +22,10 @@ module RecordingStudioStripe
       RecordingStudioStripe.register_capabilities!
       RecordingStudio.enable_capability(:stripe_admin, on: base)
 
-      RecordingStudioAdmin.configuration.site_admin_recording_resolver ||= lambda do |context|
-        RecordingStudioStripe::AdminSupport.default_site_admin_recording_for(context)
+      if defined?(RecordingStudioAccessible)
+        RecordingStudioAccessible.configuration.admin_root_resolver ||= lambda do |context: nil|
+          RecordingStudioStripe::AdminSupport.default_site_admin_recording_for(context)
+        end
       end
 
       base.recording_studio_admin_sections do

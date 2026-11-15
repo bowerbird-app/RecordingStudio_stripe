@@ -13,7 +13,7 @@ class StripeHardeningTest < ActionDispatch::IntegrationTest
       user.password_confirmation = "Password"
     end
     @workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
-    @root = RecordingStudio.root_recording_for(@workspace)
+    @root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     grant_owner_access!(recording: @root, actor: @user)
     sign_in @user
     switch_to_root!(@root)
@@ -357,7 +357,7 @@ class StripeHardeningTest < ActionDispatch::IntegrationTest
 
   test "usage idempotency keys are scoped to the workspace" do
     other = Workspace.create!(name: "Other Workspace #{SecureRandom.hex(4)}")
-    other_root = RecordingStudio.root_recording_for(other)
+    other_root = RecordingStudio.create_root_recording!(other, actor: root_actor)
     meter = RecordingStudioStripe::Meter.fetch("ai_tokens")
 
     first = RecordingStudioStripe::RecordUsage.call(

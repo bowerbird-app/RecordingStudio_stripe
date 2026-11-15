@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-11-15
+
+### Changed
+- Requires `recording_studio` `>= 7.0, < 8.0`. Development and dummy pin tag `v7.0.0`
+- Requires Accessible `>= 0.43.1, < 1.0`. Development and dummy pin tag `v0.43.1`
+- `Billing.for` (what `Billable#billing` calls) uses `RecordingStudio.create_root_recording!`. The first call creates the workspace root and one `created` event. A later call returns that root and does not append another event
+- `config.site_admin_recording` still looks up with `root_recording_for`. A missing admin root is nil and is not created
+- Admin 2.15 removed `site_admin_recording_resolver`. `AdminSupport` sets Accessible `admin_root_resolver` only when the host has not (`||=`). The dummy names that root with `admin_root_resolver` and points Admin `access_recording_resolver` at `RecordingStudioAccessible.admin_root`
+- Dummy `authorize_write` allows a persisted user to create a root. Core calls that check with `root_recording: nil`. Later writes still need an Accessible role on the root
+- Development and dummy pins: Trashable `v0.16.1`, Admin `v2.16.0`, Root Switchable `v0.15.1`, Internationalization `v0.2.3`. Logs stay `v0.7.4`. Metrics stay `v0.8.0`. Cache stays `v0.6.3`. FlatPack stays `v0.1.360`
+
+### Upgrade notes
+- Bump to **0.29.0**. No Stripe migration. No webhook change
+- Require Recording Studio **7.0** or newer, below **8.0**, and Accessible **0.43.1** or newer, below **1.0**
+- Install Trashable **0.16.1**, Admin **2.16.0**, Root Switchable **0.15.1**, and Internationalization **0.2.3** when the host uses those addons. Logs **0.7.4** still resolves
+- Seeds and setup that created a root by looking it up call `create_root_recording!` with an actor. `account.billing` does that for the workspace root. Do not call `create_root_recording!` from `site_admin_recording`
+- `config.authorize_write` must allow a persisted actor when `root_recording` is nil. A check that rejects a nil root blocks every new root, including the first `billing` call
+- Delete `RecordingStudioAdmin.configuration.site_admin_recording_resolver`. Set `RecordingStudioAccessible.configuration.admin_root_resolver` to the kept admin root recording. Point the mounted admin `access_recording_resolver` at `RecordingStudioAccessible.admin_root(context:)`. A host resolver still wins over the `AdminSupport` default
+
 ## [0.28.0] - 2026-11-14
 
 ### Changed

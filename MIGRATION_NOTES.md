@@ -4,10 +4,20 @@
 
 - Ruby 3.3 or newer
 - Rails 8.1 or newer
-- Recording Studio `>= 6.14.0` (gemspec). Development pin is GitHub tag `v6.14.0`
-- Accessible `>= 0.42.0, < 1.0` (GitHub tag `v0.42.0`)
+- Recording Studio `>= 7.0, < 8.0` (gemspec). Development pin is GitHub tag `v7.0.0`
+- Accessible `>= 0.43.1, < 1.0` (GitHub tag `v0.43.1`)
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
 - FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.360`
+
+## Roots
+
+`0.29.0` follows Recording Studio 7. `root_recording_for` only finds a root. `Billing.for`, which `Billable#billing` calls, uses `create_root_recording!`. The first call creates the workspace root and one `created` event when `config.actor` (or an explicit actor) is present and `authorize_write` allows `root_recording: nil`. A later call returns that root and does not append another event. `config.site_admin_recording` stays a lookup. A missing admin root is nil.
+
+Seeds that used to create a root by looking it up call `create_root_recording!` with an actor. Dummy `authorize_write` allows a persisted user when `root_recording` is nil, then keeps the Accessible role check for later writes.
+
+Admin `2.15.0` removed `site_admin_recording_resolver`. `AdminSupport` sets Accessible `admin_root_resolver` with `||=`. The dummy sets that resolver to the Studio Admin root and points Admin `access_recording_resolver` at `RecordingStudioAccessible.admin_root`.
+
+Development pins: Trashable `v0.16.1` (`require: false`), Admin `v2.16.0`, Root Switchable `v0.15.1`, Internationalization `v0.2.3`. Logs stay `v0.7.4`. Metrics stay `v0.8.0`. Cache stays `v0.6.3`. No Stripe migration. No webhook change.
 
 ## Kept recordings
 
@@ -28,12 +38,12 @@ No database migration. No webhook change.
 ## Usage meters
 
 `0.26.0` draws meter and limit cards with `FlatPack::Billing::UsageMeter`. The bar warns at 80% and turns danger at the cap. A zero cap is a muted line, because UsageMeter rejects a max of 0. A nil cap is Unlimited, with no bar. Count and quantity caps still use 0 for none. A meter that mixes included usage and extra packs puts that split in the meter's description. The percent label, the `used/included` line, and the Breakdown dropdown are gone. The status alert is unchanged: over the cap, and within 15% of the included amount. `AllowanceCardComponent` is still the pack checkout button. No database migration. No webhook change. Hosts need Flatpack `0.1.356` or newer.
-- Trashable GitHub tag `v0.16.0` (`require: false`)
-- Admin dummy tag `v2.13.0` and Logs dummy tag `v0.7.4`
-- Root Switchable GitHub tag `v0.15.0`
+- Trashable GitHub tag `v0.16.1` (`require: false`)
+- Admin dummy tag `v2.16.0` and Logs dummy tag `v0.7.4`
+- Root Switchable GitHub tag `v0.15.1`
 - Metrics dummy tag `v0.8.0`
 - Cache dummy tag `v0.6.3`
-- Internationalization dummy tag `v0.2.2`
+- Internationalization dummy tag `v0.2.3`
 - Public RubyGems and GitHub access for dependency installation
 
 ## Downgrade timing

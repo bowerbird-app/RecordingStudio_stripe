@@ -13,7 +13,7 @@ class WeeklyPlansTest < ActionDispatch::IntegrationTest
       user.password_confirmation = "Password"
     end
     @workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
-    @root = RecordingStudio.root_recording_for(@workspace)
+    @root = RecordingStudio.create_root_recording!(@workspace, actor: root_actor)
     grant_owner_access!(recording: @root, actor: @user)
     sign_in @user
     switch_to_root!(@root)

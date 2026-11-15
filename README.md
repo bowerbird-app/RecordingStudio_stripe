@@ -37,14 +37,16 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 
 ```ruby
 # Gemfile
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.14.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.0.0"
 gem "recording_studio_stripe", github: "bowerbird-app/RecordingStudio_stripe"
-gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.42.0"
+gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.43.1"
 gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.360"
 gem "view_component", "4.19.0"
 ```
 
-This gem requires `recording_studio` `>= 6.14.0`, Accessible `>= 0.42.0, < 1.0`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.360`. The pin above loads FlatPack `0.1.360`, which lets UsageMeter take `limit: 0` and lets Button submit a form with `url:`. Count limits use `Recording.kept`. Accessible `0.42.0` loads Trashable's query entry. Trashable `0.16.0` registers the filter that leaves trashed rows out. This gem does not declare Trashable itself.
+This gem requires `recording_studio` `>= 7.0, < 8.0`, Accessible `>= 0.43.1, < 1.0`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.360`. The pin above loads FlatPack `0.1.360`, which lets UsageMeter take `limit: 0` and lets Button submit a form with `url:`. Count limits use `Recording.kept`. Accessible `0.43.1` loads Trashable's query entry. Trashable `0.16.1` registers the filter that leaves trashed rows out. This gem does not declare Trashable itself.
+
+`account.billing` creates the workspace root with `RecordingStudio.create_root_recording!` when that root is missing. The actor is `RecordingStudio.configuration.actor`, the same as any other write. That first call appends one `created` event. A later call returns the same root and does not append another event. `config.authorize_write` receives `root_recording: nil` for that create, so a persisted actor has to be allowed to open a root.
 
 `config.layout` chooses the screen chrome for this engine. `nil` uses `RecordingStudio.configuration.layout`, then `"recording_studio/default_layout"`. A String is a layout name. `false` renders with no layout. A callable must take `controller:` and return a String, `nil`, or `false`.
 
@@ -294,7 +296,9 @@ mount RecordingStudioAccessible::Engine, at: "/admin/access"
 recording_studio_admin_for :admin, at: "/admin", root_section: :stripe
 ```
 
-`config.site_admin_recording` may be the root recording, the admin root recordable, or a callable that returns one of those. A zero-argument callable runs with `instance_exec` on the Stripe Admin controller (`self` is that controller), same as `config.current_actor`. A callable that takes `controller` or `controller:` receives the controller. `RecordingStudioStripe.site_admin_recording_for` is the public resolver. Stripe Admin forms authorize against that workspace only. If the setting is missing or returns nothing, those forms respond 403. They do not pick the first `stripe_admin` row. User billing screens still use `config.current_root_recording`.
+`config.site_admin_recording` may be the root recording, the admin root recordable, or a callable that returns one of those. A zero-argument callable runs with `instance_exec` on the Stripe Admin controller (`self` is that controller), same as `config.current_actor`. A callable that takes `controller` or `controller:` receives the controller. `RecordingStudioStripe.site_admin_recording_for` is the public resolver. It looks the recordable up with `root_recording_for` and does not create a root. Create that root in seeds with `create_root_recording!`. Stripe Admin forms authorize against that workspace only. If the setting is missing or returns nothing, those forms respond 403. They do not pick the first `stripe_admin` row. User billing screens still use `config.current_root_recording`.
+
+Site-wide Admin screens (`blast_radius :site`) use Accessible `admin_root_resolver`. `AdminSupport` sets that resolver only when the host has not. The callable is the same lookup as `site_admin_recording`, then the current access recording when that type has `:stripe_admin`. A host that already named an admin root keeps it. Point the mounted admin `access_recording_resolver` at `RecordingStudioAccessible.admin_root(context:)`.
 
 Do not invent a second admin.
 
