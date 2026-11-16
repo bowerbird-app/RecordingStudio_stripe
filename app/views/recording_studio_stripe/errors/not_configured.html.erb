@@ -1,0 +1,13 @@
+<% content_for :title, t("recording_studio.stripe.billing.title") %>
+<% flat_pack_page_nav(
+  round: true,
+  style: :default,
+  anchor_href: main_app.root_path,
+  anchor_tooltip: t("recording_studio.stripe.nav.close")
+) %>
+
+<%= render FlatPack::EmptyState::Component.new(
+  title: t("recording_studio.stripe.not_configured.title"),
+  description: t("recording_studio.stripe.not_configured.description"),
+  icon: "credit-card"
+) %>

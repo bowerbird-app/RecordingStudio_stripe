@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-11-16
+
+### Changed
+- Stripe keys are optional at boot. A missing `STRIPE_WEBHOOK_SECRET` or `STRIPE_SECRET_KEY` logs one warning outside local mode and does not raise. Production, deploys, `db:migrate`, and asset builds start without those variables
+- Outside local mode, a missing webhook secret makes `POST /webhooks/stripe` return 503 before the body is parsed. Nothing is stored. A bad or missing signature stays 400 when the secret is set. Local mode still accepts unsigned JSON. Production never accepts an unsigned event
+- Checkout, the portal, and other Stripe calls raise `NotConfigured` (`MissingStripeKey`) at call time. HTML gets a 503 page. JSON gets 503 with an error body
+- The install template no longer ships `RECORDING_STUDIO_STRIPE_API_KEY` or `enable_feature_x`
+
+### Added
+- `config.require_secrets`, default false. `RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS=1` turns it on. Production then raises `MissingWebhookSecret` or `MissingStripeKey`. `assets:precompile`, `assets:clean`, `assets:clobber`, `tailwindcss:build`, `tailwindcss:watch`, and `SECRET_KEY_BASE_DUMMY` still skip that check
+- `Configuration#webhook_configured?`, `#configured?`, and `#missing_secrets` (env var names only). `RecordingStudioStripe.configured?` and `.webhook_configured?`. `to_h` includes `configured`
+
+### Upgrade notes
+- Bump to **0.30.0**. No migration
+- Production now boots without `STRIPE_WEBHOOK_SECRET`. Set `config.require_secrets` or `RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS=1` to keep a boot raise
+- Webhook endpoints without a secret return 503 instead of 400 outside local mode. Stripe retries. Do not send live events until `STRIPE_WEBHOOK_SECRET` is set
+- A screen that calls Stripe with no secret key renders “Billing isn't set up” at 503. JSON clients get `{ "error": "Billing isn't set up" }`
+
 ## [0.29.1] - 2026-11-15
 
 ### Fixed
@@ -817,12 +835,28 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.20.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.0...HEAD
+[0.30.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.29.1...v0.30.0
+[0.29.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.29.0...v0.29.1
+[0.29.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.28.0...v0.29.0
+[0.28.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.27.0...v0.28.0
+[0.27.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.26.0...v0.27.0
+[0.26.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.25.1...v0.26.0
+[0.25.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.25.0...v0.25.1
+[0.25.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.24.1...v0.25.0
+[0.24.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.23.2...v0.24.1
+[0.23.2]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.23.1...v0.23.2
+[0.23.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.23.0...v0.23.1
+[0.23.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.22.0...v0.23.0
+[0.22.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.21.0...v0.22.0
+[0.21.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.1...v0.18.0
 [0.17.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.16.0...v0.17.0
+[0.16.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.15.0...v0.16.0
+[0.15.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.12.0...v0.12.1

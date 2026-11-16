@@ -103,3 +103,18 @@ jobs:
         run: bundle exec rake test:all
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/recording_studio_stripe_test
+
+      - name: Boot production with no Stripe keys
+        working-directory: test/dummy
+        env:
+          RAILS_ENV: production
+          SECRET_KEY_BASE: ci-boot-without-stripe-keys-not-a-real-secret-0123456789abcdef
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/recording_studio_stripe_boot
+          CACHE_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/recording_studio_stripe_boot_cache
+          QUEUE_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/recording_studio_stripe_boot_queue
+          CABLE_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/recording_studio_stripe_boot_cable
+        run: |
+          unset STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET STRIPE_API_KEY
+          bin/rails db:prepare
+          bin/rails runner 'puts :ok'
+          bin/rails tailwindcss:build

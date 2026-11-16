@@ -91,9 +91,9 @@ module RecordingStudioStripe
       RecordingStudioStripe.configuration.hooks.run(:after_initialize, self)
     end
 
-    initializer "recording_studio_stripe.require_webhook_secret", after: "recording_studio_stripe.after_initialize" do
+    initializer "recording_studio_stripe.report_missing_secrets", after: "recording_studio_stripe.after_initialize" do
       config.after_initialize do
-        RecordingStudioStripe::WebhookSecret.require_in_production!
+        RecordingStudioStripe::WebhookSecret.report!
       end
     end
 

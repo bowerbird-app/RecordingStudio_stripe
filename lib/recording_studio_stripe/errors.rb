@@ -2,7 +2,10 @@
 
 module RecordingStudioStripe
   class Error < StandardError; end
-  class MissingStripeKey < Error; end
+
+  # Raised when a Stripe call or screen needs keys that are not set.
+  class NotConfigured < Error; end
+  class MissingStripeKey < NotConfigured; end
   class MissingWebhookSecret < Error; end
   class Forbidden < Error; end
   class InvalidPrice < Error; end

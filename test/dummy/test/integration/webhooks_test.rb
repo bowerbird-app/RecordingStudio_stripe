@@ -266,16 +266,20 @@ class WebhooksTest < ActionDispatch::IntegrationTest
     assert_equal "past_due", @workspace.billing.subscription.reload.status
   end
 
-  test "configured Stripe without a webhook secret rejects unsigned events" do
+  test "configured Stripe without a webhook secret returns service unavailable" do
     previous_client = RecordingStudioStripe.configuration.client
     RecordingStudioStripe.configuration.client = RecordingStudioStripe::Testing::Client.new
+    errors = []
 
-    post "/webhooks/stripe",
-         params: stripe_event("evt_unsigned", "customer.subscription.created", { "id" => "sub_unsigned" }),
-         as: :json
+    Rails.logger.stub(:error, ->(message = nil, &block) { errors << (message || block&.call) }) do
+      post "/webhooks/stripe",
+           params: stripe_event("evt_unsigned", "customer.subscription.created", { "id" => "sub_unsigned" }),
+           as: :json
+    end
 
-    assert_response :bad_request
+    assert_response :service_unavailable
     refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_unsigned")
+    assert_includes errors.compact.join, "STRIPE_WEBHOOK_SECRET missing"
   ensure
     RecordingStudioStripe.configuration.client = previous_client
   end
@@ -284,11 +288,15 @@ class WebhooksTest < ActionDispatch::IntegrationTest
     with_webhook_settings(secret_key: nil, client: nil, webhook_secret: nil) do
       Rails.stub(:env, ActiveSupport::StringInquirer.new("production")) do
         refute_predicate RecordingStudioStripe.configuration, :local_mode?
+        post "/webhooks/stripe",
+             params: "{not-json",
+             headers: { "CONTENT_TYPE" => "application/json" }
+        assert_response :service_unavailable
         post_unsigned("evt_unsigned_production")
       end
     end
 
-    assert_response :bad_request
+    assert_response :service_unavailable
     refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_unsigned_production")
   end
 
@@ -426,8 +434,20 @@ class WebhooksTest < ActionDispatch::IntegrationTest
       end
     end
 
-    assert_response :bad_request
+    assert_response :service_unavailable
     refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_key_no_secret")
+    refute_includes response.body, "sk_test_fixture"
+  end
+
+  test "a missing signature is rejected when the webhook secret is set" do
+    with_webhook_settings(webhook_secret: "whsec_test_fixture") do
+      post "/webhooks/stripe",
+           params: unsigned_body("evt_missing_signature"),
+           headers: { "CONTENT_TYPE" => "application/json" }
+    end
+
+    assert_response :bad_request
+    refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_missing_signature")
   end
 
   private

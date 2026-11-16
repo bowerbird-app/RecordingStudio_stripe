@@ -106,7 +106,21 @@ Render the same plan cards on a host screen. Pass `groups:` from `Catalog.plan_g
 
 A single-type host can still pass `products:`, `subscription:`, `weekly_href`, `monthly_href`, and `yearly_href`. `hrefs_for` already includes `weekly_href`. A pill shows only when that group has a Price for it. `stripe_plan_intervals(products)` returns those intervals. Pass `intervals:` to limit them, for example `%w[month year]`. When the requested interval is not in that list, the cards use the first interval that is. The card row keeps Products that have a Price for the interval on screen. `align: :center` is the default and centers the title, subtitle, and interval pills. Pass `align: :left` if the host screen needs that. Copy inside each card stays left either way. `density: :auto` is the default. On a phone each plan is a compact row. The name stays on one line, the marketing subtitle hides, the price is smaller, and the features sit behind What’s included. From the `md` breakpoint those cards share four subgrid rows again, and the feature list stays open. The grid is one column on a phone, two from `md`, and three from `lg`. Pass `density: :cards` to keep the tall card on a phone. Pass `density: :rows` to keep the compact row at every width. That stacks the plans in a list with a small gap. `PlanCardComponent` defaults to `density: :cards`. Pass `density:` when a host renders that card itself. `config.layout` is the engine layout. It does not choose density. An unknown density raises `ArgumentError`. Group titles such as Studio and Inbox only render when more than one type has Products. Week is `/wk` on the card. `?interval=week` and `?interval[studio]=week` select it. Default view stays monthly.
 
-Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Leave the keys blank in development or test to click through locally. Production will not boot without `STRIPE_WEBHOOK_SECRET`.
+Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET` for live checkout and signed webhooks. Leave the keys blank in development or test to click through locally. Production boots without them.
+
+## Running without keys
+
+Installing the gem does not require Stripe keys. Boot, `db:migrate`, `tailwindcss:build`, and asset builds keep going. Outside local mode the gem logs one warning that names each missing variable and what it turns off. It never logs the values. Local mode (development or test, no secret key and no client) stays quiet.
+
+| Key | When it is missing | Status |
+| --- | --- | --- |
+| `STRIPE_WEBHOOK_SECRET` | Outside local mode, `POST /webhooks/stripe` returns before reading the body and stores nothing. Local mode still accepts unsigned JSON. A bad or missing signature stays 400 once the secret is set. Production never accepts an unsigned event. | 503 |
+| `STRIPE_SECRET_KEY` | Checkout, the billing portal, and admin sync raise `NotConfigured` (`MissingStripeKey`) when called. HTML shows “Billing isn't set up”. JSON returns `{ "error": "Billing isn't set up" }`. | 503 |
+| `STRIPE_PUBLISHABLE_KEY` | Not used to boot, migrate, build assets, or take a payment on the server. | none |
+
+`stripe_configured?` is true when a secret key or client is present. `webhook_configured?` is true when the webhook secret is present. `configured?` is both. `missing_secrets` returns env var names only. `RecordingStudioStripe.configured?` and `RecordingStudioStripe.webhook_configured?` read the same flags. `to_h` includes `configured`.
+
+`config.require_secrets` defaults to false. Set it to true, or set `RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS=1`, and a production boot raises `MissingWebhookSecret` or `MissingStripeKey` when that secret is missing. `assets:precompile`, `assets:clean`, `assets:clobber`, `tailwindcss:build`, `tailwindcss:watch`, and a boot with `SECRET_KEY_BASE_DUMMY` skip the raise and the warning.
 
 Named usage counters default to `ai_tokens` and `api_calls`. Change `config.meters` in the initializer to add your own, then set `included_<name>` on each plan Price. Optional `icon` and `plan_line` on meters, paywalls, and limits are the words and icons on the public plan card.
 
@@ -369,7 +383,7 @@ In local mode, an immediate downgrade or cancel updates the local Subscription d
 
 ## Webhooks
 
-Point Stripe at `POST /webhooks/stripe`. Local mode is development or test with no Stripe secret key and no client. Unsigned JSON is accepted only in that mode, and only when `STRIPE_WEBHOOK_SECRET` is blank. A Stripe key or client with no webhook secret is rejected in every environment, including development. A missing or invalid signature returns 400. Production raises `RecordingStudioStripe::MissingWebhookSecret` on boot when `STRIPE_WEBHOOK_SECRET` is blank. `assets:precompile`, `assets:clean`, `assets:clobber`, and a boot with `SECRET_KEY_BASE_DUMMY` skip that raise so a build can compile files without the runtime secret. The gem then projects:
+Point Stripe at `POST /webhooks/stripe`. Local mode is development or test with no Stripe secret key and no client. Unsigned JSON is accepted only in that mode, and only when `STRIPE_WEBHOOK_SECRET` is blank. Outside local mode, a missing webhook secret returns 503 before the body is parsed and stores nothing. A missing or invalid signature returns 400 when the secret is set. Production boots with no Stripe keys and logs one warning. It does not raise unless `config.require_secrets` is on. See [Running without keys](#running-without-keys). The gem then projects:
 
 - `checkout.session.completed` and `checkout.session.async_payment_succeeded` for paid plans and extra packs
 - `customer.subscription.*`

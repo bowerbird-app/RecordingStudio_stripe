@@ -4,8 +4,11 @@ RecordingStudioStripe.configure do |config|
   config.secret_key = ENV.fetch("STRIPE_SECRET_KEY", nil)
   config.publishable_key = ENV.fetch("STRIPE_PUBLISHABLE_KEY", nil)
   config.webhook_secret = ENV.fetch("STRIPE_WEBHOOK_SECRET", nil)
-  # Production raises on boot when this is blank. Unsigned webhooks are accepted
-  # only in development or test local mode: no Stripe key, no client, and no webhook secret.
+  # Keys may be blank. The app boots. Outside local mode, a missing webhook
+  # secret makes /webhooks/stripe return 503. A missing secret key disables
+  # checkout, the portal, and admin sync. Set require_secrets = true, or
+  # RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS=1, to raise on a production boot.
+  # Unsigned webhooks are accepted only in development or test local mode.
   # Named usage counters. Defaults are ai_tokens and api_calls.
   # Add your own, then set included_<name> on each plan Price.
   # icon and plan_line are for the public plan card. %{quantity} is shortened (1m, 10k).

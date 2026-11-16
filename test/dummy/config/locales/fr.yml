@@ -29,6 +29,9 @@ fr:
     stripe:
       nav:
         close: Fermer
+      not_configured:
+        title: La facturation n’est pas prête
+        description: Le paiement et le portail restent fermés tant que les clés Stripe ne sont pas là.
       intervals:
         names:
           week: semaine
