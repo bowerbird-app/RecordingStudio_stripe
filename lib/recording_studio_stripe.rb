@@ -89,6 +89,14 @@ module RecordingStudioStripe
       yield(configuration) if block_given?
     end
 
+    def configured?
+      configuration.configured?
+    end
+
+    def webhook_configured?
+      configuration.webhook_configured?
+    end
+
     def usage_cost(key)
       UsageTariff.rate(key)
     end

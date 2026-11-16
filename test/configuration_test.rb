@@ -248,6 +248,89 @@ class ConfigurationTest < Minitest::Test
     assert_empty RecordingStudio::Layout.hardcoded_layout_paths(File.join(root, "test/dummy"))
   end
 
+  def test_configured_helpers_need_a_key_and_a_webhook_secret
+    @configuration.secret_key = nil
+    @configuration.client = nil
+    @configuration.webhook_secret = nil
+    @configuration.publishable_key = "pk_test_not_enough"
+
+    refute @configuration.stripe_configured?
+    refute @configuration.webhook_configured?
+    refute @configuration.configured?
+    assert_equal %w[STRIPE_WEBHOOK_SECRET STRIPE_SECRET_KEY], @configuration.missing_secrets
+    refute @configuration.to_h.fetch(:configured)
+    refute_includes @configuration.to_h.values, "pk_test_not_enough"
+
+    @configuration.client = Object.new
+    assert @configuration.stripe_configured?
+    assert_equal ["STRIPE_WEBHOOK_SECRET"], @configuration.missing_secrets
+    refute @configuration.configured?
+
+    @configuration.webhook_secret = "whsec_test_fixture"
+    assert @configuration.webhook_configured?
+    assert @configuration.configured?
+    assert_empty @configuration.missing_secrets
+    assert @configuration.to_h.fetch(:configured)
+    assert_equal "[set]", @configuration.to_h.fetch(:webhook_secret)
+  end
+
+  def test_module_helpers_follow_configuration
+    configuration = RecordingStudioStripe.configuration
+    previous_key = configuration.secret_key
+    previous_client = configuration.client
+    previous_secret = configuration.webhook_secret
+    configuration.secret_key = "sk_test_fixture"
+    configuration.client = nil
+    configuration.webhook_secret = "whsec_test_fixture"
+
+    assert RecordingStudioStripe.configured?
+    assert RecordingStudioStripe.webhook_configured?
+
+    configuration.webhook_secret = nil
+    refute RecordingStudioStripe.webhook_configured?
+    refute RecordingStudioStripe.configured?
+  ensure
+    configuration.secret_key = previous_key
+    configuration.client = previous_client
+    configuration.webhook_secret = previous_secret
+  end
+
+  def test_require_secrets_defaults_off_and_env_turns_it_on
+    previous = ENV.fetch("RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS", nil)
+    ENV.delete("RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS")
+    refute RecordingStudioStripe::Configuration.new.require_secrets
+
+    ENV["RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS"] = "1"
+    assert RecordingStudioStripe::Configuration.new.require_secrets
+
+    ENV["RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS"] = "true"
+    refute RecordingStudioStripe::Configuration.new.require_secrets
+  ensure
+    if previous.nil?
+      ENV.delete("RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS")
+    else
+      ENV["RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS"] = previous
+    end
+  end
+
+  def test_client_current_raises_missing_stripe_key
+    configuration = RecordingStudioStripe.configuration
+    previous_key = configuration.secret_key
+    previous_client = configuration.client
+    configuration.secret_key = nil
+    configuration.client = nil
+
+    error = assert_raises(RecordingStudioStripe::MissingStripeKey) do
+      RecordingStudioStripe::Client.current
+    end
+
+    assert_kind_of RecordingStudioStripe::NotConfigured, error
+    assert_includes error.message, "STRIPE_SECRET_KEY"
+  ensure
+    configuration.secret_key = previous_key
+    configuration.client = previous_client
+  end
+
   def test_local_mode_is_development_or_test_without_a_stripe_key
     previous = ENV.fetch("STRIPE_SECRET_KEY", nil)
     ENV.delete("STRIPE_SECRET_KEY")

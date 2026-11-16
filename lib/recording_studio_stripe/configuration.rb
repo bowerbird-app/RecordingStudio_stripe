@@ -1,13 +1,33 @@
 # frozen_string_literal: true
 
 module RecordingStudioStripe
+  module ConfigurationSecrets
+    def webhook_configured?
+      webhook_secret.present?
+    end
+
+    def configured?
+      stripe_configured? && webhook_configured?
+    end
+
+    def missing_secrets
+      names = []
+      names << "STRIPE_WEBHOOK_SECRET" unless webhook_configured?
+      names << "STRIPE_SECRET_KEY" unless stripe_configured?
+      names
+    end
+  end
+
   class Configuration
     DOWNGRADE_TIMINGS = %w[at_period_end immediately].freeze
     private_constant :DOWNGRADE_TIMINGS
 
+    include ConfigurationSecrets
+
     attr_accessor :secret_key,
                   :publishable_key,
                   :webhook_secret,
+                  :require_secrets,
                   :api_version,
                   :client,
                   :meters,
@@ -31,9 +51,7 @@ module RecordingStudioStripe
     attr_writer :usage_path
 
     def initialize
-      @secret_key = ENV.fetch("STRIPE_SECRET_KEY", nil)
-      @publishable_key = ENV.fetch("STRIPE_PUBLISHABLE_KEY", nil)
-      @webhook_secret = ENV.fetch("STRIPE_WEBHOOK_SECRET", nil)
+      apply_environment_defaults
       @api_version = "2026-07-29.dahlia"
       @client = nil
       @meters = default_meters
@@ -94,6 +112,7 @@ module RecordingStudioStripe
         allow_promotion_codes: allow_promotion_codes,
         automatic_tax: automatic_tax,
         local_mode: local_mode?,
+        configured: configured?,
         mount_path: mount_path,
         hooks_registered: hooks.instance_variable_get(:@registry).transform_values(&:size)
       }
@@ -139,6 +158,13 @@ module RecordingStudioStripe
       raise ArgumentError, "limit name must not be blank" if key.blank?
 
       key
+    end
+
+    def apply_environment_defaults
+      @secret_key = ENV.fetch("STRIPE_SECRET_KEY", nil)
+      @publishable_key = ENV.fetch("STRIPE_PUBLISHABLE_KEY", nil)
+      @webhook_secret = ENV.fetch("STRIPE_WEBHOOK_SECRET", nil)
+      @require_secrets = ENV["RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS"] == "1"
     end
 
     def validate_downgrade_timings!(value)

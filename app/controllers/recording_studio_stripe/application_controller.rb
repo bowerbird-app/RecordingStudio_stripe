@@ -6,6 +6,8 @@ module RecordingStudioStripe
     # so a local protect_from_forgery does not fall behind authenticate_user!.
     protect_from_forgery with: :exception, prepend: true
 
+    rescue_from NotConfigured, with: :billing_not_configured
+
     include RecordingStudioAccessible::ControllerAuth
 
     CHECKOUT_HOST = /\A[A-Za-z0-9.-]+\z/
@@ -123,6 +125,15 @@ module RecordingStudioStripe
       end
 
       value
+    end
+
+    def billing_not_configured
+      status = :service_unavailable
+      if request.format.json?
+        render json: { error: Copy.t("not_configured.title") }, status: status
+      else
+        render template: "recording_studio_stripe/errors/not_configured", status: status
+      end
     end
 
     def recording_studio_stripe_sign_in_url

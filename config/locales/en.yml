@@ -23,6 +23,9 @@ en:
         amount: "%{amount}/%{interval}"
       nav:
         close: Close
+      not_configured:
+        title: Billing isn’t set up
+        description: Checkout and the portal stay off until Stripe keys are set.
       plans:
         title: Pricing
         subtitle: Monthly or yearly. You can switch later.

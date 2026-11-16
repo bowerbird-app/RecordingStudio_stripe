@@ -339,7 +339,7 @@ class PlanDowngradeTest < ActionDispatch::IntegrationTest
     assert stored.sole.published_at
   end
 
-  test "an unsigned or badly signed subscription update is rejected and emits nothing" do
+  test "an unsigned subscription update returns 503 and a bad signature returns 400" do
     configuration = RecordingStudioStripe.configuration
     subscribe!("sub_bad_sign", @pro.monthly_price)
     previous_client = configuration.client
@@ -355,7 +355,7 @@ class PlanDowngradeTest < ActionDispatch::IntegrationTest
       post "/webhooks/stripe", params: body, as: :json
     end
 
-    assert_response :bad_request
+    assert_response :service_unavailable
     assert_empty unsigned
     refute RecordingStudioStripe::WebhookEvent.exists?(stripe_id: "evt_unsigned_down")
 

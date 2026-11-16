@@ -1,9 +1,5 @@
-development:
-  api_key: "dev-key"
-  enable_feature_x: true
-  timeout: 5
-
-production:
-  api_key: <%= ENV["RECORDING_STUDIO_STRIPE_API_KEY"] %>
-  enable_feature_x: false
-  timeout: 5
+# Stripe keys are environment variables.
+# STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET.
+# The app boots when they are blank.
+development: {}
+production: {}

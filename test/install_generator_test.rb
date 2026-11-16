@@ -147,7 +147,20 @@ class InstallGeneratorTest < Minitest::Test
     assert_includes install_guide, "db:migrate"
     assert_includes install_guide, "Billable"
     assert_includes install_guide, "recording_studio_stripe/button"
+    assert_includes install_guide, "Running without keys"
+    assert_includes install_guide, "RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS"
+    refute_includes install_guide, "will not boot"
     refute_includes install_guide, "RecordingStudio v3"
+
+    yaml = File.read(
+      File.expand_path(
+        "../lib/generators/recording_studio_stripe/install/templates/recording_studio_stripe.yml",
+        __dir__
+      )
+    )
+    refute_includes yaml, "RECORDING_STUDIO_STRIPE_API_KEY"
+    refute_includes yaml, "enable_feature_x"
+    refute_includes yaml, "api_key"
   end
 
   private

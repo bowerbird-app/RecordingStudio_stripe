@@ -9,6 +9,10 @@
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
 - FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.360`
 
+## Optional Stripe keys
+
+`0.30.0` does not add a migration. The app boots, migrates, and builds assets with no `STRIPE_*` variables. Outside local mode, one warning names each missing variable. `/webhooks/stripe` returns 503 until `STRIPE_WEBHOOK_SECRET` is set, and stores nothing. Checkout and the portal return 503 until `STRIPE_SECRET_KEY` or a client is set. Set `config.require_secrets` or `RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS=1` to raise `MissingWebhookSecret` or `MissingStripeKey` on a production boot. Asset tasks and `tailwindcss:build` / `tailwindcss:watch` still skip that raise.
+
 ## Checkout webhooks
 
 `0.29.1` does not add a migration. Bump the gem pin. There is no host config change. When Stripe is configured, checkout stores the price, status, and period from the Subscription, and it stores the event time. An older checkout does not replace a later subscription change. A failed Subscription read returns 503 so Stripe retries. Local mode still uses the price on the checkout session.
