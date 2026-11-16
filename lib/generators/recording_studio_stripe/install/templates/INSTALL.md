@@ -20,7 +20,7 @@ Recording Studio Stripe is mounted.
 | Key | When it is missing | Status |
 | --- | --- | --- |
 | STRIPE_WEBHOOK_SECRET | Outside local mode, POST /webhooks/stripe returns before reading the body and stores nothing. A bad or missing signature stays 400 once the secret is set. | 503 |
-| STRIPE_SECRET_KEY | Checkout, the portal, and admin sync raise NotConfigured at call time. HTML shows “Billing isn't set up”. JSON returns an error body. | 503 |
+| STRIPE_SECRET_KEY | Checkout, the portal, and admin sync raise NotConfigured at call time. HTML shows “Billing isn't set up”. JSON returns an error body. Seeding the demo catalogue still writes local plans and skips the paid-trial Stripe price. | 503 |
 | STRIPE_PUBLISHABLE_KEY | Not used to boot, migrate, or build assets. | none |
 
 `config.require_secrets` defaults to false. `RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS=1` turns it on. Production then raises MissingWebhookSecret or MissingStripeKey. Asset tasks and `tailwindcss:build` / `tailwindcss:watch` still skip that raise.

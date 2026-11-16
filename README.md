@@ -115,7 +115,7 @@ Installing the gem does not require Stripe keys. Boot, `db:migrate`, `tailwindcs
 | Key | When it is missing | Status |
 | --- | --- | --- |
 | `STRIPE_WEBHOOK_SECRET` | Outside local mode, `POST /webhooks/stripe` returns before reading the body and stores nothing. Local mode still accepts unsigned JSON. A bad or missing signature stays 400 once the secret is set. Production never accepts an unsigned event. | 503 |
-| `STRIPE_SECRET_KEY` | Checkout, the billing portal, and admin sync raise `NotConfigured` (`MissingStripeKey`) when called. HTML shows “Billing isn't set up”. JSON returns `{ "error": "Billing isn't set up" }`. | 503 |
+| `STRIPE_SECRET_KEY` | Checkout, the billing portal, and admin sync raise `NotConfigured` (`MissingStripeKey`) when called. HTML shows “Billing isn't set up”. JSON returns `{ "error": "Billing isn't set up" }`. The demo catalogue seed still writes local plans and skips the paid-trial Stripe price, so `db:prepare` can finish. | 503 |
 | `STRIPE_PUBLISHABLE_KEY` | Not used to boot, migrate, build assets, or take a payment on the server. | none |
 
 `stripe_configured?` is true when a secret key or client is present. `webhook_configured?` is true when the webhook secret is present. `configured?` is both. `missing_secrets` returns env var names only. `RecordingStudioStripe.configured?` and `RecordingStudioStripe.webhook_configured?` read the same flags. `to_h` includes `configured`.

@@ -399,7 +399,7 @@ Local mode is development or test with no Stripe secret key and no client. In th
 | Key | When it is missing | Status |
 | --- | --- | --- |
 | `STRIPE_WEBHOOK_SECRET` | Outside local mode, `POST /webhooks/stripe` returns before reading the body and stores nothing. A bad or missing signature stays 400 once the secret is set. | 503 |
-| `STRIPE_SECRET_KEY` | Checkout, the portal, and admin sync raise `NotConfigured` at call time. HTML shows “Billing isn't set up”. JSON returns an error body. | 503 |
+| `STRIPE_SECRET_KEY` | Checkout, the portal, and admin sync raise `NotConfigured` at call time. HTML shows “Billing isn't set up”. JSON returns an error body. The demo catalogue seed still writes local plans and skips the paid-trial Stripe price, so `db:prepare` can finish. | 503 |
 | `STRIPE_PUBLISHABLE_KEY` | Not used to boot, migrate, or build assets. | none |
 
 `config.require_secrets` defaults to false. Set it, or `RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS=1`, and a production boot raises `MissingWebhookSecret` or `MissingStripeKey`. `assets:precompile`, `assets:clean`, `assets:clobber`, `tailwindcss:build`, `tailwindcss:watch`, and `SECRET_KEY_BASE_DUMMY` skip the raise and the warning.

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stripe keys are optional at boot. A missing `STRIPE_WEBHOOK_SECRET` or `STRIPE_SECRET_KEY` logs one warning outside local mode and does not raise. Production, deploys, `db:migrate`, and asset builds start without those variables
 - Outside local mode, a missing webhook secret makes `POST /webhooks/stripe` return 503 before the body is parsed. Nothing is stored. A bad or missing signature stays 400 when the secret is set. Local mode still accepts unsigned JSON. Production never accepts an unsigned event
 - Checkout, the portal, and other Stripe calls raise `NotConfigured` (`MissingStripeKey`) at call time. HTML gets a 503 page. JSON gets 503 with an error body
+- The demo catalogue seed skips the paid-trial Stripe price when the secret key is missing outside local mode, so `db:prepare` can finish
 - The install template no longer ships `RECORDING_STUDIO_STRIPE_API_KEY` or `enable_feature_x`
 
 ### Added

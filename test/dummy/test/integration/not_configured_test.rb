@@ -53,6 +53,16 @@ class NotConfiguredTest < ActionDispatch::IntegrationTest
     assert_equal "Billing isn’t set up", response.parsed_body.fetch("error")
   end
 
+  test "demo catalogue seeds in production without calling Stripe" do
+    in_production do
+      assert_nothing_raised do
+        RecordingStudioStripe::SeedDemoCatalog.call
+      end
+    end
+
+    assert RecordingStudioStripe::Product.exists?(name: "Pro")
+  end
+
   private
 
   def in_production(&)
