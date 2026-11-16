@@ -37,14 +37,14 @@ This is a Stripe gem. It does not wrap other processors, invent wallets, or calc
 
 ```ruby
 # Gemfile
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.0.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.3.0"
 gem "recording_studio_stripe", github: "bowerbird-app/RecordingStudio_stripe"
-gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.43.1"
-gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.360"
+gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.45.1"
+gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.377"
 gem "view_component", "4.19.0"
 ```
 
-This gem requires `recording_studio` `>= 7.0, < 8.0`, Accessible `>= 0.43.1, < 1.0`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.360`. The pin above loads FlatPack `0.1.360`, which lets UsageMeter take `limit: 0` and lets Button submit a form with `url:`. Count limits use `Recording.kept`. Accessible `0.43.1` loads Trashable's query entry. Trashable `0.16.1` registers the filter that leaves trashed rows out. This gem does not declare Trashable itself.
+This gem requires `recording_studio` `>= 7.0, < 8.0`, Accessible `>= 0.43.1, < 1.0`, `view_component` `>= 4.14, < 5`, and `flat_pack` `>= 0.1.360`. The pin above loads FlatPack `0.1.377`, which lets UsageMeter take `limit: 0` and lets Button submit a form with `url:`. Count limits use `Recording.kept`. Accessible `0.43.1` loads Trashable's query entry. Trashable `0.16.1` registers the filter that leaves trashed rows out. This gem does not declare Trashable itself.
 
 `account.billing` creates the workspace root with `RecordingStudio.create_root_recording!` when that root is missing. The actor is `RecordingStudio.configuration.actor`, the same as any other write. That first call appends one `created` event. A later call returns the same root and does not append another event. `config.authorize_write` receives `root_recording: nil` for that create, so a persisted actor has to be allowed to open a root.
 
