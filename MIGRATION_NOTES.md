@@ -9,6 +9,10 @@
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
 - FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.360`
 
+## Canceled subscriptions
+
+`0.31.0` does not add a migration. When Stripe is configured, `customer.subscription.created` and `customer.subscription.updated` read the Subscription and apply that price, status, and period. A failed read returns 503 and does not store the event, so Stripe retries. Local mode still uses the event body. `customer.subscription.deleted` stores the Stripe event time on the Subscription. A canceled Stripe subscription id stays canceled. A later event for that same id does not make the row active. A different Stripe subscription id still creates a new row. A delete that arrives before the local row is stored and does not create a row. The next created or updated event, when Stripe is configured, reads Stripe and stores `canceled` when that Subscription is canceled.
+
 ## Optional Stripe keys
 
 `0.30.0` does not add a migration. The app boots, migrates, and builds assets with no `STRIPE_*` variables. Outside local mode, one warning names each missing variable. `/webhooks/stripe` returns 503 until `STRIPE_WEBHOOK_SECRET` is set, and stores nothing. Checkout and the portal return 503 until `STRIPE_SECRET_KEY` or a client is set. Set `config.require_secrets` or `RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS=1` to raise `MissingWebhookSecret` or `MissingStripeKey` on a production boot. Asset tasks and `tailwindcss:build` / `tailwindcss:watch` still skip that raise.
