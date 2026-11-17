@@ -9,6 +9,10 @@ module RecordingStudioStripe
     EVENT_HANDLERS = {
       "checkout.session.completed" => :handle_checkout,
       "checkout.session.async_payment_succeeded" => :handle_checkout,
+      "checkout.session.async_payment_failed" => :handle_async_payment_failed,
+      "charge.refunded" => :handle_charge_refunded,
+      "charge.dispute.created" => :handle_dispute_created,
+      "charge.dispute.closed" => :handle_dispute_closed,
       "customer.subscription.created" => :handle_subscription,
       "customer.subscription.updated" => :handle_subscription,
       "customer.subscription.deleted" => :handle_subscription_deleted,
@@ -90,6 +94,7 @@ module RecordingStudioStripe
       append_invoice_snapshot(payload, event, object)
       append_subscription_status(payload, event, object)
       append_checkout_subscription(payload, event, object)
+      append_allowance_charge(payload, event, object)
       payload
     end
 
@@ -104,6 +109,19 @@ module RecordingStudioStripe
 
       status = stripe_get(object, :status).to_s
       payload["subscription_status"] = status if status.present?
+    end
+
+    def append_allowance_charge(payload, event, object)
+      type = event.type.to_s
+      return unless type == "charge.refunded" || type.start_with?("charge.dispute.")
+
+      payload["payment_intent_id"] = stripe_reference_id(stripe_get(object, :payment_intent)).to_s
+      if type == "charge.refunded"
+        payload["amount"] = stripe_get(object, :amount).to_i
+        payload["amount_refunded"] = stripe_get(object, :amount_refunded).to_i
+      else
+        payload["dispute_status"] = stripe_get(object, :status).to_s
+      end
     end
 
     def append_checkout_subscription(payload, event, object)
@@ -221,8 +239,49 @@ module RecordingStudioStripe
       ApplyAllowance.call(
         root_recording: root,
         price: price,
-        stripe_checkout_session_id: session.id
+        stripe_checkout_session_id: session.id,
+        stripe_payment_intent_id: stripe_reference_id(stripe_get(session, :payment_intent))
       )
+    end
+
+    def handle_async_payment_failed(session)
+      price = price_from_session(session)
+      return unless price&.product&.allowance?
+
+      AllowanceCharge.record_failure!(
+        root: require_root!(root_from(session)),
+        price: price,
+        session_id: stripe_get(session, :id),
+        payment_intent_id: stripe_reference_id(stripe_get(session, :payment_intent))
+      )
+    end
+
+    def handle_charge_refunded(charge)
+      AllowanceCharge.refund!(
+        payment_intent_id: stripe_reference_id(stripe_get(charge, :payment_intent)),
+        amount_refunded: stripe_get(charge, :amount_refunded),
+        amount: stripe_get(charge, :amount)
+      )
+    end
+
+    def handle_dispute_created(dispute)
+      AllowanceCharge.freeze!(
+        payment_intent_id: stripe_reference_id(stripe_get(dispute, :payment_intent))
+      )
+    end
+
+    def handle_dispute_closed(dispute)
+      AllowanceCharge.close_dispute!(
+        payment_intent_id: stripe_reference_id(stripe_get(dispute, :payment_intent)),
+        status: stripe_get(dispute, :status)
+      )
+    end
+
+    def stripe_reference_id(raw)
+      return if raw.blank?
+      return raw if raw.is_a?(String)
+
+      stripe_get(raw, :id).presence
     end
 
     def handle_subscription(stripe_subscription, event_created: nil)

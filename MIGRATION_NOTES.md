@@ -9,6 +9,19 @@
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
 - FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.360`
 
+## Allowance refunds and disputes
+
+`0.32.0` adds columns on `recording_studio_stripe_allowance_purchases`: `stripe_payment_intent_id`, `status` (`active` or `failed`), `credits_frozen`, `credits_revoked`, `credit_shortfall`, and `refunded_amount`. Copy the migration and run it:
+
+```bash
+bin/rails generate recording_studio_stripe:migrations
+bin/rails db:migrate
+```
+
+Checkout stores the PaymentIntent id. `charge.refunded` revokes unused credits on that pack. A partial refund uses the cumulative `amount_refunded` divided by the charge `amount`, rounded down to whole credits. A repeat event does not revoke twice. `charge.dispute.created` freezes the pack so those credits cannot be spent. `charge.dispute.closed` unfreezes it when the status is `won` or `warning_closed`, and revokes unused credits when the status is `lost`. Used credits that cannot be revoked stay on the meter and are stored as `credit_shortfall`. The balance does not go below zero. `checkout.session.async_payment_failed` stores a failed allowance purchase and grants nothing.
+
+Charges that are not allowance purchases are stored and ignored. Subscription refunds and disputes are not applied here. Use Stripe's cancel-on-failure and dispute settings so a lost dispute or a failed renewal cancels the Subscription.
+
 ## Canceled subscriptions
 
 `0.31.0` does not add a migration. When Stripe is configured, `customer.subscription.created` and `customer.subscription.updated` read the Subscription and apply that price, status, and period. A failed read returns 503 and does not store the event, so Stripe retries. Local mode still uses the event body. `customer.subscription.deleted` stores the Stripe event time on the Subscription. A canceled Stripe subscription id stays canceled. A later event for that same id does not make the row active. A different Stripe subscription id still creates a new row. A delete that arrives before the local row is stored and does not create a row. The next created or updated event, when Stripe is configured, reads Stripe and stores `canceled` when that Subscription is canceled.

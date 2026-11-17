@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-11-17
+
+### Security
+- Allowance Checkout stores the Stripe PaymentIntent id on the purchase. `charge.refunded` revokes unused credits from that pack. A full refund clears the unused credits. A partial refund clears `floor(credits × amount_refunded / amount)`. Repeat events use the cumulative `amount_refunded`, not a delta. Credits already spent are not pulled back below zero. The purchase stores `credit_shortfall` for that gap
+- `charge.dispute.created` freezes the pack so those credits cannot be spent. `charge.dispute.closed` with status `won` or `warning_closed` unfreezes it. Status `lost` revokes the unused credits and records the same shortfall
+- `checkout.session.async_payment_failed` records the allowance session as failed and grants nothing
+- A charge or dispute with no allowance purchase is stored and ignored
+- Subscription refunds and disputes are not handled. Hosts rely on Stripe's cancel-on-failure and dispute settings
+
+### Upgrade notes
+- Bump to **0.32.0** and run the new migration. It adds the PaymentIntent id, status, freeze flag, revoked credits, shortfall, and cumulative refunded amount on allowance purchases
+- Copy it with `bin/rails generate recording_studio_stripe:migrations`, then `bin/rails db:migrate`
+- In the Stripe Dashboard, keep the settings that cancel a subscription when payment fails and when a dispute is lost. This gem does not revoke a plan from `charge.refunded` or `charge.dispute.*`
+
 ## [0.31.0] - 2026-11-17
 
 ### Security
@@ -859,7 +873,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.32.0...HEAD
+[0.32.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.1...v0.31.0
 [0.30.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.0...v0.30.1
 [0.30.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.29.1...v0.30.0

@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.31.0", ::RecordingStudioStripe::VERSION
+    assert_equal "0.32.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -315,6 +315,12 @@ class RecordingStudioStripeTest < Minitest::Test
     assert_includes readme, "payload[:id]"
     assert_includes readme, "nil means unlimited"
     assert_includes readme, "ProcessWebhook.replay"
+    assert_includes readme, "charge.refunded"
+    assert_includes readme, "credit_shortfall"
+    assert_includes readme, "checkout.session.async_payment_failed"
+    assert_includes readme, "charge.dispute.created"
+    assert_includes readme, "warning_closed"
+    assert_includes readme, "cancel a subscription when a payment fails"
     assert_includes readme, "kind` is `trial_fee"
     assert_includes readme, "does not call Stripe"
     assert_includes readme, "first_payment"

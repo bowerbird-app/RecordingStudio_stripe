@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_14_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_17_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -157,11 +157,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_14_090000) do
     t.string "stripe_checkout_session_id"
     t.string "subscription_type"
     t.datetime "updated_at", null: false
+    t.string "stripe_payment_intent_id"
+    t.string "status", default: "active", null: false
+    t.boolean "credits_frozen", default: false, null: false
+    t.bigint "credits_revoked", default: 0, null: false
+    t.bigint "credit_shortfall", default: 0, null: false
+    t.bigint "refunded_amount", default: 0, null: false
     t.index ["customer_id"], name: "idx_on_customer_id_100eab8f3f"
     t.index ["meter_id"], name: "index_recording_studio_stripe_allowance_purchases_on_meter_id"
     t.index ["price_id"], name: "index_recording_studio_stripe_allowance_purchases_on_price_id"
     t.index ["root_recording_id", "meter_id", "purchased_at"], name: "idx_rs_stripe_allowance_root_meter_purchased"
     t.index ["stripe_checkout_session_id"], name: "idx_on_stripe_checkout_session_id_1cb51a2418", unique: true, where: "(stripe_checkout_session_id IS NOT NULL)"
+    t.index ["stripe_payment_intent_id"], name: "idx_rs_stripe_allowance_payment_intent", unique: true, where: "(stripe_payment_intent_id IS NOT NULL)"
   end
 
   create_table "recording_studio_stripe_customers", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
