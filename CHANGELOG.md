@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.1] - 2026-11-17
+
+### Security
+- Stripe Admin catalogue writes need Accessible `:admin` on the site-admin root. Create, update, archive, trial assignment, and any other non-GET on Products and Prices return 403 for `:view` and `:edit`. Read-only catalogue screens, including Cents per credit, stay on `:view`. New Product, Add Price, Edit, and the save buttons stay hidden without `:admin`
+
+### Upgrade notes
+- Bump to **0.30.1**. No migration
+- Staff who change Products or Prices need `:admin` on the site-admin root. `:edit` can still open the catalogue and cannot change what customers are charged
+
 ## [0.30.0] - 2026-11-16
 
 ### Changed
@@ -836,7 +845,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.1...HEAD
+[0.30.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.0...v0.30.1
 [0.30.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.29.1...v0.30.0
 [0.29.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.29.0...v0.29.1
 [0.29.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.28.0...v0.29.0

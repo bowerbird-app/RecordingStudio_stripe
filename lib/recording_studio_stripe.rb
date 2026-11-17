@@ -76,6 +76,7 @@ require "recording_studio_stripe/plan_interval_pills"
 require "recording_studio_stripe/plan_card_display"
 require "recording_studio_stripe/seed_demo_catalog"
 require "recording_studio_stripe/testing/client"
+require "recording_studio_stripe/admin/catalogue_access"
 require "recording_studio_stripe/admin/definitions"
 require "recording_studio_stripe/admin/registration"
 

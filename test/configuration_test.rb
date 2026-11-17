@@ -237,11 +237,17 @@ class ConfigurationTest < Minitest::Test
     root = File.expand_path("..", __dir__)
     stripe = File.read(File.join(root, "app/controllers/recording_studio_stripe/application_controller.rb"))
     admin = File.read(File.join(root, "app/controllers/recording_studio_stripe/admin/base_controller.rb"))
+    catalogue = File.read(File.join(root, "lib/recording_studio_stripe/admin/catalogue_access.rb"))
 
     assert_includes stripe, "recording_studio_layout { RecordingStudioStripe.configuration.layout }"
     assert_includes admin, "recording_studio_layout { RecordingStudioStripe.configuration.layout }"
-    assert_includes admin, "return false unless RecordingStudioStripe.accessible_loaded?"
+    assert_includes admin, "CatalogueAccess.allowed?"
+    assert_includes admin, "CatalogueAccess.role_for(request)"
+    assert_includes catalogue, "return false unless RecordingStudioStripe.accessible_loaded?"
+    assert_includes catalogue, "return :view if request.get? || request.head?"
+    refute_includes admin, "role: :edit"
     refute_includes admin, "return true unless defined?(RecordingStudioAccessible)"
+    refute_includes catalogue, "return true unless defined?(RecordingStudioAccessible)"
     refute_includes stripe, "UsesDefaultLayout"
     refute_includes admin, "UsesDefaultLayout"
     assert_empty RecordingStudio::Layout.hardcoded_layout_paths(root)
