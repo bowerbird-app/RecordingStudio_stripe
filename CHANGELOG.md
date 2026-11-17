@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-11-17
+
+### Security
+- `customer.subscription.created` and `customer.subscription.updated` re-read the Subscription when Stripe is configured and apply that price, status, and period. A failed read returns 503 and does not store the event. Local mode still uses the event payload
+- `customer.subscription.deleted` stores `stripe_event_created` on the Subscription. An older subscription event cannot write `active` back over that cancel
+- `ApplySubscription` does not move a canceled Stripe subscription id to another status
+
+### Upgrade notes
+- Bump to **0.31.0**. No migration
+- When Stripe is configured, subscription created and updated webhooks follow the live Subscription. A read error is 503 and Stripe retries. Local mode still uses the event body
+- A delete that arrives before the local row is stored and does not create a row. The next created or updated event reads Stripe and stores `canceled` when that Subscription is canceled
+- A canceled Stripe subscription id stays canceled. A later event for that same id does not make the row active. A different Stripe subscription id still creates a new row
+- In local mode the synthetic subscription id is stable for a workspace and plan group. An immediate local cancel stays canceled if checkout runs again on that id
+
 ## [0.30.1] - 2026-11-17
 
 ### Security
@@ -845,7 +859,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.31.0...HEAD
+[0.31.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.1...v0.31.0
 [0.30.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.0...v0.30.1
 [0.30.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.29.1...v0.30.0
 [0.29.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.29.0...v0.29.1

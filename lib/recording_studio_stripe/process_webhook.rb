@@ -142,10 +142,13 @@ module RecordingStudioStripe
 
       object = event.data.object
       created = stripe_get(event, :created)
-      if method_name == :handle_subscription
+      case method_name
+      when :handle_subscription
         handle_subscription(object, event_created: require_event_time(created))
-      elsif method_name == :handle_checkout
+      when :handle_checkout
         handle_checkout(object, event_created: created)
+      when :handle_subscription_deleted
+        handle_subscription_deleted(object, event_created: created)
       else
         send(method_name, object)
       end
@@ -223,6 +226,7 @@ module RecordingStudioStripe
     end
 
     def handle_subscription(stripe_subscription, event_created: nil)
+      stripe_subscription = subscription_for_event(stripe_subscription)
       previous = projection_before(stripe_subscription)
       root = require_root!(root_from_subscription(stripe_subscription))
       price = require_price!(price_from_subscription(stripe_subscription))
@@ -271,7 +275,7 @@ module RecordingStudioStripe
       subscription.update!(metadata: subscription.metadata.merge("stripe_item_id" => item_id))
     end
 
-    def handle_subscription_deleted(stripe_subscription)
+    def handle_subscription_deleted(stripe_subscription, event_created: nil)
       subscription = Subscription.includes(price: :product).find_by(stripe_id: stripe_subscription.id)
       return unless subscription
 
@@ -281,8 +285,32 @@ module RecordingStudioStripe
         cancel_at_period_end: subscription.cancel_at_period_end?,
         scheduled_price_id: subscription.scheduled_price_id
       }
-      subscription.update!(status: "canceled", cancel_at_period_end: false)
+      subscription.update!(
+        status: "canceled",
+        cancel_at_period_end: false,
+        metadata: canceled_metadata(subscription, event_created)
+      )
       PlanDowngrade.record!(subscription: subscription, previous: previous)
+    end
+
+    def canceled_metadata(subscription, event_created)
+      data = stringify_metadata(subscription.metadata)
+      stamp = event_created.to_i
+      previous = data["stripe_event_created"].to_i
+      data["stripe_event_created"] = stamp.to_s if stamp.positive? && stamp >= previous
+      data
+    end
+
+    def subscription_for_event(stripe_subscription)
+      return stripe_subscription unless RecordingStudioStripe.configuration.stripe_configured?
+
+      retrieved = retrieve_stripe_subscription(stripe_get(stripe_subscription, :id))
+      if retrieved.blank? || read_subscription_status(retrieved).blank?
+        raise OrderingRace, "Subscription could not be read from Stripe"
+      end
+
+      remember_retrieved_subscription!(retrieved)
+      retrieved
     end
 
     def handle_invoice_paid(invoice)

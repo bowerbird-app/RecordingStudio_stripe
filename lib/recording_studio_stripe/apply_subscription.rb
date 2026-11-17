@@ -43,7 +43,7 @@ module RecordingStudioStripe
       stripe_id = resolve_stripe_id(type)
 
       subscription = find_subscription(stripe_id, type)
-      return subscription if stale_event?(subscription)
+      return subscription if stale_event?(subscription) || canceled_terminal?(subscription, stripe_id)
 
       period_start = resolve_period_start(subscription, now)
       period_end = resolve_period_end(subscription, period_start)
@@ -103,6 +103,10 @@ module RecordingStudioStripe
       created = @stripe_event_created.to_i
       previous = subscription.metadata.to_h["stripe_event_created"].to_i
       created.positive? && previous.positive? && created < previous
+    end
+
+    def canceled_terminal?(subscription, stripe_id)
+      subscription.persisted? && subscription.status == "canceled" && subscription.stripe_id == stripe_id
     end
 
     def merged_metadata(subscription)
