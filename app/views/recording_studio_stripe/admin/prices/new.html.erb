@@ -52,11 +52,13 @@
         placeholder: "5000000"
       ) %>
     <% end %>
-    <%= render FlatPack::Button::Component.new(
-      text: t("recording_studio.stripe.admin.prices.create"),
-      style: :primary,
-      size: :md,
-      type: "submit"
-    ) %>
+    <% if catalogue_writes_allowed? %>
+      <%= render FlatPack::Button::Component.new(
+        text: t("recording_studio.stripe.admin.prices.create"),
+        style: :primary,
+        size: :md,
+        type: "submit"
+      ) %>
+    <% end %>
   <% end %>
 </div>

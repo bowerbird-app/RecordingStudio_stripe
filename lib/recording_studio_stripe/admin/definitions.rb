@@ -71,7 +71,8 @@ module RecordingStudioStripe
         klass.query { |_context| RecordingStudioStripe::Product.includes(:paywalls).order(:name) }
         klass.button :new_product,
                      text: ->(_context) { Copy.t("admin.definitions.products.new_button", default: "New Product") },
-                     url: ->(_context) { "#{RecordingStudioStripe.configuration.mount_path}/admin/products/new" }
+                     url: ->(_context) { "#{RecordingStudioStripe.configuration.mount_path}/admin/products/new" },
+                     visible_if: ->(context) { CatalogueAccess.write_allowed?(context) }
         klass.table do
           column :name
           column :kind
@@ -89,12 +90,14 @@ module RecordingStudioStripe
                  text: ->(_row, _context) { Copy.t("admin.definitions.products.edit", default: "Edit") },
                  url: lambda { |row, _context|
                    "#{RecordingStudioStripe.configuration.mount_path}/admin/products/#{row.id}/edit"
-                 }
+                 },
+                 visible_if: ->(_row, context) { CatalogueAccess.write_allowed?(context) }
           action :add_price,
                  text: ->(_row, _context) { Copy.t("admin.definitions.products.add_price", default: "Add Price") },
                  url: lambda { |row, _context|
                    "#{RecordingStudioStripe.configuration.mount_path}/admin/prices/new?product_id=#{row.id}"
-                 }
+                 },
+                 visible_if: ->(_row, context) { CatalogueAccess.write_allowed?(context) }
         end
         RecordingStudioStripe::Admin::Definitions.const_set(:ProductsScreen, klass)
       end
@@ -126,7 +129,8 @@ module RecordingStudioStripe
                  text: ->(_row, _context) { Copy.t("admin.definitions.prices.edit", default: "Edit") },
                  url: lambda { |row, _context|
                    "#{RecordingStudioStripe.configuration.mount_path}/admin/prices/#{row.id}/edit"
-                 }
+                 },
+                 visible_if: ->(_row, context) { CatalogueAccess.write_allowed?(context) }
         end
         RecordingStudioStripe::Admin::Definitions.const_set(:PricesScreen, klass)
       end

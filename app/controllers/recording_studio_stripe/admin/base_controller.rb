@@ -7,7 +7,7 @@ module RecordingStudioStripe
 
       before_action :require_admin_access!
 
-      helper_method :admin_screen_url
+      helper_method :admin_screen_url, :catalogue_writes_allowed?
 
       private
 
@@ -18,19 +18,19 @@ module RecordingStudioStripe
       end
 
       def admin_authorized?
-        recording = admin_access_recording
-        return false unless recording
-        return false unless RecordingStudioStripe.accessible_loaded?
-
-        RecordingStudioAccessible.authorized?(
+        CatalogueAccess.allowed?(
           actor: current_admin_actor,
-          recording: recording,
-          role: :edit
+          controller: self,
+          role: CatalogueAccess.role_for(request)
         )
       end
 
-      def admin_access_recording
-        RecordingStudioStripe.site_admin_recording_for(self)
+      def catalogue_writes_allowed?
+        CatalogueAccess.allowed?(
+          actor: current_admin_actor,
+          controller: self,
+          role: :admin
+        )
       end
 
       def current_admin_actor

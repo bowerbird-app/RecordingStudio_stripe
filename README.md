@@ -312,6 +312,8 @@ recording_studio_admin_for :admin, at: "/admin", root_section: :stripe
 
 `config.site_admin_recording` may be the root recording, the admin root recordable, or a callable that returns one of those. A zero-argument callable runs with `instance_exec` on the Stripe Admin controller (`self` is that controller), same as `config.current_actor`. A callable that takes `controller` or `controller:` receives the controller. `RecordingStudioStripe.site_admin_recording_for` is the public resolver. It looks the recordable up with `root_recording_for` and does not create a root. Create that root in seeds with `create_root_recording!`. Stripe Admin forms authorize against that workspace only. If the setting is missing or returns nothing, those forms respond 403. They do not pick the first `stripe_admin` row. User billing screens still use `config.current_root_recording`.
 
+Catalogue screens need Accessible `:view` on that site-admin root. `:edit` includes `:view`. Products, Prices, and Cents per credit stay readable at `:view`. Creating or changing a Product or Price needs `:admin` on that same root. Create, update, archive, a trial, and any other non-GET on the product and price forms are writes. `:edit` can open the catalogue and cannot change what customers are charged. New Product, Add Price, Edit, and the save buttons stay off the screen without `:admin`. A write without `:admin` is 403, “Staff only.”
+
 Site-wide Admin screens (`blast_radius :site`) use Accessible `admin_root_resolver`. `AdminSupport` sets that resolver only when the host has not. The callable is the same lookup as `site_admin_recording`, then the current access recording when that type has `:stripe_admin`. A host that already named an admin root keeps it. Point the mounted admin `access_recording_resolver` at `RecordingStudioAccessible.admin_root(context:)`.
 
 Do not invent a second admin.
@@ -433,7 +435,7 @@ Replay with `RecordingStudioStripe::ProcessWebhook.replay(webhook_event)`. The n
 
 Set `config.automatic_tax = true` only after Stripe Tax is on in the Dashboard. Checkout then also sends `customer_update: { address: "auto" }`. Promotion codes are on by default.
 
-Hosts that do not use `current_user` should set `config.current_actor`. Hosts that do not use `current_root_recording` should set `config.current_root_recording`. Hosts that mount Stripe Admin forms must set `config.site_admin_recording`. `draw_recording_studio_stripe at:` overwrites `config.mount_path`. Billing screens use Accessible `ControllerAuth` for actor and root; grant `:view` / `:admin` on the workspace root. Accessible is required. Missing Accessible forbids billing money actions and Stripe Admin forms, and hides Manage billing on Stripe.
+Hosts that do not use `current_user` should set `config.current_actor`. Hosts that do not use `current_root_recording` should set `config.current_root_recording`. Hosts that mount Stripe Admin forms must set `config.site_admin_recording`. `draw_recording_studio_stripe at:` overwrites `config.mount_path`. Billing screens use Accessible `ControllerAuth` for actor and root; grant `:view` / `:admin` on the workspace root. Catalogue reads on the site-admin root need `:view`. Catalogue writes need `:admin` there. Accessible is required. Missing Accessible forbids billing money actions and Stripe Admin forms, and hides Manage billing on Stripe.
 
 Recording Studio core still swallows `before_record` errors. Standing caps gate on `Recording` `before_create`, restore, and move until core can deny `record!` itself.
 

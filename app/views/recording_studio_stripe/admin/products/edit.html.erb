@@ -51,11 +51,13 @@
       <%= render "trial" %>
       <%= render "plan_card" %>
     <% end %>
-    <%= render FlatPack::Button::Component.new(
-      text: t("recording_studio.stripe.admin.common.save"),
-      style: :primary,
-      size: :md,
-      type: "submit"
-    ) %>
+    <% if catalogue_writes_allowed? %>
+      <%= render FlatPack::Button::Component.new(
+        text: t("recording_studio.stripe.admin.common.save"),
+        style: :primary,
+        size: :md,
+        type: "submit"
+      ) %>
+    <% end %>
   <% end %>
 </div>
