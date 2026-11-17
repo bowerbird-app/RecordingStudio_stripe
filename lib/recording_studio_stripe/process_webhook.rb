@@ -142,9 +142,12 @@ module RecordingStudioStripe
 
       object = event.data.object
       created = stripe_get(event, :created)
-      if method_name == :handle_subscription
+      case method_name
+      when :handle_subscription
         handle_subscription(object, event_created: require_event_time(created))
-      elsif method_name == :handle_checkout
+      when :handle_subscription_deleted
+        handle_subscription_deleted(object, event_created: require_event_time(created))
+      when :handle_checkout
         handle_checkout(object, event_created: created)
       else
         send(method_name, object)
@@ -223,6 +226,7 @@ module RecordingStudioStripe
     end
 
     def handle_subscription(stripe_subscription, event_created: nil)
+      stripe_subscription = subscription_for_projection(stripe_subscription)
       previous = projection_before(stripe_subscription)
       root = require_root!(root_from_subscription(stripe_subscription))
       price = require_price!(price_from_subscription(stripe_subscription))
@@ -271,7 +275,7 @@ module RecordingStudioStripe
       subscription.update!(metadata: subscription.metadata.merge("stripe_item_id" => item_id))
     end
 
-    def handle_subscription_deleted(stripe_subscription)
+    def handle_subscription_deleted(stripe_subscription, event_created:)
       subscription = Subscription.includes(price: :product).find_by(stripe_id: stripe_subscription.id)
       return unless subscription
 
@@ -281,8 +285,35 @@ module RecordingStudioStripe
         cancel_at_period_end: subscription.cancel_at_period_end?,
         scheduled_price_id: subscription.scheduled_price_id
       }
-      subscription.update!(status: "canceled", cancel_at_period_end: false)
+      subscription.update!(
+        status: "canceled",
+        cancel_at_period_end: false,
+        metadata: canceled_metadata(subscription, event_created)
+      )
       PlanDowngrade.record!(subscription: subscription, previous: previous)
+    end
+
+    # When Stripe is configured, project the Subscription it returns now.
+    # Local mode keeps the event object, the same way checkout does.
+    def subscription_for_projection(stripe_subscription)
+      return stripe_subscription unless RecordingStudioStripe.configuration.stripe_configured?
+
+      id = checkout_subscription_id(stripe_subscription)
+      raise OrderingRace, "Subscription could not be read from Stripe" if id.blank?
+
+      retrieved = retrieve_stripe_subscription(id)
+      raise OrderingRace, "Subscription could not be read from Stripe" if retrieved.blank?
+
+      remember_retrieved_subscription!(retrieved)
+      retrieved
+    end
+
+    def canceled_metadata(subscription, event_created)
+      data = stringify_metadata(subscription.metadata)
+      incoming = event_created.to_i
+      return data unless incoming.positive? && incoming >= data["stripe_event_created"].to_i
+
+      data.merge("stripe_event_created" => event_created.to_s)
     end
 
     def handle_invoice_paid(invoice)

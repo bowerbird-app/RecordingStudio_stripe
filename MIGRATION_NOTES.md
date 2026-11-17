@@ -9,6 +9,10 @@
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
 - FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.360`
 
+## Canceled subscriptions
+
+`0.31.0` does not add a migration. Bump the gem pin. There is no host config change. When Stripe is configured, `customer.subscription.created` and `customer.subscription.updated` read the Subscription and store that current price, status, and period. A failed read returns 503 and stores nothing. `customer.subscription.deleted` stores the event time. A canceled `stripe_id` stays canceled. A new subscription uses a new id. Local mode still uses the event object. An immediate cancel in local mode keeps the stable local id, so a later local checkout for that same id stays canceled.
+
 ## Optional Stripe keys
 
 `0.30.0` does not add a migration. The app boots, migrates, and builds assets with no `STRIPE_*` variables. Outside local mode, one warning names each missing variable. `/webhooks/stripe` returns 503 until `STRIPE_WEBHOOK_SECRET` is set, and stores nothing. Checkout and the portal return 503 until `STRIPE_SECRET_KEY` or a client is set. Set `config.require_secrets` or `RECORDING_STUDIO_STRIPE_REQUIRE_SECRETS=1` to raise `MissingWebhookSecret` or `MissingStripeKey` on a production boot. Asset tasks and `tailwindcss:build` / `tailwindcss:watch` still skip that raise.

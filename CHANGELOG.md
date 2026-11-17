@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-11-17
+
+### Fixed
+- A canceled Stripe subscription stays canceled. `customer.subscription.deleted` stores `stripe_event_created` on that row. `ApplySubscription` does not move a canceled `stripe_id` to another status
+- `customer.subscription.created` and `customer.subscription.updated` re-read the Subscription when Stripe is configured, and store that current price, status, and period. A delete that arrives before the local row no longer lets a later event open an active plan from a stale payload. A failed read returns 503 and stores nothing. Local mode still uses the event object
+
+### Security
+- Out-of-order subscription webhooks cannot resurrect a canceled plan. That includes an update created before the delete and delivered after it, such as a retry after a 503
+
+### Upgrade notes
+- Bump to **0.31.0**. No migration. No host config change
+- Canceled is terminal for that Stripe subscription id. A new subscription uses a new id. Local mode still applies the event object. An immediate cancel in local mode keeps the stable local id, so a later local checkout for that same id stays canceled
+
 ## [0.30.0] - 2026-11-16
 
 ### Changed
@@ -836,7 +849,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.31.0...HEAD
+[0.31.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.29.1...v0.30.0
 [0.29.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.29.0...v0.29.1
 [0.29.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.28.0...v0.29.0

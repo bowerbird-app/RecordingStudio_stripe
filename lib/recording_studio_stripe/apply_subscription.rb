@@ -43,6 +43,7 @@ module RecordingStudioStripe
       stripe_id = resolve_stripe_id(type)
 
       subscription = find_subscription(stripe_id, type)
+      return subscription if terminal_canceled?(subscription, stripe_id)
       return subscription if stale_event?(subscription)
 
       period_start = resolve_period_start(subscription, now)
@@ -95,6 +96,10 @@ module RecordingStudioStripe
         return match if match
       end
       ordered.first
+    end
+
+    def terminal_canceled?(subscription, stripe_id)
+      subscription.persisted? && subscription.stripe_id == stripe_id && subscription.status == "canceled"
     end
 
     def stale_event?(subscription)
