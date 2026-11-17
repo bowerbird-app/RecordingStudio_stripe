@@ -35,10 +35,22 @@ module RecordingStudioStripe
     end
 
     def purchased
-      purchases = AllowancePurchase
-                  .where(root_recording_id: root_recording.id, meter_id: meter.id)
-                  .where(purchased_at: purchase_window_start...ends_at)
-      typed_scope(purchases, AllowancePurchase).sum(:quantity)
+      spendable_packs.sum(net_credits_sql).to_i
+    end
+
+    # Credits from this pack that usage in this period has not consumed.
+    # Included usage is spent first, then packs in purchase order. Frozen packs
+    # still occupy a slot so their usage is not charged to a later pack.
+    def unused_credits_for(purchase)
+      usage_left = [usage - included, 0].max
+      credited_packs.each do |pack|
+        net = net_quantity(pack, purchase)
+        consumed = [usage_left, net].min
+        return net - consumed if pack.id == purchase.id
+
+        usage_left -= consumed
+      end
+      purchase.net_quantity
     end
 
     def usage
@@ -52,6 +64,35 @@ module RecordingStudioStripe
 
     def purchase_window_start
       [starts_at, starts_at.beginning_of_month].min
+    end
+
+    def purchase_span
+      purchase_window_start...ends_at
+    end
+
+    def pack_scope
+      AllowancePurchase
+        .where(root_recording_id: root_recording.id, meter_id: meter.id)
+        .where(purchased_at: purchase_span)
+        .where(status: AllowancePurchase::STATUS_ACTIVE)
+    end
+
+    def credited_packs
+      typed_scope(pack_scope, AllowancePurchase).order(:purchased_at, :id)
+    end
+
+    def spendable_packs
+      credited_packs.where(credits_frozen: false)
+    end
+
+    def net_credits_sql
+      Arel.sql("quantity - credits_revoked")
+    end
+
+    def net_quantity(pack, purchase)
+      return purchase.net_quantity if pack.id == purchase.id
+
+      pack.net_quantity
     end
 
     def typed_scope(scope, model)
