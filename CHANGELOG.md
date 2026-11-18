@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.1] - 2026-11-18
+
+### Changed
+- Development and dummy git pins move to Recording Studio `v7.7.1`, Accessible `v0.54.1`, Metrics `v0.9.2`, Trashable `v1.2.1`, and FlatPack `v0.1.378`. The dummy also pins Admin `v2.19.0`, Logs `v0.8.1`, Cache `v0.7.1`, and Internationalization `v0.3.1`. Root Switchable stays `v0.16.0`.
+- Gemspec floors stay `recording_studio` `>= 7.0`, `< 8.0`, Accessible `>= 0.43.1`, `< 1.0`, and `flat_pack` `>= 0.1.360`.
+
+### Upgrade notes
+- Bump to **0.33.1**. No Stripe migration.
+- Hosts that install Recording Studio `v7.7.1` MUST run the Recording Studio 7.4, 7.5, and 7.7 migrations, then `bin/rails db:migrate`. Copy them from Recording Studio (`bin/rails generate recording_studio:migrations`). This gem does not ship them. The dummy app does not add them.
+- 7.4 is `20261116230000_add_recording_studio_recordings_root_type_creation_index`. 7.5 is `20261117120000_enforce_recording_studio_recording_root_invariant`. 7.7 is `20261117200000_replace_recording_studio_recordings_root_index`.
+
 ## [0.33.0] - 2026-11-18
 
 ### Added
@@ -884,7 +895,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.33.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.33.1...HEAD
+[0.33.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.33.0...v0.33.1
 [0.33.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.1...v0.31.0
