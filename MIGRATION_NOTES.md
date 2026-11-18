@@ -9,6 +9,10 @@
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
 - FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.360`
 
+## Public plans
+
+`0.33.0` does not add a migration. `config.public_plans` defaults to false, so `/plans` still requires a signed-in actor and a billing root. Set `config.public_plans = true` and `config.public_plans_signup_path` to a host path such as `"/users/sign_up"`, or to a zero-argument callable. The callable runs with `instance_exec` on the plans controller. A visit with no actor, or with an actor and no billing root, renders the plans page for guests. Each card's button is Sign up, linked to that path, with no plan and no `return_to`. Guest HTML does not include a subscription, a checkout form, a portal form, a Stripe price id, or a customer id. A signed-in visit that has a billing root still loads that workspace's subscription and checkout. Checkout and the portal stay signed in.
+
 ## Allowance refunds and disputes
 
 `0.32.0` adds columns on `recording_studio_stripe_allowance_purchases`: `stripe_payment_intent_id`, `status` (`active` or `failed`), `credits_frozen`, `credits_revoked`, `credit_shortfall`, and `refunded_amount`. Copy the migration and run it:

@@ -197,6 +197,24 @@ class ConfigurationTest < Minitest::Test
     RecordingStudioStripe.configuration.site_admin_recording = previous
   end
 
+  def test_public_plans_default_off_and_accept_a_path_or_callable
+    refute @configuration.public_plans
+    assert_nil @configuration.public_plans_signup_path
+
+    @configuration.public_plans = true
+    @configuration.public_plans_signup_path = "/users/sign_up"
+
+    assert @configuration.public_plans
+    assert_equal "/users/sign_up", @configuration.public_plans_signup_path
+
+    signup = -> { "/users/sign_up" }
+    @configuration.merge!(public_plans: false, public_plans_signup_path: signup)
+
+    refute @configuration.public_plans
+    assert_equal "/users/sign_up", signup.call
+    assert_same signup, @configuration.public_plans_signup_path
+  end
+
   def test_plans_background_image_defaults_to_nil
     assert_nil @configuration.plans_background_image
 

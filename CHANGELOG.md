@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-11-18
+
+### Added
+- `config.public_plans`, default false. When it is on, `/plans` renders for a visitor with no actor or no billing root. The page lists active plan products and active prices. Each card links to `config.public_plans_signup_path` with the label Sign up. That path is a host path or a zero-argument callable. The link does not add a plan or `return_to`. Guest HTML has no checkout form, portal form, subscription, Stripe price id, or customer id
+- A signed-in visit with a billing root stays on the workspace plans page. With `public_plans` off, `/plans` still requires an actor and a root
+
+### Upgrade notes
+- Bump to **0.33.0**. No migration
+- Leave `config.public_plans` unset to keep `/plans` signed-in only
+- Set `config.public_plans = true` and `config.public_plans_signup_path = "/users/sign_up"` to show plans before sign-in. A zero-argument callable runs with `instance_exec` on the plans controller. A host `authenticate_user!` before_action is skipped for that guest request when the host defined one. Checkout and the portal stay signed in
+
 ## [0.32.0] - 2026-11-17
 
 ### Security
@@ -873,7 +884,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.32.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.33.0...HEAD
+[0.33.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.1...v0.31.0
 [0.30.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.30.0...v0.30.1

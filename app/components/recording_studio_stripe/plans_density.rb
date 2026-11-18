@@ -17,8 +17,10 @@ module RecordingStudioStripe
         render PlanCardComponent.new(
           product: product,
           interval: interval,
-          subscription: subscription,
-          density: @density
+          subscription: @guest_signup[:guest] ? nil : subscription,
+          density: @density,
+          guest: @guest_signup[:guest],
+          signup_href: @guest_signup[:href]
         )
       end
     end
