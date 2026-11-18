@@ -12,12 +12,14 @@ module RecordingStudioStripe
     # Flatpack Card rejects style:, and its own flex class wins a normal grid utility.
     CARD_SUBGRID_ROWS = "h-full [display:grid]! [grid-template-rows:subgrid]! [grid-row:span_4]!"
 
-    def initialize(product:, interval:, subscription:, density: :cards)
+    def initialize(product:, interval:, subscription:, density: :cards, guest: false, signup_href: nil)
       super()
       @product = product
       @interval = interval
-      @subscription = subscription
+      @subscription = guest ? nil : subscription
       @density = density.to_sym
+      @guest = guest
+      @signup_href = signup_href
       validate_density!
     end
 
@@ -118,10 +120,17 @@ module RecordingStudioStripe
 
     def action
       return unless price
+      return signup_link if @guest
       return current_button if current?
       return change_button if @subscription&.active?
 
       checkout_button
+    end
+
+    def signup_link
+      return if @signup_href.blank?
+
+      plan_button(text: Copy.t("plans.sign_up"), style: :primary, href: @signup_href)
     end
 
     def current?

@@ -94,6 +94,11 @@ RecordingStudioStripe.configure do |config|
   # end
   # Decorative backdrop for /plans. Blank leaves that page unchanged.
   # config.plans_background_image = "/plans-backdrop.svg"
+  # Logged-out /plans. Off by default. A signed-in visit with a billing root stays on checkout.
+  # public_plans_signup_path is a host path, or a zero-argument callable (instance_exec
+  # on the plans controller). Sign up does not add a plan or return_to.
+  # config.public_plans = true
+  # config.public_plans_signup_path = "/users/sign_up"
   # Required for Stripe Admin forms. Return the site-admin workspace recording
   # (or the admin root recordable). A zero-argument callable runs as instance_exec
   # on the controller. A callable may take controller or controller:. Missing or

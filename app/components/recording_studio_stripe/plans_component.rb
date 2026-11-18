@@ -19,7 +19,7 @@ module RecordingStudioStripe
 
     def initialize(interval: "month", weekly_href: nil, monthly_href: nil, yearly_href: nil, intervals: nil,
                    products: [], subscription: nil, groups: nil, align: :center, title: Copy::UNSET,
-                   subtitle: Copy::UNSET, density: :auto)
+                   subtitle: Copy::UNSET, density: :auto, guest: false, signup_href: nil)
       super()
       @interval = interval
       @align = align.to_sym
@@ -30,6 +30,7 @@ module RecordingStudioStripe
       @yearly_href = yearly_href
       @title = title
       @subtitle = subtitle
+      @guest_signup = { guest: guest, href: signup_href }
       @groups = Array(groups.presence || [{ products: products, subscription: subscription, label: nil }])
       validate_align!
       validate_density!

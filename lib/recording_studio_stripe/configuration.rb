@@ -46,7 +46,9 @@ module RecordingStudioStripe
                   :domain_event_publish_lease,
                   :prices_pending_alert_after,
                   :prices_pending_max_hold,
-                  :plans_background_image
+                  :plans_background_image,
+                  :public_plans,
+                  :public_plans_signup_path
     attr_reader :hooks, :usage_costs, :limit_usages, :layout, :subscription_types
     attr_writer :usage_path
 
@@ -76,6 +78,8 @@ module RecordingStudioStripe
       @prices_pending_max_hold = 3.days
       @layout = nil
       @plans_background_image = nil
+      @public_plans = false
+      @public_plans_signup_path = nil
       @hooks = RecordingStudio::Hooks.new
     end
 
