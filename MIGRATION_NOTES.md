@@ -4,10 +4,28 @@
 
 - Ruby 3.3 or newer
 - Rails 8.1 or newer
-- Recording Studio `>= 7.0, < 8.0` (gemspec). Development pin is GitHub tag `v7.0.0`
-- Accessible `>= 0.43.1, < 1.0` (GitHub tag `v0.43.1`)
+- Recording Studio `>= 7.0, < 8.0` (gemspec). Development and dummy pin GitHub tag `v7.7.1`
+- Accessible `>= 0.43.1, < 1.0` (GitHub tag `v0.54.1`)
+- Metrics GitHub tag `v0.9.2` (`require: false`)
+- Trashable GitHub tag `v1.2.1` (`require: false`)
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
-- FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.360`
+- FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.378`
+- Dummy also pins Admin `v2.19.0`, Logs `v0.8.1`, Cache `v0.7.1`, Internationalization `v0.3.1`. Root Switchable stays `v0.16.0`
+
+## Recording Studio 7.7
+
+`0.33.1` does not add a Stripe migration. Hosts that install Recording Studio `v7.7.1` MUST run the Recording Studio 7.4, 7.5, and 7.7 migrations. Copy them from Recording Studio, then migrate:
+
+```bash
+bin/rails generate recording_studio:migrations
+bin/rails db:migrate
+```
+
+- 7.4: `20261116230000_add_recording_studio_recordings_root_type_creation_index`
+- 7.5: `20261117120000_enforce_recording_studio_recording_root_invariant`
+- 7.7: `20261117200000_replace_recording_studio_recordings_root_index`
+
+The dummy app does not add those three migrations. Add Accessible access-request migrations or Trashable `purge_at` on a host only when that host uses those tables.
 
 ## Public plans
 
