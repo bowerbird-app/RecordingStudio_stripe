@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-11-19
+
+### Changed
+- Development and dummy git pins move to Recording Studio `v7.8.0` (`~> 7.8`), Accessible `v0.56.0` (`~> 0.56`), Metrics `v0.10.0` (`~> 0.10`), Trashable `v1.2.3`, and FlatPack `v0.2.0` (`~> 0.2`). The dummy also pins Admin `v2.19.1`, Logs `v0.8.2`, Cache `v0.8.0` (`~> 0.8`), and Root Switchable `v0.16.1`. Internationalization stays `v0.3.1`.
+- Gemspec floors stay `recording_studio` `>= 7.0`, `< 8.0`, Accessible `>= 0.43.1`, `< 1.0`, and `flat_pack` `>= 0.1.360`. Hosts outside this sweep can stay on FlatPack `0.1.x`.
+
+### Upgrade notes
+- Bump to **0.34.0**. No Stripe migration.
+- Hosts MUST run the Recording Studio 7.4, 7.5, and 7.7 migrations if they have not, then `bin/rails db:migrate`. Copy them from Recording Studio (`bin/rails generate recording_studio:migrations`). This gem does not ship them. The dummy app does not add them.
+- 7.4 is `20261116230000_add_recording_studio_recordings_root_type_creation_index`. 7.5 is `20261117120000_enforce_recording_studio_recording_root_invariant`. 7.7 is `20261117200000_replace_recording_studio_recordings_root_index`.
+- flat_pack 0.2.0 is supported; hosts moving to 0.2 must remove the manual `flat_pack/heroicons` importmap pin and any `flat-pack--icon` controller registration. Icons on plan cards and billing buttons are server-rendered SVG. `data-flat-pack--icon-name-value` is no longer emitted.
+- Recording Studio 7.8's default layout backdrop image sets `decoding="async"` and `fetchpriority="low"`. It does not set `loading`.
+- Compare [v0.33.1...v0.34.0](https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.33.1...v0.34.0).
+
 ## [0.33.1] - 2026-11-18
 
 ### Changed
@@ -895,7 +909,8 @@ First product cut of Recording Studio Stripe. The repo started as the addon temp
 
 Template environment work. See git history if you still have a copy from the gem template.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.33.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.34.0...HEAD
+[0.34.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.33.1...v0.34.0
 [0.33.1]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.33.0...v0.33.1
 [0.33.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/bowerbird-app/RecordingStudio_stripe/compare/v0.31.0...v0.32.0

@@ -4,13 +4,30 @@
 
 - Ruby 3.3 or newer
 - Rails 8.1 or newer
-- Recording Studio `>= 7.0, < 8.0` (gemspec). Development and dummy pin GitHub tag `v7.7.1`
-- Accessible `>= 0.43.1, < 1.0` (GitHub tag `v0.54.1`)
-- Metrics GitHub tag `v0.9.2` (`require: false`)
-- Trashable GitHub tag `v1.2.1` (`require: false`)
+- Recording Studio `>= 7.0, < 8.0` (gemspec). Development and dummy pin GitHub tag `v7.8.0` (`~> 7.8`)
+- Accessible `>= 0.43.1, < 1.0` (GitHub tag `v0.56.0`, `~> 0.56`)
+- Metrics GitHub tag `v0.10.0` (`~> 0.10`, `require: false`)
+- Trashable GitHub tag `v1.2.3` (`require: false`)
 - `view_component` `>= 4.14, < 5` (this repo locks `4.19.0`)
-- FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.1.378`
-- Dummy also pins Admin `v2.19.0`, Logs `v0.8.1`, Cache `v0.7.1`, Internationalization `v0.3.1`. Root Switchable stays `v0.16.0`
+- FlatPack `>= 0.1.360` (UsageMeter `limit: 0`, Button form submit). This repo pins GitHub tag `v0.2.0` (`~> 0.2`). Hosts on `0.1.x` still resolve
+- Dummy also pins Admin `v2.19.1`, Logs `v0.8.2`, Cache `v0.8.0` (`~> 0.8`), Internationalization `v0.3.1`, and Root Switchable `v0.16.1`
+
+## 0.34.0
+
+`0.34.0` does not add a Stripe migration. Hosts MUST run the Recording Studio 7.4, 7.5, and 7.7 migrations if they have not. Copy them from Recording Studio, then migrate:
+
+```bash
+bin/rails generate recording_studio:migrations
+bin/rails db:migrate
+```
+
+- 7.4: `20261116230000_add_recording_studio_recordings_root_type_creation_index`
+- 7.5: `20261117120000_enforce_recording_studio_recording_root_invariant`
+- 7.7: `20261117200000_replace_recording_studio_recordings_root_index`
+
+The dummy app does not add those three migrations.
+
+flat_pack 0.2.0 is supported; hosts moving to 0.2 must remove the manual `flat_pack/heroicons` importmap pin and any `flat-pack--icon` controller registration. The gemspec floor stays `>= 0.1.360`, so a host can stay on FlatPack `0.1.x`.
 
 ## Recording Studio 7.7
 
@@ -135,7 +152,7 @@ Engine controllers call `recording_studio_layout { RecordingStudioStripe.configu
 
 Page titles use `content_for :title` and `content_for :subtitle`. Back and close use `flat_pack_page_nav`. The right side of the top nav uses `register_page_nav` or `content_for :page_nav_right`. `/plans` centers its title and subtitle in `PlansComponent` and does not set `content_for :title`. Those headings, and each group heading, use `fp-on-backdrop`. That class changes text only when the layout has a background image. Plan cards are outside it. Interval pills use `track: true` and `style: :primary`, and set the pill list background token to the surface background. The track class includes `mb-4`, so the switch stays clear of the plan cards. The page title uses `size: :display`. Each group title on a multi-group page has a divider above it. Over a layout photo the rule uses `--backdrop-muted-content-color`. Without a photo it keeps the surface border.
 
-`recording_studio_background_image(url)` writes `content_for :background_image`. The default layout passes that URL to `FlatPack::PageLayout` as a decorative image (`alt=""`, `loading="lazy"`). A blank URL leaves the page unchanged. `/plans` passes `config.plans_background_image`. That setting defaults to nil. `recording_studio_page_width(:wide)` writes `content_for :page_width`. Allowed values are `:narrow`, `:default`, `:wide`, and `:full`. A blank value stays `:default`. A host layout that replaces the default reads both slots.
+`recording_studio_background_image(url)` writes `content_for :background_image`. The default layout passes that URL to `FlatPack::PageLayout` as a decorative image (`alt=""`, `decoding="async"`, `fetchpriority="low"`). It does not set `loading`. A blank URL leaves the page unchanged. `/plans` passes `config.plans_background_image`. That setting defaults to nil. `recording_studio_page_width(:wide)` writes `content_for :page_width`. Allowed values are `:narrow`, `:default`, `:wide`, and `:full`. A blank value stays `:default`. A host layout that replaces the default reads both slots.
 
 ## Verification
 

@@ -138,7 +138,11 @@ module RecordingStudioStripe
       assert_nil details["open"]
       assert_includes details["class"].to_s, "peer"
       assert_equal "What\u2019s included", details.at_css("summary").text.squish
-      assert_equal "chevron-down", details.at_css("svg")["data-flat-pack--icon-name-value"]
+      chevron = details.at_css("summary svg")
+      assert chevron
+      assert_nil chevron["data-flat-pack--icon-name-value"]
+      assert_equal "0 0 24 24", chevron["viewbox"]
+      assert_equal "m19.5 8.25-7.5 7.5-7.5-7.5", chevron.at_css("path")["d"]
       assert_empty details.css("li")
       assert_equal 1, inclusions.css("ul").size
       refute inclusions.at_css("[data-controller='flat-pack--collapse']")
