@@ -367,7 +367,7 @@ DEPENDENCIES
   recording_studio_accessible (~> 0.56)!
   recording_studio_metrics (~> 0.10)!
   recording_studio_stripe!
-  recording_studio_trashable!
+  recording_studio_trashable (~> 1.2)!
   rubocop
   rubocop-rails
   simplecov

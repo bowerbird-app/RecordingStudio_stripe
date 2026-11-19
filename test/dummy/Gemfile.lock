@@ -545,14 +545,14 @@ DEPENDENCIES
   rails (~> 8.1.1)
   recording_studio (~> 7.8)!
   recording_studio_accessible (~> 0.56)!
-  recording_studio_admin!
+  recording_studio_admin (~> 2.19)!
   recording_studio_cache (~> 0.8)!
   recording_studio_internationalization!
-  recording_studio_logs!
+  recording_studio_logs (~> 0.8)!
   recording_studio_metrics (~> 0.10)!
-  recording_studio_root_switchable!
+  recording_studio_root_switchable (~> 0.16)!
   recording_studio_stripe!
-  recording_studio_trashable!
+  recording_studio_trashable (~> 1.2)!
   rubocop-rails-omakase
   solid_cable
   solid_cache
