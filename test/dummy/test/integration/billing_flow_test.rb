@@ -56,9 +56,10 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Generate an image"
     assert_includes response.body, "Export CSV"
     assert_includes response.body, "Someone picks up the phone"
-    assert_includes response.body, "rectangle-stack"
-    assert_includes response.body, "sparkles"
-    assert_includes response.body, "photo"
+    assert_includes response.body, "M6 6.878V6a2.25"
+    assert_includes response.body, "M9.813 15.904"
+    assert_includes response.body, "m2.25 15.75 5.159-5.159"
+    refute_includes response.body, "data-flat-pack--icon-name-value"
     assert_includes response.body, "Monthly"
     assert_includes response.body, "Yearly"
     assert_select "a", text: "Weekly", count: 0
@@ -742,7 +743,8 @@ class BillingFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Manage billing on Stripe"
-    assert_includes response.body, "credit-card"
+    assert_includes response.body, "M2.25 8.25h19.5"
+    refute_includes response.body, "data-flat-pack--icon-name-value"
     assert_includes response.body, 'data-fp-style="stripe"'
     assert_includes response.body, "recording_studio_stripe/button"
     assert_includes response.body, recording_studio_stripe.portal_path

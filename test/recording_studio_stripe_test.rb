@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioStripeTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.33.1", ::RecordingStudioStripe::VERSION
+    assert_equal "0.34.0", ::RecordingStudioStripe::VERSION
   end
 
   def test_engine_exists
@@ -56,15 +56,24 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_dummy_gemfile_pins_recording_studio_6_2
     gemfile = File.read(File.expand_path("dummy/Gemfile", __dir__))
 
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v7.7.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.54.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.19.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v1.2.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.16.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.9.2"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.7.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_logs", tag: "v0.8.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.378"'
+    assert_includes gemfile, 'gem "recording_studio", "~> 7.8"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v7.8.0"'
+    assert_includes gemfile, 'gem "recording_studio_accessible", "~> 0.56"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.56.0"'
+    assert_includes gemfile, 'gem "recording_studio_admin", "~> 2.19"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.19.1"'
+    assert_includes gemfile, 'gem "recording_studio_trashable", "~> 1.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v1.2.3"'
+    assert_includes gemfile, 'gem "recording_studio_root_switchable", "~> 0.16"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.16.1"'
+    assert_includes gemfile, 'gem "recording_studio_metrics", "~> 0.10"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.10.0"'
+    assert_includes gemfile, 'gem "recording_studio_cache", "~> 0.8"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.8.0"'
+    assert_includes gemfile, 'gem "recording_studio_logs", "~> 0.8"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_logs", tag: "v0.8.2"'
+    assert_includes gemfile, 'gem "flat_pack", "~> 0.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.2.0"'
     assert_includes gemfile, 'gem "view_component", "4.19.0"'
     refute_includes gemfile, "widen_recording_studio_requirement"
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_Internationalization", tag: "v0.3.1"'
@@ -73,11 +82,16 @@ class RecordingStudioStripeTest < Minitest::Test
   def test_root_gemfile_pins_accessible_and_recording_studio_6_2
     gemfile = File.read(File.expand_path("../Gemfile", __dir__))
 
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v7.7.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.54.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.378"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.9.2"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v1.2.1"'
+    assert_includes gemfile, 'gem "recording_studio", "~> 7.8"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v7.8.0"'
+    assert_includes gemfile, 'gem "recording_studio_accessible", "~> 0.56"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.56.0"'
+    assert_includes gemfile, 'gem "flat_pack", "~> 0.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.2.0"'
+    assert_includes gemfile, 'gem "recording_studio_metrics", "~> 0.10"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.10.0"'
+    assert_includes gemfile, 'gem "recording_studio_trashable", "~> 1.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v1.2.3"'
     assert_includes gemfile, 'gem "view_component", "4.19.0"'
     refute_includes gemfile, "widen_recording_studio_requirement"
   end
@@ -86,12 +100,12 @@ class RecordingStudioStripeTest < Minitest::Test
     root_lock = File.read(File.expand_path("../Gemfile.lock", __dir__))
     dummy_lock = File.read(File.expand_path("dummy/Gemfile.lock", __dir__))
 
-    assert_includes root_lock, "flat_pack (0.1.378)"
-    assert_includes root_lock, "tag: v0.1.378"
-    assert_includes root_lock, "recording_studio_stripe (0.33.1)"
-    assert_includes dummy_lock, "flat_pack (0.1.378)"
-    assert_includes dummy_lock, "tag: v0.1.378"
-    assert_includes dummy_lock, "recording_studio_stripe (0.33.1)"
+    assert_includes root_lock, "flat_pack (0.2.0)"
+    assert_includes root_lock, "tag: v0.2.0"
+    assert_includes root_lock, "recording_studio_stripe (0.34.0)"
+    assert_includes dummy_lock, "flat_pack (0.2.0)"
+    assert_includes dummy_lock, "tag: v0.2.0"
+    assert_includes dummy_lock, "recording_studio_stripe (0.34.0)"
   end
 
   def test_billing_application_controller_protects_forgery_before_controller_auth
